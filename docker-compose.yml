@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ais-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=
+    networks:
+      - ais-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ais-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - ais-net
+
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    container_name: ais-etl
+    depends_on:
+      - db
+    networks:
+      - ais-net
+    # Décommentez pour exécuter l'ETL une seule fois puis quitter
+    # restart: "no"
+    # command: ["python","-m","etl.main"]
+
+  db:
+    image: postgres:16-alpine
+    container_name: ais-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ais
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - ais-net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ais-pgadmin
+    depends_on:
+      - db
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@local.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ais-net
+
+volumes:
+  # Données persistantes de PostgreSQL
+  db_data:
+  # Données persistantes de pgAdmin
+  pgadmin_data:
+
+networks:
+  ais-net:
+    driver: bridge

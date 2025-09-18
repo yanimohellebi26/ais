@@ -1,12 +1,31 @@
-# React + Vite
+# Frontend React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Salut à tous,
 
-Currently, two official plugins are available:
+Voici le frontend de notre projet, développé avec React et Vite. Ce setup nous permet de bénéficier d'un rechargement à chaud (HMR) pour un développement rapide, ainsi que d'une configuration ESLint de base pour garder un code propre.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## C'est quoi ce projet ?
 
-## Expanding the ESLint configuration
+Ce dossier contient toute la partie interface utilisateur de notre application. On utilise React pour construire les composants et Vite pour le bundling et le serveur de développement.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Comment lancer le projet ?
+
+Pour démarrer le frontend en local :
+
+1. Placez-vous dans ce dossier (`frontend`).
+2. Installez les dépendances :
+   ```bash
+   npm install
+   ```
+3. Lancez le serveur de développement :
+   ```bash
+   npm run dev
+   ```
+4. Ouvrez votre navigateur à l'adresse indiquée dans le terminal (en général http://localhost:5173).
+
+## Plugins utilisés
+
+On utilise principalement deux plugins React pour Vite :
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) (Babel)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) (SWC)
+
