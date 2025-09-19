@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir poetry
 # Copier le projet
 WORKDIR /app
 COPY pyproject.toml poetry.lock /app/
-RUN poetry install --no-root  # installe deps sans installer le package
+RUN poetry install --no-root  # install deps sans installer le package
 
 COPY etl/ /app/etl/
 
