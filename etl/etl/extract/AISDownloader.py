@@ -66,6 +66,7 @@ class AISDownloader(FileDownloader):
 
         # If csv already exists, return file path
         if os.path.exists(csv_path):
+            Logger.info(f"File {csv_name} already exists, skipping.")
             return csv_path
 
         # Check zip available on server
