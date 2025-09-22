@@ -57,7 +57,8 @@ services:
     # command: ["python","-m","etl.main"]
 
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.5
+    platform: linux/amd64 # For ARM64 users force to use the qemu
     container_name: ais-db
     environment:
       - POSTGRES_USER=postgres
@@ -105,8 +106,10 @@ services:
 volumes:
   # Données persistantes de PostgreSQL
   db_data:
+    name: ais-db-data
   # Données persistantes de pgAdmin
   pgadmin_data:
+    name: ais-pgadmin-data
 
 networks:
   ais-net:
