@@ -1,56 +1,66 @@
-# logger.py
+# _ETLLogger.py
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
+import os
+from datetime import datetime
+import colorlog
 
 class _ETLLogger:
     """
-    Central logger singleton .
-    Do no instantiate, use 'logger' "from ._ETLLogger import logger"
+    Central logger singleton.
+    Do not instantiate multiple times, use Logger instance from logger.py
     """
 
+    SUCCESS_LEVEL = 25
+    logging.addLevelName(SUCCESS_LEVEL, "SUCCESS")
+
     LEVEL_COLORS = {
-        "SUCCESS": "\033[92m",
-        "INFO": "\033[94m",
-        "WARNING": "\033[93m",
-        "ERROR": "\033[91m",
-        "CRITICAL": "\033[95m",
-        "RESET": "\033[0m"
+        "SUCCESS": "green",
+        "INFO": "blue",
+        "WARNING": "yellow",
+        "ERROR": "red",
+        "CRITICAL": "magenta",
     }
 
-    def __init__(self, name="ETL", log_file="etl.log"):
+    def __init__(self, name="ETL", log_dir="logs"):
         self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.DEBUG)  # Catch all
+        self.logger.setLevel(logging.DEBUG)
 
-        if not self.logger.hasHandlers():  # Avoid double
-            # Handler console
-            console_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        if not self.logger.hasHandlers():
+            os.makedirs(log_dir, exist_ok=True)
+
+            log_file = os.path.join(log_dir, f"etl_{datetime.now():%Y-%m-%d}.log")
+
+            # Console handler
             console_handler = logging.StreamHandler()
+            console_formatter = colorlog.ColoredFormatter(
+                "%(log_color)s%(levelname)s:%(reset)s %(message)s",
+                log_colors=self.LEVEL_COLORS,
+            )
             console_handler.setFormatter(console_formatter)
             self.logger.addHandler(console_handler)
 
-            # Handler rotating files
-            file_handler = RotatingFileHandler(log_file, maxBytes=5_000_000, backupCount=5)
-            file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+            # Logs files without ANSI
+            file_handler = TimedRotatingFileHandler(
+                log_file, when="midnight", interval=1, backupCount=7, encoding="utf-8"
+            )
+            file_formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(message)s"
+            )
             file_handler.setFormatter(file_formatter)
             self.logger.addHandler(file_handler)
 
-    # Simple use case
     def success(self, message):
-        colored = f"{self.LEVEL_COLORS['SUCCESS']}SUCCESS: {message}{self.LEVEL_COLORS['RESET']}"
-        self.logger.info(colored)
+        self.logger.log(self.SUCCESS_LEVEL,message)
 
     def info(self, message):
-        colored = f"{self.LEVEL_COLORS['INFO']}INFO: {message}{self.LEVEL_COLORS['RESET']}"
-        self.logger.info(colored)
+        self.logger.info(message)
 
     def warning(self, message):
-        colored = f"{self.LEVEL_COLORS['WARNING']}WARNING: {message}{self.LEVEL_COLORS['RESET']}"
-        self.logger.warning(colored)
+        self.logger.warning(message)
 
     def error(self, message):
-        colored = f"{self.LEVEL_COLORS['ERROR']}ERROR: {message}{self.LEVEL_COLORS['RESET']}"
-        self.logger.error(colored)
+        self.logger.error(message)
 
     def critical(self, message):
-        colored = f"{self.LEVEL_COLORS['CRITICAL']}CRITICAL: {message}{self.LEVEL_COLORS['RESET']}"
-        self.logger.critical(colored)
+        self.logger.critical(message)

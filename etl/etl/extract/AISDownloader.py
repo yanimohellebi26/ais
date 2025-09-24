@@ -3,7 +3,6 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from datetime import date, datetime
-import configparser
 from etl.utils.logger import Logger
 from etl.utils.FileDownloader import FileDownloader
 
@@ -14,12 +13,11 @@ class AISDownloader(FileDownloader):
     """
 
     def __init__(self, download_folder: str = None):
-        cfg = configparser.ConfigParser()
-        cfg.read("config.ini")
-        base_url = cfg["AIS"]["base_url"]
+
+        base_url = os.getenv("AIS_BASE_URL")
 
         if download_folder is None:
-            download_folder = cfg.get("AIS", "download_folder", fallback="data/local/downloads")
+            download_folder = os.getenv("AIS_DOWNLOAD_FOLDER")
 
         super().__init__(base_url, download_folder)
 

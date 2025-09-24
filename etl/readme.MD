@@ -2,10 +2,14 @@
 
 Pipeline ETL en Python avec [Poetry](https://python-poetry.org/).
 
-## 🚀 Prérequis
+##  Prérequis
 - Python **>=3.10,<3.13** (recommandé : 3.12)
 - [Poetry](https://python-poetry.org/docs/#installation)
 - (optionnel) Docker et Docker Compose
+
+## 🔧 Configurer les variables d'environnement 
+
+Dupliquer le fichier `.env.exemple` en un fichier `.env` avec les paramètres d'environnements adapté (Dev local, ou production).
 
 ## 🔧 Installation locale
 
