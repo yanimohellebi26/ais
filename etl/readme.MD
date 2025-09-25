@@ -2,6 +2,8 @@
 
 Pipeline ETL en Python avec [Poetry](https://python-poetry.org/).
 
+L'ETL utilise click pour générer une CLI, et exécuté des workflows.
+
 ##  Prérequis
 - Python **>=3.10,<3.13** (recommandé : 3.12)
 - [Poetry](https://python-poetry.org/docs/#installation)
@@ -27,10 +29,17 @@ Dupliquer le fichier `.env.exemple` en un fichier `.env` avec les paramètres d'
     ```bash 
     poetry run pytest 
     ```
-4. Lancer le script de base ETL
+4. Lancer une commande CLI 
    ```bash
-   poetry run etl
+   poetry run etl-cli download -d 2024-01-13
+   poetry run etl-cli --help
    ```
+5. Lancer un workflow complet
+   ```bash 
+      poetry run etl-wkf run-workflow -w daily
+      poetry run etl-cli --help
+   ```
+   
 
-## Utilisation avec Docker
+## Utilisation avec Docker et CRON 
 _A compléter avec devops_

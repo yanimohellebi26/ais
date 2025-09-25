@@ -57,14 +57,19 @@ class AISDownloader(FileDownloader):
     def get_file(self, year: int, month: int, day: int) -> str | None:
         """Download the file, unzip, return path to CSV. Keep only CSV."""
 
-        target_date = date(year, month, day)
+        try:
+            target_date = date(year, month, day)
+        except ValueError as e:
+            Logger.error(e)
+            return None
+
         zip_name = self._construct_file_name(year, target_date)
         csv_name = zip_name.replace(".zip", ".csv")  # nom final CSV
         csv_path = os.path.join(self.download_folder, csv_name)
 
         # If csv already exists, return file path
         if os.path.exists(csv_path):
-            Logger.info(f"File {csv_name} already exists, skipping.")
+            Logger.success(f"File {csv_name} already exists, skipping.")
             return csv_path
 
         # Check zip available on server
