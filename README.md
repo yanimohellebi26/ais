@@ -42,6 +42,3 @@ L'ETL s'exécute via le conteneur `ais-etl` avec la commande par défaut `python
 - Lancer en arrière-plan: `docker compose up -d`
 - Arrêter: `docker compose down`
 
-## Notes
-- Aucun lien direct n'est configuré entre le backend et la base de données par défaut; adaptez `application.properties` si nécessaire.
-- Vous pouvez modifier les variables d'environnement de la base de données dans `docker-compose.yml`.
