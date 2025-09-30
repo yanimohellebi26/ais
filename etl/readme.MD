@@ -58,7 +58,11 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 ```
 Le paramètre DB_DRIVER permet de choisir le driver PostgreSQL : psycopg (classique) ou pg8000 (ARM64).
 
-🚀 Lancer les commandes CLI avec Click
+Pour lancer uniquement le container docker de la base de donnée :
+```bash
+    docker compose up db -d
+```
+## 🚀 Lancer les commandes CLI avec Click
 
 Le projet contient des commandes CLI définies avec Click
 
@@ -93,12 +97,11 @@ Le projet utilise SQLAlchemy avec un pattern singleton pour les sessions :
 
 
 ```python
-   from etl.utils.db import DBSession
+   from etl.utils.db import get_session
    from etl.models import User
    
-   db = DBSession()
    
-   with db.get_session() as session:
+   with get_session() as session:
        # Ajouter un utilisateur
        user = User(name="Bob", age=30)
        session.add(user)
@@ -113,33 +116,35 @@ Le projet utilise SQLAlchemy avec un pattern singleton pour les sessions :
 
 
 Pour des requêtes SQL brutes :
-
+```python
 from sqlalchemy import text
+from etl.utils.db import get_session
 
 with db.get_session() as session:
     result = session.execute(text("SELECT * FROM users WHERE age > :age"), {"age": 20}).mappings()
     for row in result:
         print(row["id"], row["name"])
-
+```
 
 Si vous êtes sur ARM64 et que vous utilisez pg8000, cela fonctionne automatiquement via la variable DB_DRIVER.
 
-🧪 Tests
+## 🧪 Tests
 
 Lancer tous les tests:
-
-poetry run pytest
-
+```bash 
+  poetry run pytest
+```
 
 Les tests incluent la connexion à la base de données et le bon fonctionnement des utilitaires ETL.
 
-📂 Structure du projet
+## 📂 Structure du projet
+
 etl/
-├── cli.py           # Commandes CLI
-├── workflow.py      # Scripts de workflow
-├── utils/
-│   ├── db.py        # Gestion des sessions SQLAlchemy
-│   └── logger.py    # Logger centralisé
-├── models/          # Définition des modèles ORM
-├── tests/           # Tests unitaires
-└── pyproject.toml   # Configuration Poetry
+- cli.py           **# Commandes CLI**
+- workflow.py      **# Scripts de workflow**
+- utils/
+  - db.py        **# Gestion des sessions SQLAlchemy**
+  - logger.py    **# Logger centralisé**
+- models/          **# Définition des modèles ORM**
+- tests/           **# Tests unitaires**
+- pyproject.toml   **# Configuration Poetry**
