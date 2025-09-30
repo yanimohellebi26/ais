@@ -1,19 +1,22 @@
-# ETL Project
+# ETL Pipeline Python
 
-Pipeline ETL en Python avec [Poetry](https://python-poetry.org/).
+Cette partie du projet contient le pipeline ETL pour traiter et insérer des données dans la base PostgreSQL.
 
-L'ETL utilise click pour générer une CLI, et exécuté des workflows.
+# ETL Pipeline Python
 
-##  Prérequis
-- Python **>=3.10,<3.13** (recommandé : 3.12)
-- [Poetry](https://python-poetry.org/docs/#installation)
-- (optionnel) Docker et Docker Compose
+Cette partie du projet contient le pipeline ETL pour traiter et insérer des données dans la base PostgreSQL.
 
-## 🔧 Configurer les variables d'environnement 
+---
 
-Dupliquer le fichier `.env.exemple` en un fichier `.env` avec les paramètres d'environnements adapté (Dev local, ou production).
+## 🐍 Prérequis
 
-## 🔧 Installation locale
+- Python 3.10 à 3.12
+- PostgreSQL installé et accessible
+- [Poetry](https://python-poetry.org/) pour gérer les dépendances et l'environnement
+
+---
+
+## 📦 Installation du projet
 
 1. Vérifier votre version de Python : 
    ```bash
@@ -23,23 +26,115 @@ Dupliquer le fichier `.env.exemple` en un fichier `.env` avec les paramètres d'
 2. Créer l'environnement Poetry :
    ```bash
    poetry env use python3.12 #(Pas obliger si IDE configurer)
-   poetry install
-   ```
-3. Lancer les tests :
-    ```bash 
-    poetry run pytest 
-    ```
-4. Lancer une commande CLI 
-   ```bash
-   poetry run etl-cli download -d 2024-01-13
-   poetry run etl-cli --help
-   ```
-5. Lancer un workflow complet
-   ```bash 
-      poetry run etl-wkf run-workflow -w daily
-      poetry run etl-cli --help
    ```
    
+3. Installer les dépendances : 
+```bash
+   poetry install
+   poetry install --with arm64 #Uniquement pour les utilisateur de systèmes ARM64 
+```
 
-## Utilisation avec Docker et CRON 
-_A compléter avec devops_
+## ⚙️ Configuration des variables d'environnement
+
+1. Copier le fichier d'exemple .env.example en .env :
+```bash 
+   cp .env.example .env
+```
+
+2. Modifier les variables d'environnement pour correspondre à votre config
+```bash
+   ENV=dev
+   LOG_DIR=data/local/logs
+   AIS_DOWNLOAD_FOLDER=data/local/downloads
+   AIS_BASE_URL=https://coast.noaa.gov/htdata/CMSP/AISDataHandler
+   
+   DB_HOST=localhost
+   DB_PORT=5432        # ou 5433 selon votre installation si vous avez psotgresql d'installer notamment.
+   DB_NAME=ais
+   DB_USER=postgres
+   DB_PASSWORD=postgres
+   DB_DRIVER=psycopg    # mettre 'pg8000' si vous êtes sur ARM64
+
+```
+Le paramètre DB_DRIVER permet de choisir le driver PostgreSQL : psycopg (classique) ou pg8000 (ARM64).
+
+🚀 Lancer les commandes CLI avec Click
+
+Le projet contient des commandes CLI définies avec Click
+
+- Lister les commandes disponibles :
+```bash
+   poetry run etl-cli --help
+   poetry run etl-wkf --help
+```
+Exemple
+```bash 
+   poetry run etl-cli download-data
+   poetry run etl-cli process-data
+
+```
+
+## 📝 Logger et gestion des logs
+
+Le projet utilise colorlog pour centraliser le logging.
+
+Exemple d'utilisation:
+```python   
+   from etl.utils.logger import Logger
+   Logger.info("Démarrage du traitement ETL")
+   Logger.error("Une erreur est survenue")
+```
+
+Les logs seront écrits dans le dossier défini par LOG_DIR dans votre .env.
+
+💾 Accès à la base de données
+
+Le projet utilise SQLAlchemy avec un pattern singleton pour les sessions :
+
+from etl.utils.db import DBSession
+from etl.models import User
+
+db = DBSession()
+
+with db.get_session() as session:
+    # Ajouter un utilisateur
+    user = User(name="Bob", age=30)
+    session.add(user)
+
+    # Requête ORM
+    users = session.query(User).filter(User.age > 20).all()
+    for u in users:
+        print(u.id, u.name)
+
+
+Pour des requêtes SQL brutes :
+
+from sqlalchemy import text
+
+with db.get_session() as session:
+    result = session.execute(text("SELECT * FROM users WHERE age > :age"), {"age": 20}).mappings()
+    for row in result:
+        print(row["id"], row["name"])
+
+
+Si vous êtes sur ARM64 et que vous utilisez pg8000, cela fonctionne automatiquement via la variable DB_DRIVER.
+
+🧪 Tests
+
+Lancer tous les tests :
+
+poetry run pytest
+
+
+Les tests incluent la connexion à la base de données et le bon fonctionnement des utilitaires ETL.
+
+📂 Structure du projet
+etl/
+├── cli.py           # Commandes CLI
+├── workflow.py      # Scripts de workflow
+├── utils/
+│   ├── db.py        # Gestion des sessions SQLAlchemy
+│   └── logger.py    # Logger centralisé
+├── models/          # Définition des modèles ORM
+├── tests/           # Tests unitaires
+└── pyproject.toml   # Configuration Poetry

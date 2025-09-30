@@ -1,14 +1,12 @@
 # test_db.py
+from sqlalchemy import text
 import pytest
-
-from etl.utils.db import DBSession
+from etl.utils.db import get_session
 
 def test_database_connection():
-    db = DBSession()
     try:
-        with db.get_session() as session:
-            result = session.execute("SELECT 1 as test")
-            row = result.fetchone()
-            assert row["test"] == 1
+        with get_session() as session:
+            result = session.execute(text("SELECT 1 as test")).mappings().first()
+            assert result["test"] == 1
     except Exception as e:
         pytest.fail(f"Database connection failed: {e}")

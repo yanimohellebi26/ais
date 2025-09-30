@@ -17,3 +17,4 @@ def download(date):
     y,m,d = map(int,date.split("-"))
     downloader = AISDownloader()
     downloader.get_file(y,m,d)
+
