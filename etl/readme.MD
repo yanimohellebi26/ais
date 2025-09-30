@@ -87,24 +87,29 @@ Exemple d'utilisation:
 
 Les logs seront écrits dans le dossier défini par LOG_DIR dans votre .env.
 
-💾 Accès à la base de données
+## 💾 Accès à la base de données
 
 Le projet utilise SQLAlchemy avec un pattern singleton pour les sessions :
 
-from etl.utils.db import DBSession
-from etl.models import User
 
-db = DBSession()
+```python
+   from etl.utils.db import DBSession
+   from etl.models import User
+   
+   db = DBSession()
+   
+   with db.get_session() as session:
+       # Ajouter un utilisateur
+       user = User(name="Bob", age=30)
+       session.add(user)
+   
+       # Requête ORM
+       users = session.query(User).filter(User.age > 20).all()
+       for u in users:
+           print(u.id, u.name)
 
-with db.get_session() as session:
-    # Ajouter un utilisateur
-    user = User(name="Bob", age=30)
-    session.add(user)
+```
 
-    # Requête ORM
-    users = session.query(User).filter(User.age > 20).all()
-    for u in users:
-        print(u.id, u.name)
 
 
 Pour des requêtes SQL brutes :
@@ -121,7 +126,7 @@ Si vous êtes sur ARM64 et que vous utilisez pg8000, cela fonctionne automatique
 
 🧪 Tests
 
-Lancer tous les tests :
+Lancer tous les tests:
 
 poetry run pytest
 
