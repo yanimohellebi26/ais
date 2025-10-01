@@ -1,5 +1,7 @@
 from etl.extract.AISDownloader import AISDownloader
 from dotenv import load_dotenv
+
+import etl.transform.transform_vessel_delta as dv
 from etl.utils.logger import Logger
 import click
 
@@ -18,3 +20,10 @@ def download(date):
     downloader = AISDownloader()
     downloader.get_file(y,m,d)
 
+@cli.command()
+def test():
+    Logger.info("Run test")
+    dv.clear_vessels_db()
+    dv.insert_test_data()
+    df_vessels = dv.get_vessels_db()
+    print(df_vessels.head())

@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS vessel (
     transceiver_class VARCHAR(20),
     created_at TIMESTAMP
 );
+-- Index for JOIN on vessel and vessel_type
+CREATE INDEX idx_vessel_type_id ON vessel(vessel_type_id);
 
 CREATE TABLE IF NOT EXISTS position_vessel (
     id BIGSERIAL PRIMARY KEY,
