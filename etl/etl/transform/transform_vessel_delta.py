@@ -1,127 +1,74 @@
-from datetime import datetime
 
 import pandas as pd
 
 from sqlalchemy import text
 
+from etl.utils.timer import timer
+from etl.utils.db import get_session
 from etl.utils.logger import Logger
 
-from etl.Entity import Vessel, VesselType
-from etl.utils.db import get_session
 
-
-def get_vessels_db():
+def get_vessels_db() -> pd.DataFrame:
+    """
+    Fetch all vessels data from the database
+    :return:
+    """
     with get_session() as session:
         result = session.execute(text(
-            "SELECT * FROM vessel JOIN public.vessel_type vt on vessel.vessel_type_id = vt.id"
+            "SELECT * FROM vessel LEFT JOIN public.vessel_type vt on vessel.vessel_type_id = vt.id"
         )).mappings().all()
         df = pd.DataFrame.from_records(result)
         return df
 
-def transform_vessel_delta(df):
+@timer
+def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply delta detection on new data, use current database vessel for comparison
+    :param new_df: The new dataset
+    :param db_df: Original dataset
+    :return: new dataset clear
+    """
+    #Change type for merge on key mmsi
+    new_df['mmsi'] = new_df['mmsi'].astype(str)
+    db_df['mmsi'] = db_df['mmsi'].astype(str)
 
-    return df
+    # Merge
+    merged = pd.merge(new_df, db_df, how='left', on='mmsi', suffixes=('_new', ''))
 
+    # Detect new from (new MMSI)
+    new_boats = merged[merged["id"].isna()]
 
-def clear_vessels_db():
-    with get_session() as session:
-        session.execute(text("TRUNCATE TABLE vessel_type RESTART IDENTITY CASCADE"))
-        session.execute(text("TRUNCATE TABLE vessel RESTART IDENTITY CASCADE"))
-        session.commit()
+    # Columns to check for new values
+    cols_to_check = [
+        "vessel_name", "imo", "call_sign", "vessel_type_id",
+        "cargo_type_id", "length", "width", "draft",
+        "transceiver_class"
+    ]
 
+    # Construct boolean mask
+    has_changes = False
+    for col in cols_to_check:
+        mask = (~merged[f"{col}_new"].isna()) & (merged[f"{col}_new"] != merged[col])
+        has_changes |= mask
 
-def insert_test_data():
-    with get_session() as session:
-        # --- Create Vessel_type ---
-        tanker = VesselType(id=1, description="Tanker")
-        cargo = VesselType(id=2, description="Cargo")
-        passenger = VesselType(id=3, description="Passenger")
-        fishing = VesselType(id=4, description="Fishing")
-        military = VesselType(id=5, description="Military")
-
-        session.add_all([tanker, cargo, passenger, fishing, military])
-        session.flush()
-
-        # --- Create Vessel ---
-        vessels = [
-            Vessel(
-                mmsi="123456789",
-                imo="7654321",
-                vessel_name="Poseidon",
-                call_sign="PSDN",
-                vessel_type_id=2,
-                length=250.50,
-                width=32.20,
-                draft=10.5,
-                transceiver_class="A",
-                created_at=datetime.now(),
-            ),
-            Vessel(
-                mmsi="987654321",
-                imo="1234567",
-                vessel_name="Neptune",
-                call_sign="NPTN",
-                vessel_type_id=2,
-                length=180.75,
-                width=25.00,
-                draft=8.3,
-                transceiver_class="A",
-                created_at=datetime.now()
-            ),
-            Vessel(
-                mmsi="111111111",
-                imo="2222222",
-                vessel_name="Hermes",
-                call_sign="HRMS",
-                vessel_type_id=3,
-                length=120.0,
-                width=20.0,
-                draft=6.0,
-                transceiver_class="B",
-                created_at=datetime.utcnow(),
-            ),
-            Vessel(
-                mmsi="222222222",
-                imo="3333333",
-                vessel_name="Athena",
-                call_sign="ATHN",
-                vessel_type_id=4,
-                length=90.5,
-                width=15.0,
-                draft=4.5,
-                transceiver_class="B",
-                created_at=datetime.utcnow(),
-            ),
-            Vessel(
-                mmsi="333333333",
-                imo="4444444",
-                vessel_name="Zeus",
-                call_sign="ZEUS",
-                vessel_type_id=5,
-                length=300.0,
-                width=40.0,
-                draft=12.0,
-                transceiver_class="A",
-                created_at=datetime.utcnow(),
-            ),
+    # Select ships where is not null in db, ship is not locked, there's new values, and ship datas are more recent.
+    updates = merged[
+        (~merged["id"].isna()) &
+        (merged["locked"] == False) &
+        (merged["last_update_new"] >= merged["last_update"]) &
+        has_changes
         ]
 
-        for i in range(5, 10):
-            vessels.append(
-                Vessel(
-                    mmsi=f"55555555{i}",
-                    imo=f"777777{i}",
-                    vessel_name=f"TestVessel{i}",
-                    call_sign=f"TST{i}",
-                    vessel_type_id=1 if i % 2 == 0 else 2,
-                    length=100.0 + i * 10,
-                    width=20.0 + i,
-                    draft=5.0 + i * 0.5,
-                    transceiver_class="B",
-                    created_at=datetime.utcnow(),
-                )
-            )
+    # Concat final result new_boats + updates without resident fields from merge
+    final = pd.concat([new_boats, updates], ignore_index=True)
+    final = final[[c for c in final.columns if c.endswith("_new") or c == "mmsi"]]
 
-        session.add_all(vessels)
-        session.commit()
-        Logger.success(f"Inserted {len(vessels)} vessels")
+    final = final.rename(columns={c: c.replace("_new", "") for c in final.columns})
+
+    Logger.info(f"T-Vessel delta : {len(final)}/{len(new_df)} ({round(len(final)/len(new_df) * 100,2)}%) lines selected")
+
+    return final
+
+
+
+

@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Integer, Numeric, TIMESTAMP, ForeignKey
+from sqlalchemy import String, Integer, Numeric, TIMESTAMP, ForeignKey, Boolean, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .base import Base
 
@@ -23,6 +23,8 @@ class Vessel(Base):
     draft: Mapped[Optional[float]] = mapped_column(Numeric(4, 2))
     transceiver_class: Mapped[Optional[str]] = mapped_column(String(20))
     created_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
+    locked : Mapped[Optional[bool]] = mapped_column(Boolean)
+    last_update = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     vessel_type: Mapped[Optional["VesselType"]] = relationship(
         "VesselType",

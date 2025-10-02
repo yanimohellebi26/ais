@@ -1,3 +1,7 @@
+-- =========================================================
+-- TABLES
+-- =========================================================
+
 CREATE TABLE IF NOT EXISTS vessel_type (
     id SERIAL PRIMARY KEY,
     description VARCHAR(100),
@@ -17,8 +21,8 @@ CREATE TABLE IF NOT EXISTS status (
 
 CREATE TABLE IF NOT EXISTS vessel (
     id SERIAL PRIMARY KEY,
-    mmsi CHAR(9) NOT NULL UNIQUE,
-    imo CHAR(7),
+    mmsi VARCHAR(9) NOT NULL UNIQUE,
+    imo VARCHAR(7),
     vessel_name VARCHAR(50),
     call_sign VARCHAR(20),
     vessel_type_id INT REFERENCES vessel_type(id),
@@ -27,10 +31,12 @@ CREATE TABLE IF NOT EXISTS vessel (
     width NUMERIC(6,2),
     draft NUMERIC(4,2),
     transceiver_class VARCHAR(20),
-    created_at TIMESTAMP
+    locked BOOLEAN default false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- Index for JOIN on vessel and vessel_type
-CREATE INDEX idx_vessel_type_id ON vessel(vessel_type_id);
+
+CREATE INDEX IF NOT EXISTS idx_vessel_type_id ON vessel(vessel_type_id);
 
 CREATE TABLE IF NOT EXISTS position_vessel (
     id BIGSERIAL PRIMARY KEY,
@@ -43,3 +49,40 @@ CREATE TABLE IF NOT EXISTS position_vessel (
     geom geography(Point, 4326),
     inserted_at TIMESTAMP
 );
+
+-- =========================================================
+-- TRIGGER FUNCTION
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION update_last_update_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_update = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =========================================================
+-- TRIGGERS AUTO FOR last_update
+-- =========================================================
+
+DO $$
+DECLARE
+    tbl RECORD;
+BEGIN
+    FOR tbl IN
+        SELECT table_name
+        FROM information_schema.columns
+        WHERE column_name = 'last_update' AND table_schema = 'public'
+    LOOP
+        -- Supprime le trigger si déjà existant
+        EXECUTE format('
+            DROP TRIGGER IF EXISTS trg_%I_update ON %I;
+            CREATE TRIGGER trg_%I_update
+            BEFORE UPDATE ON %I
+            FOR EACH ROW
+            EXECUTE FUNCTION update_last_update_column();
+        ', tbl.table_name, tbl.table_name, tbl.table_name, tbl.table_name);
+    END LOOP;
+END;
+$$;
