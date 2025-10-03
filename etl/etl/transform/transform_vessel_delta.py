@@ -47,22 +47,37 @@ def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.Data
 
     # Construct boolean mask
     has_changes = False
+    fills_missing_info = False
     for col in cols_to_check:
+        # Case when value different and no-null -> check differences
         mask = (~merged[f"{col}_new"].isna()) & (merged[f"{col}_new"] != merged[col])
         has_changes |= mask
 
-    # Select ships where is not null in db, ship is not locked, there's new values, and ship datas are more recent.
-    updates = merged[
-        (~merged["id"].isna()) &
-        (merged["locked"] == False) &
-        (merged["last_update_new"] >= merged["last_update"]) &
-        has_changes
-        ]
+        # Case when new value, different, AND older value null -> complete an empty field
+        mask_fill = (~merged[f"{col}_new"].isna()) & (merged[col].isna())
+        fills_missing_info |= mask_fill
 
-    # Concat final result new_boats + updates without resident fields from merge
-    final = pd.concat([new_boats, updates], ignore_index=True)
+    # Update new more recent data + changed
+    mask_updates = (
+            (~merged["id"].isna()) &
+            (merged["locked"] == False) &
+            (merged["last_update_new"] >= merged["last_update"]) &
+            has_changes
+    )
+
+    # Updates to fill missing value (even if older data)
+    mask_fills = (
+            (~merged["id"].isna()) &
+            (merged["locked"] == False) &
+            (~mask_updates) &  # <--- exclude the ones already in updates
+            fills_missing_info
+    )
+    updates = merged[mask_updates]
+    fills = merged[mask_fills]
+
+    # Combine
+    final = pd.concat([new_boats, updates, fills], ignore_index=True)
     final = final[[c for c in final.columns if c.endswith("_new") or c == "mmsi"]]
-
     final = final.rename(columns={c: c.replace("_new", "") for c in final.columns})
 
     Logger.info(f"T-Vessel delta : {len(final)}/{len(new_df)} ({round(len(final)/len(new_df) * 100,2)}%) lines selected")
