@@ -15,7 +15,27 @@ def get_vessels_db() -> pd.DataFrame:
     """
     with get_session() as session:
         result = session.execute(text(
-            "SELECT * FROM vessel LEFT JOIN public.vessel_type vt on vessel.vessel_type_id = vt.id"
+            """
+            SELECT 
+                v.id AS vessel_id,
+                v.mmsi AS mmsi,
+                v.imo AS imo,
+                v.vessel_name as vessel_name,
+                v.call_sign as call_sign,
+                v.vessel_type_id as vessel_type_id,
+                v.cargo_type_id as cargo_type_id,
+                v.length as length,
+                v.width as width,
+                v.draft as draft,
+                v.transceiver_class as transceiver_class,
+                v.locked as locked,
+                v.created_at as created_at,
+                v.last_update as last_update,
+                vt.id AS vessel_type_id
+            FROM vessel v 
+            LEFT JOIN public.vessel_type vt on v.vessel_type_id = vt.id
+            """
+
         )).mappings().all()
         df = pd.DataFrame.from_records(result)
         return df
@@ -31,12 +51,11 @@ def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.Data
     #Change type for merge on key mmsi
     new_df['mmsi'] = new_df['mmsi'].astype(str)
     db_df['mmsi'] = db_df['mmsi'].astype(str)
-
     # Merge
     merged = pd.merge(new_df, db_df, how='left', on='mmsi', suffixes=('_new', ''))
 
     # Detect new from (new MMSI)
-    new_boats = merged[merged["id"].isna()]
+    new_boats = merged[merged["vessel_id"].isna()]
 
     # Columns to check for new values
     cols_to_check = [
@@ -59,7 +78,7 @@ def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.Data
 
     # Update new more recent data + changed
     mask_updates = (
-            (~merged["id"].isna()) &
+            (~merged["vessel_id"].isna()) &
             (merged["locked"] == False) &
             (merged["last_update_new"] >= merged["last_update"]) &
             has_changes
@@ -67,7 +86,7 @@ def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.Data
 
     # Updates to fill missing value (even if older data)
     mask_fills = (
-            (~merged["id"].isna()) &
+            (~merged["vessel_id"].isna()) &
             (merged["locked"] == False) &
             (~mask_updates) &  # <--- exclude the ones already in updates
             fills_missing_info
