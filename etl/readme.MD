@@ -2,18 +2,13 @@
 
 Cette partie du projet contient le pipeline ETL pour traiter et insérer des données dans la base PostgreSQL.
 
-# ETL Pipeline Python
-
-Cette partie du projet contient le pipeline ETL pour traiter et insérer des données dans la base PostgreSQL.
-
 ---
 
 ## 🐍 Prérequis
 
 - Python 3.10 à 3.12
-- PostgreSQL installé et accessible
 - [Poetry](https://python-poetry.org/) pour gérer les dépendances et l'environnement
-
+- Docker pour héberger la base de données PostgreSQL.
 ---
 
 ## 📦 Installation du projet
