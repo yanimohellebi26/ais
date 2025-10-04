@@ -60,10 +60,6 @@ ou
 
  💡 **Astuce** : Pas besoin de relancer le **backend** ou l’**ETL** pour tester une migration. **Flyway** s’occupe de tout.
 
-## 🧱 `init.sql` vs migrations Flyway
-
-- `init.sql` contient le même DDL que la migration correspondante. Il est conservé pour les cas où l’on souhaite initialiser rapidement une base **sans** passer par Flyway (par exemple un import manuel dans `psql` ou un script legacy).
-- Les fichiers dans `./db/migrations` (ex : `V2__create_roles_and_users.sql`) sont ceux qui seront exécutés automatiquement par Flyway dans les environnements Docker, CI/CD ou production.
 ## 📝 Nommer les migrations
 
 - Le nom des fichiers de migration doit respecter le format **Flyway** :

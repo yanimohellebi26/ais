@@ -1,169 +1,42 @@
-.app-shell {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle at top, #dbeafe 0%, #e0f2fe 40%, #f8fafc 100%);
-    padding: 2.5rem 1.5rem;
+#root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
 }
 
-.register-wrapper {
-    width: 100%;
-    max-width: 520px;
+.logo {
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
+}
+.logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-.register-card {
-    background: #ffffff;
-    border-radius: 24px;
-    box-shadow: 0 35px 80px rgba(15, 23, 42, 0.15);
-    padding: 2.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.75rem;
-}
-
-.register-header h1 {
-    margin: 0;
-    font-size: 2rem;
-    color: #0f172a;
-    font-weight: 700;
-}
-
-.register-subtitle {
-    margin: 0.35rem 0 0;
-    color: #475569;
-    font-size: 0.95rem;
-}
-
-.register-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-}
-
-.form-group label {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #0f172a;
-}
-
-.form-control {
-    border-radius: 12px;
-    border: 1.5px solid #cbd5f5;
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-    font-family: inherit;
-    transition: border-color 0.18s, box-shadow 0.18s;
-    background-color: #f8fafc;
-    color: #0f172a;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
-    background-color: #ffffff;
-}
-
-.form-control.has-error {
-    border-color: #ef4444;
-    background-color: #fef2f2;
-}
-
-.submit-button {
-    border: none;
-    border-radius: 12px;
-    padding: 0.95rem;
-    font-size: 1rem;
-    font-weight: 600;
-    background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 100%);
-    color: #ffffff;
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-    box-shadow: 0 18px 35px rgba(37, 99, 235, 0.28);
-}
-
-.submit-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 22px 42px rgba(37, 99, 235, 0.35);
-    filter: brightness(1.03);
-}
-
-.submit-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-    box-shadow: none;
-}
-
-.input-error {
-    margin: 0;
-    font-size: 0.85rem;
-    color: #b91c1c;
-}
-
-.password-hints {
-    list-style: none;
-    padding: 0;
-    margin: 0.4rem 0 0;
-    display: grid;
-    gap: 0.25rem;
-    font-size: 0.85rem;
-    color: #64748b;
-}
-
-.password-hints li::before {
-    content: '\2715';
-    color: #ef4444;
-    margin-right: 0.5rem;
-}
-
-.password-hints li.valid {
-    color: #047857;
-}
-
-.password-hints li.valid::before {
-    content: '\2713';
-    color: #047857;
-}
-
-.success-banner,
-.error-banner {
-    border-radius: 16px;
-    padding: 1.1rem 1.25rem;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
-.success-banner {
-    background: #ecfdf5;
-    color: #047857;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.success-banner strong {
-    display: block;
-    margin-bottom: 0.35rem;
-}
-
-.error-banner {
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid rgba(239, 68, 68, 0.35);
-}
-
-@media (max-width: 600px) {
-    .register-card {
-        padding: 2.2rem 1.75rem;
-        border-radius: 18px;
+@keyframes logo-spin {
+    from {
+        transform: rotate(0deg);
     }
-
-    .register-header h1 {
-        font-size: 1.75rem;
+    to {
+        transform: rotate(360deg);
     }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+        animation: logo-spin infinite 20s linear;
+    }
+}
+
+.card {
+    padding: 2em;
+}
+
+.read-the-docs {
+    color: #888;
 }
