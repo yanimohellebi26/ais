@@ -3,12 +3,13 @@ import pandas as pd
 
 from sqlalchemy import text
 
+from etl.models.context import VesselContext
 from etl.utils.timer import timer
 from etl.utils.db import get_session
 from etl.utils.logger import Logger
 
 
-def get_vessels_db() -> pd.DataFrame:
+def get_vessels_db(context : VesselContext ,**kwargs) -> VesselContext:
     """
     Fetch all vessels data from the database
     :return:
@@ -38,16 +39,18 @@ def get_vessels_db() -> pd.DataFrame:
 
         )).mappings().all()
         df = pd.DataFrame.from_records(result)
-        return df
 
-@timer
-def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.DataFrame:
+        context.df_db = df
+        return context
+def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
     """
     Apply delta detection on new data, use current database vessel for comparison
-    :param new_df: The new dataset
-    :param db_df: Original dataset
+    :param context: Must hold df, and db_df
     :return: new dataset clear
     """
+    new_df = context.df
+    db_df = context.df_db
+
     #Change type for merge on key mmsi
     new_df['mmsi'] = new_df['mmsi'].astype(str)
     db_df['mmsi'] = db_df['mmsi'].astype(str)
@@ -101,8 +104,8 @@ def transform_vessel_delta(new_df: pd.DataFrame, db_df: pd.DataFrame) -> pd.Data
 
     Logger.info(f"T-Vessel delta : {len(final)}/{len(new_df)} ({round(len(final)/len(new_df) * 100,2)}%) lines selected")
 
-    return final
-
+    context.df = final
+    return context
 
 
 

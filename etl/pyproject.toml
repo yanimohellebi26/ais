@@ -30,5 +30,3 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 etl-cli = "etl.cli:cli"
-etl-wkf = "etl.workflow:cli"
-
