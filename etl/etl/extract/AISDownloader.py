@@ -51,6 +51,37 @@ class AISDownloader(FileDownloader):
                  if a.get("href") and (a.get("href").endswith(".zip") or a.get("href").endswith(".csv.zst"))]
         return files
 
+    @staticmethod
+    def _normalize_csv(csv_path: str) -> str:
+        """
+        Normalize CSV file:
+        - Rename columns to a standard format
+        - Rename file: capitalize + '-' -> '_'
+        """
+        # Colonnes standard
+        standard_columns = [
+            "mmsi", "last_update", "lon", "lat", "sog", "cog",
+            "heading", "vessel_name", "imo", "call_sign", "vessel_type_id",
+            "status", "length", "width", "draft", "cargo_type_id", "transceiver_class"
+        ]
+
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        with open(csv_path, 'w', encoding='utf-8') as f:
+            f.write(",".join(standard_columns) + "\n")
+            f.writelines(lines[1:])
+
+        # Renommer le fichier
+        dirname = os.path.dirname(csv_path)
+        basename = os.path.basename(csv_path)
+        new_basename = basename.replace('-', '_').upper()
+        new_path = os.path.join(dirname, new_basename)
+        if new_path != csv_path:
+            os.rename(csv_path, new_path)
+
+        return new_path
+
     # ----------------------
     # Publics method
     # ----------------------
@@ -110,6 +141,7 @@ class AISDownloader(FileDownloader):
                 Logger.warning(f"Unknown file type for {file_name}, keeping as is.")
                 csv_path = file_path
 
+            csv_path = self._normalize_csv(csv_path)
             return csv_path
 
         except Exception as e:

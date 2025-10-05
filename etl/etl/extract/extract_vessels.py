@@ -24,24 +24,13 @@ def extract_vessels(context: VesselContext, **kwargs) -> VesselContext:
     file_path = file_path.resolve()
 
     # Pre-processing
-    rename_map = {
-        "MMSI": "mmsi",
-        "BaseDateTime": "last_update",
-        "VesselName": "vessel_name",
-        "IMO": "imo",
-        "CallSign": "call_sign",
-        "VesselType": "vessel_type_id",
-        "Length": "length",
-        "Width": "width",
-        "Draft": "draft",
-        "Cargo": "cargo_type_id",
-        "TransceiverClass": "transceiver_class",
-    }
+    selected_map = [ "mmsi", "last_update", "vessel_name", "imo", "call_sign",
+        "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",
+    ]
 
     # Extract file
     new_data = pd.read_csv(file_path)
-    new_data.rename(columns=rename_map, inplace=True)
-    new_data = new_data[list(rename_map.values())]
+    new_data = new_data[list(selected_map)]
 
     context.df = new_data
     return context
