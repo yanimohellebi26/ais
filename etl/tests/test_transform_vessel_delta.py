@@ -1,5 +1,7 @@
 import pandas as pd
 import pytest
+
+from etl.models.context import VesselContext
 from etl.transform.transform_vessel_delta import transform_vessel_delta
 
 
@@ -73,9 +75,11 @@ def test_transform_vessel_delta(new_data, old_data, expected_count):
     new_df = pd.DataFrame([{**BASE_FIELDS, **new_data}])
     old_df = pd.DataFrame([{**BASE_FIELDS, **old_data}])
 
-    res = transform_vessel_delta(new_df, old_df)
+    context = VesselContext(df=new_df,df_db=old_df)
 
-    assert len(res) == expected_count
+    updated_context = transform_vessel_delta(context)
+
+    assert len(updated_context.df) == expected_count
 
 
 def test_multi_vessel_mix():
@@ -96,9 +100,10 @@ def test_multi_vessel_mix():
     new_df = pd.DataFrame([{**BASE_FIELDS, **d} for d in new_data_list])
     old_df = pd.DataFrame([{**BASE_FIELDS, **d} for d in old_data_list])
 
-    res = transform_vessel_delta(new_df, old_df)
+    context = VesselContext(df=new_df, df_db=old_df)
+    updated_context = transform_vessel_delta(context)
 
-    assert len(res) == 2
 
-    selected_mmsi = set(res["mmsi"])
+    assert len(updated_context.df) == 2
+    selected_mmsi = set(updated_context.df["mmsi"])
     assert selected_mmsi == {"111111111", "222222222"}

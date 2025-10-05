@@ -14,14 +14,14 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 ## 📦 Installation du projet
 
 1. Vérifier votre version de Python : 
-   ```bash
-   python --version
-   ```
+```bash
+  python --version
+```
    
 2. Créer l'environnement Poetry :
-   ```bash
-   poetry env use python3.12 #(Pas obliger si IDE configurer)
-   ```
+```bash
+  poetry env use python3.12 #(Pas obliger si IDE configurer)
+```
    
 3. Installer les dépendances : 
 ```bash
@@ -49,7 +49,6 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_DRIVER=psycopg    # mettre 'pg8000' si vous êtes sur ARM64
-
 ```
 Le paramètre DB_DRIVER permet de choisir le driver PostgreSQL : psycopg (classique) ou pg8000 (ARM64).
 
@@ -57,6 +56,50 @@ Pour lancer uniquement le container docker de la base de donnée :
 ```bash
     docker compose up db -d
 ```
+
+## 🧩 Système de Workflows ETL 
+
+Ce module permet de définir, exécuter et superviser des workflows ETL composés de plusieurs étapes de traitement chaînées.
+Chaque workflow est une suite de fonctions qui reçoivent et retournent un objet de contexte typé contenant les données manipulées tout au long du pipeline.
+
+Les worflow sont définis dans le dictionnaire **WORKFLOWS**: 
+```python
+WORKFLOWS = {
+    "load-vessels": [
+        (extract_function, {}),
+        (transform_function, {}),
+        (load_function, {})
+    ]
+}
+```
+Chaque fonction reçoit un objet **context** (dataclass) et retourne le même **contexte** mis à jour
+
+Le contexte est un objet servant à partager les données entre les étapes du workflow
+```python
+    from dataclasses import dataclass
+    from typing import Optional
+    import pandas as pd
+    
+    @dataclass
+    class VesselContext:
+        file: Optional[str] = None          
+        df: Optional[pd.DataFrame] = None   
+        df_db: Optional[pd.DataFrame] = None 
+        workflow_id: Optional[str] = None
+```
+
+Exemple de fonction de traitement 
+```python
+def my_task(context: VesselContext, **kwargs) -> VesselContext:
+    # 1. Lire les données depuis le contexte
+    df = context.df
+    # 2. Effectuer un traitement
+    df = df.dropna(subset=["mmsi"])
+    # 3. Mettre à jour le contexte
+    context.df = df
+    return context
+```
+
 ## 🚀 Lancer les commandes CLI avec Click
 
 Le projet contient des commandes CLI définies avec Click
@@ -64,13 +107,20 @@ Le projet contient des commandes CLI définies avec Click
 - Lister les commandes disponibles :
 ```bash
    poetry run etl-cli --help
-   poetry run etl-wkf --help
 ```
 Exemple
 ```bash 
-   poetry run etl-cli download-data
-   poetry run etl-cli process-data
+   poetry run etl-cli download
+   poetry run etl-cli run -w load-vessels -f file.csv
+```
 
+Les options disponibles pour les workflows : 
+```bash
+--workflow, -w -> "Nom du workflow"
+--file, -f -> "Fichier a analyser"
+--continue-on-error, -coe -> "Le workflow ne s'interrompt pas si une erreur survient"
+--use-timer, -t -> "Log les temps d éxécution de chaque traitement"
+--workflow-name, -n -> "Donner un nom au workflow"
 ```
 
 ## 📝 Logger et gestion des logs
