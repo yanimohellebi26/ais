@@ -55,7 +55,7 @@ class AISDownloader(FileDownloader):
     # Publics method
     # ----------------------
     def get_file(self, year: int, month: int, day: int) -> str | None:
-        """Download the file, unzip, return path to CSV. Keep only CSV."""
+        """Download the file, decompress if needed, return path to CSV."""
 
         try:
             target_date = date(year, month, day)
@@ -63,45 +63,57 @@ class AISDownloader(FileDownloader):
             Logger.error(e)
             return None
 
-        zip_name = self._construct_file_name(year, target_date)
-        csv_name = zip_name.replace(".zip", ".csv")  # nom final CSV
+        file_name = self._construct_file_name(year, target_date)
+        csv_name = file_name.replace(".zip", ".csv").replace(".csv.zst", ".csv")
         csv_path = os.path.join(self.download_folder, csv_name)
 
-        # If csv already exists, return file path
+        # If already downloaded (decompressed), skip
         if os.path.exists(csv_path):
             Logger.success(f"File {csv_name} already exists, skipping.")
             return csv_path
 
-        # Check zip available on server
+        # Check if file exists on server
         available_files = self._list_files_from_index(year)
-        if zip_name not in available_files:
-            Logger.error(f"File {zip_name} not found on server")
+        if file_name not in available_files:
+            Logger.error(f"File {file_name} not found on server")
             return None
 
-        # Download ZIP
-        zip_path = os.path.join(self.download_folder, zip_name)
-        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
-        url = f"{self.base_url}/{year}/{zip_name}"
-        Logger.info(f"Downloading {zip_name} from {url}")
+        # Download file
+        file_path = os.path.join(self.download_folder, file_name)
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        url = f"{self.base_url}/{year}/{file_name}"
+        Logger.info(f"Downloading {file_name} from {url}")
+
         try:
             resp = requests.get(url)
             resp.raise_for_status()
-            with open(zip_path, "wb") as f:
+            with open(file_path, "wb") as f:
                 f.write(resp.content)
-            Logger.success(f"Downloaded {zip_name}")
+            Logger.success(f"Downloaded {file_name}")
 
-            # Unzip
-            import zipfile
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                zf.extractall(os.path.dirname(zip_path))
+            # --- Décompression selon le type de fichier ---
+            if file_name.endswith(".zip"):
+                import zipfile
+                with zipfile.ZipFile(file_path, "r") as zf:
+                    zf.extractall(os.path.dirname(file_path))
+                os.remove(file_path)
 
-            # Remove zip, keep only csv
-            os.remove(zip_path)
+            elif file_name.endswith(".zst"):
+                import zstandard as zstd
+                csv_path = file_path.replace(".csv.zst", ".csv")
+                with open(file_path, "rb") as compressed, open(csv_path, "wb") as out:
+                    dctx = zstd.ZstdDecompressor()
+                    dctx.copy_stream(compressed, out)
+                os.remove(file_path)
+
+            else:
+                Logger.warning(f"Unknown file type for {file_name}, keeping as is.")
+                csv_path = file_path
 
             return csv_path
 
         except Exception as e:
-            Logger.error(f"Failed to download {zip_name}: {e}")
+            Logger.error(f"Failed to download {file_name}: {e}")
             return None
 
     def get_size(self, year: int, month: int = None, day: int = None) -> float:
@@ -143,3 +155,35 @@ class AISDownloader(FileDownloader):
             return files
         month_str = f"_{month:02d}_"
         return [f for f in files if month_str in f]
+
+    def get_latest_file_available(self):
+        """Download last AIS file availabel"""
+
+        current_year = date.today().year
+        file_list = self.get_file_list(current_year)
+
+        if not file_list:
+            Logger.error(f"No file available for {current_year}")
+            return None
+
+        dates = []
+        for f in file_list:
+            match = re.search(r'\d{4}-\d{2}-\d{2}', f)
+            if match:
+                try:
+                    d = datetime.strptime(match.group(), "%Y-%m-%d").date()
+                    dates.append((d, f))
+                except ValueError:
+                    pass
+
+        if not dates:
+            Logger.error(f"No date found for files in {current_year}")
+            return None
+
+        latest_date, latest_file = max(dates, key=lambda x: x[0])
+
+        # Télécharger le fichier correspondant
+        return self.get_file(latest_date.year, latest_date.month, latest_date.day)
+
+
+
