@@ -1,9 +1,14 @@
 import pandas as pd
+import sys
 
+from pathlib import Path
 from etl.utils.logger import Logger
 
-input_csv = r"C:\Users\lenam\Documents\M1\Projet\ais\etl\data\local\downloads\AIS_test_data.csv"
-output_csv = "vessels_cleaned.csv"
+# script directory
+base_dir = Path(__file__).resolve().parent
+
+input_csv = base_dir.parent.parent / "data" / "local" / "downloads" / "AIS_test_data.csv"
+output_csv = base_dir / "vessels_cleaned.csv"
 id_col = "mmsi"
 date_col = "date"
 
@@ -12,6 +17,11 @@ column_names = [
     "length", "width", "draft", "cargo", "transceiver_class"
 ]
 
+if not input_csv.exists():
+    Logger.error(f"Input file {input_csv} does not exist")
+    sys.exit(1)
+
+Logger.info(f"File loading : {input_csv}")
 df = pd.read_csv(input_csv, header=None, names=column_names)
 
 df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
