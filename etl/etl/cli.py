@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from etl.extract.AISDownloader import AISDownloader
 from etl.extract.extract_vessels import extract_vessels
+from etl.transform.transform_vessel_duplication import clean_vessel_duplication
 from etl.transform.transform_vessel_delta import transform_vessel_delta, get_vessels_db
 from etl.utils.logger import Logger
 from etl.utils.timer import timer
@@ -39,6 +40,7 @@ def download(date):
 WORKFLOWS = {
     "load-vessels": [
         (extract_vessels, {}),
+        (clean_vessel_duplication, {}),
         (get_vessels_db, {}),
         (transform_vessel_delta, {})
     ]

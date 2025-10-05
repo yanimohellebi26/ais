@@ -1,8 +1,12 @@
 import pandas as pd
 
+from etl.models.context import VesselContext
 from etl.utils.logger import Logger
 
-def clean_vessel_duplication(df: pd.DataFrame, id_col: str="mmsi", date_col: str = "date") -> pd.DataFrame:
+def clean_vessel_duplication(context : VesselContext ,**kwargs) -> VesselContext:
+    df = context.df
+    date_col = 'last_update'
+    id_col = 'mmsi'
     df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
     # Sorting by descending date
@@ -26,4 +30,5 @@ def clean_vessel_duplication(df: pd.DataFrame, id_col: str="mmsi", date_col: str
 
     Logger.info(f"Cleaning complete. Total lines retained: {cleaned_count}. Duplicates info removed: {duplicates_info}")
 
-    return df_cleaned
+    context.df = df_cleaned
+    return context
