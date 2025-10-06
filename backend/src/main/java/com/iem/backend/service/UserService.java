@@ -1,45 +1,39 @@
 package com.iem.backend.service;
 
-import org.springframework.stereotype.Service;
-
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.model.User;
 import com.iem.backend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
-    
-    private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private UserRepository userRepository;
 
-    public User updateUser(UpdateUserRequest request, User currentUser) {
-        User user = userRepository.findById(request.getId())
-        .orElseThrow(() -> new RuntimeException("Utilisateur Introuvable"));
-
-        if (request.getRole() != null && !"admin".equals(currentUser.getRole())) {
-            throw new RuntimeException("Il faut être admin pour faire cela");
+    @Transactional
+    public User updateUser(UpdateUserRequest request) throws Exception {
+        Optional<User> optionalUser = userRepository.findById(request.getId());
+        if (optionalUser.isEmpty()) {
+            throw new Exception("User not found");
         }
 
-        if (request.getRole() != null) {
-            if (!List.of("user", "admin").contains(request.getRole())) {
-                throw new RuntimeException("Rôle invalide");
-            }
-            user.setRole(request.getRole());
+        User user = optionalUser.get();
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+
+            // FAIRE LE HASHAGE DU MOT DE PASSE
+            user.setPasswordHash(request.getPassword());
         }
 
-        if (request.getPassword() != null) {
-
-            // IMPLEMENTER UN CRYPTAGE DU MOT DE PASSE
-
-            user.setPassword(request.getPassword());
+        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+            user.setStatus(request.getStatus());
         }
 
         return userRepository.save(user);
     }
- }
+}
