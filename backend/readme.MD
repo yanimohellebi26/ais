@@ -29,6 +29,7 @@ Init with Spring Boot 3.x, Java 17, Maven.
 
 ## URL Swagger UI 
 http://localhost:8080/swagger-ui.html
+- Pour accéder à cette page, rentrer le compte username=admin et password=admin (voir SecurityConfig.java)
 
 
 ## Dev sur le backend :
