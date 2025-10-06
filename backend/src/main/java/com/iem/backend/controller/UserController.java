@@ -4,6 +4,7 @@ import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.model.User;
 import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,25 +15,19 @@ public class UserController {
     private final UserService userService;
     private final ApiLogger apiLogger;
 
+    @Autowired
     public UserController(UserService userService, ApiLogger apiLogger) {
         this.userService = userService;
         this.apiLogger = apiLogger;
     }
 
     @PutMapping
-    public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest request) {
+    public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest dto) {
         try {
-            User currentUser = new User();
-            currentUser.setUsername("admin");
-            currentUser.setRole("admin");
-
-            User updatedUser = userService.updateUser(request, currentUser);
-
-            apiLogger.success("Utilisateur" + updatedUser.getUsername() + " mis à jour par " + currentUser.getUsername());
-
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            apiLogger.error("Erreur de mise à joueur de l'utilisateur", e);
+            User updated = userService.updateUser(dto);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            apiLogger.error("Failed to update user id " + dto.getId(), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

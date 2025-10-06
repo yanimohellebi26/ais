@@ -3,6 +3,7 @@ package com.iem.backend.service;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.model.User;
 import com.iem.backend.repository.UserRepository;
+import com.iem.backend.utils.ApiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,25 +16,34 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ApiLogger apiLogger;
+
     @Transactional
-    public User updateUser(UpdateUserRequest request) throws Exception {
-        Optional<User> optionalUser = userRepository.findById(request.getId());
+    public User updateUser(UpdateUserRequest dto) throws Exception {
+        Optional<User> optionalUser = userRepository.findById(dto.getId());
         if (optionalUser.isEmpty()) {
+            apiLogger.warn("User not found with id " + dto.getId());
             throw new Exception("User not found");
         }
 
         User user = optionalUser.get();
 
-        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            
             // FAIRE LE HASHAGE DU MOT DE PASSE
-            user.setPasswordHash(request.getPassword());
+            user.setPasswordHash(dto.getPassword());
+            apiLogger.info("Password updated for user id " + dto.getId());
         }
 
-        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
-            user.setStatus(request.getStatus());
+        if (dto.getStatus() != null && !dto.getStatus().isEmpty()) {
+            user.setStatus(dto.getStatus());
+            apiLogger.info("Status updated for user id " + dto.getId() + " to " + dto.getStatus());
         }
 
-        return userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+        apiLogger.success("User updated successfully: id " + updatedUser.getId());
+
+        return updatedUser;
     }
 }
