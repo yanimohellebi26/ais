@@ -5,6 +5,7 @@ import com.iem.backend.model.User;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,9 @@ public class UserService {
     @Autowired
     private ApiLogger apiLogger;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Transactional
     public User updateUser(UpdateUserRequest dto) throws Exception {
         Optional<User> optionalUser = userRepository.findById(dto.getId());
@@ -31,8 +35,8 @@ public class UserService {
 
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             
-            // FAIRE LE HASHAGE DU MOT DE PASSE
-            user.setPasswordHash(dto.getPassword());
+            String passwordEncoded = passwordEncoder.encode(dto.getPassword());
+            user.setPasswordHash(passwordEncoded);
             apiLogger.info("Password updated for user id " + dto.getId());
         }
 
