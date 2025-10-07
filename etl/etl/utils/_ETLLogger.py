@@ -12,7 +12,9 @@ class _ETLLogger:
     """
 
     SUCCESS_LEVEL = 25
+    TIMER_LEVEL = 27
     logging.addLevelName(SUCCESS_LEVEL, "SUCCESS")
+    logging.addLevelName(TIMER_LEVEL, "TIMER")
 
     LEVEL_COLORS = {
         "SUCCESS": "green",
@@ -20,6 +22,7 @@ class _ETLLogger:
         "WARNING": "yellow",
         "ERROR": "red",
         "CRITICAL": "magenta",
+        "TIMER": "cyan"
     }
 
     def __init__(self, name="ETL", log_dir="logs"):
@@ -64,3 +67,6 @@ class _ETLLogger:
 
     def critical(self, message):
         self.logger.critical(message)
+
+    def timer(self, message):
+        self.logger.log(self.TIMER_LEVEL, message)
