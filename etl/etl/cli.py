@@ -4,8 +4,11 @@ import uuid
 import click
 from dotenv import load_dotenv
 
+from datetime import date as datetime_date
+
 from etl.extract.AISDownloader import AISDownloader
 from etl.extract.extract_vessels import extract_vessels
+from etl.transform.transform_vessel_duplication import clean_vessel_duplication
 from etl.transform.transform_vessel_delta import transform_vessel_delta, get_vessels_db
 from etl.utils.logger import Logger
 from etl.utils.timer import timer
@@ -23,13 +26,16 @@ def cli():
 
 @cli.command()
 @click.option("--date", "-d", help="Date to format YYYY-MM-DD")
-def download(date):
+@click.option("--latest", is_flag=True, help="Download latest file available")
+def download(date, latest):
     """Télécharger un fichier pour une date donnée"""
     Logger.info(f"Run task download")
-    y, m, d = map(int, date.split("-"))
     downloader = AISDownloader()
-    downloader.get_file(y, m, d)
-
+    if latest:
+        downloader.get_latest_file_available()
+    else :
+        y, m, d = map(int, date.split("-"))
+        downloader.get_file(y, m, d)
 
 #
 # ===== WORKFLOWS / PIPELINES =====
@@ -39,6 +45,7 @@ def download(date):
 WORKFLOWS = {
     "load-vessels": [
         (extract_vessels, {}),
+        (clean_vessel_duplication, {}),
         (get_vessels_db, {}),
         (transform_vessel_delta, {})
     ]
