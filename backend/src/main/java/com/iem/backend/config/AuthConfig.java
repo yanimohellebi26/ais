@@ -1,4 +1,4 @@
-package com.iem.backend.auth.config;
+package com.iem.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

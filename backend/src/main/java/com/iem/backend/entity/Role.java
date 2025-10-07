@@ -1,4 +1,4 @@
-package com.iem.backend.auth.entity;
+package com.iem.backend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,18 +18,15 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @ToString
 @Entity
-@Table(name = "roles")
+@Table(name = "role")
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "name", length = 50, nullable = false, unique = true)
     private String name;
-
-    @Column(name = "description")
-    private String description;
 
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

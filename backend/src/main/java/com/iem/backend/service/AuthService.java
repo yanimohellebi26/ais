@@ -1,11 +1,11 @@
-package com.iem.backend.auth.service;
+package com.iem.backend.service;
 
-import com.iem.backend.auth.dto.RegisterRequest;
-import com.iem.backend.auth.dto.RegisterResponse;
-import com.iem.backend.auth.entity.Role;
-import com.iem.backend.auth.entity.UserAccount;
-import com.iem.backend.auth.repository.RoleRepository;
-import com.iem.backend.auth.repository.UserAccountRepository;
+import com.iem.backend.dto.RegisterRequest;
+import com.iem.backend.dto.RegisterResponse;
+import com.iem.backend.entity.Role;
+import com.iem.backend.entity.User;
+import com.iem.backend.repository.RoleRepository;
+import com.iem.backend.repository.UserAccountRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,13 +48,13 @@ public class AuthService {
         Role role = roleRepository.findByNameIgnoreCase(roleName)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown role"));
 
-        UserAccount user = new UserAccount();
+        User user = new User();
         user.setUsername(username);
         user.setEmail(email);
         user.setRole(role);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
-        UserAccount saved = userAccountRepository.save(user);
+        User saved = userAccountRepository.save(user);
         apiLogger.success("User registered: " + saved.getEmail());
 
         return new RegisterResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole().getName());

@@ -1,10 +1,10 @@
 package com.iem.backend.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iem.backend.auth.entity.Role;
-import com.iem.backend.auth.entity.UserAccount;
-import com.iem.backend.auth.repository.RoleRepository;
-import com.iem.backend.auth.repository.UserAccountRepository;
+import com.iem.backend.entity.Role;
+import com.iem.backend.entity.User;
+import com.iem.backend.repository.RoleRepository;
+import com.iem.backend.repository.UserAccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john.doe@example.com"))
                 .andExpect(jsonPath("$.role").value("admin"));
 
-        UserAccount saved = userAccountRepository.findByEmailIgnoreCase("john.doe@example.com").orElseThrow();
+        User saved = userAccountRepository.findByEmailIgnoreCase("john.doe@example.com").orElseThrow();
         assertThat(saved.getPasswordHash()).isNotEqualTo("StrongPass1!");
         assertThat(passwordEncoder.matches("StrongPass1!", saved.getPasswordHash())).isTrue();
     }
@@ -84,7 +84,7 @@ class AuthControllerTest {
     @DisplayName("should reject duplicate email")
     void register_conflict_email() throws Exception {
         Role adminRole = roleRepository.findByNameIgnoreCase("admin").orElseThrow();
-        UserAccount existing = new UserAccount();
+        User existing = new User();
         existing.setUsername("existingUser");
         existing.setEmail("john.doe@example.com");
         existing.setPasswordHash(passwordEncoder.encode("StrongPass1!"));

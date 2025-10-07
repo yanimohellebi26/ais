@@ -1,4 +1,4 @@
-package com.iem.backend.auth.dto;
+package com.iem.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;

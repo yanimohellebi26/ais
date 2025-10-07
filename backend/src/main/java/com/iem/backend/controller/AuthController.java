@@ -1,8 +1,8 @@
-package com.iem.backend.auth.controller;
+package com.iem.backend.controller;
 
-import com.iem.backend.auth.dto.RegisterRequest;
-import com.iem.backend.auth.dto.RegisterResponse;
-import com.iem.backend.auth.service.AuthService;
+import com.iem.backend.dto.RegisterRequest;
+import com.iem.backend.dto.RegisterResponse;
+import com.iem.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

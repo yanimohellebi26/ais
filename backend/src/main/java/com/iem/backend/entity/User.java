@@ -1,4 +1,4 @@
-package com.iem.backend.auth.entity;
+package com.iem.backend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,11 +22,11 @@ import java.time.OffsetDateTime;
 @ToString(exclude = {"passwordHash", "role"})
 @Entity
 @Table(name = "users")
-public class UserAccount {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "username", length = 50, nullable = false, unique = true)
     private String username;
@@ -34,7 +34,7 @@ public class UserAccount {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password", nullable = false)
     private String passwordHash;
 
     @ManyToOne(fetch = FetchType.LAZY)

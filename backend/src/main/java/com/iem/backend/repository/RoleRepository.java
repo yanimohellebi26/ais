@@ -1,6 +1,6 @@
-package com.iem.backend.auth.repository;
+package com.iem.backend.repository;
 
-import com.iem.backend.auth.entity.Role;
+import com.iem.backend.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,10 +1,10 @@
-package com.iem.backend.auth.dto;
+package com.iem.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record RegisterResponse(
         @JsonProperty("id")
-        Long id,
+        Integer id,
         @JsonProperty("username")
         String username,
         @JsonProperty("email")
