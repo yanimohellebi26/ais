@@ -25,10 +25,11 @@ services:
     image: flyway/flyway
     container_name: ais-flyway
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./db/migrations:/flyway/sql
-    command: -url=jdbc:postgresql://db:5432/ais -user=postgres -password=postgres migrate
+    command: -connectRetries=10 -url=jdbc:postgresql://db:5432/ais -user=postgres -password=postgres migrate
     restart: "no"
     networks:
       - ais-net
