@@ -6,6 +6,7 @@ import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +23,7 @@ public class UserController {
     }
 
     @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest dto) {
         try {
             User updated = userService.updateUser(dto);
