@@ -1,7 +1,7 @@
 package com.iem.backend.service;
 
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.model.User;
+import com.iem.backend.entity.User;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.beans.factory.annotation.Autowired;

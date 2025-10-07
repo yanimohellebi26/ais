@@ -1,4 +1,4 @@
-package com.iem.backend.model;
+package com.iem.backend.entity;
 
 import java.time.LocalDateTime;
 
