@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS vessel_type (
 CREATE TABLE IF NOT EXISTS vessel (
       id SERIAL PRIMARY KEY,
       mmsi VARCHAR(9) NOT NULL UNIQUE,
-      imo VARCHAR(7) UNIQUE,
+      imo VARCHAR(10) UNIQUE,
       vessel_name VARCHAR(100),
       call_sign VARCHAR(20),
       vessel_type_id INT REFERENCES vessel_type(id),
@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS vessel (
       transceiver_class VARCHAR(1),
       locked BOOLEAN default false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      base_date_time TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_type_id ON vessel(vessel_type_id);
