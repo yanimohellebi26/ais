@@ -27,7 +27,7 @@ def cli():
 @click.option("--date", "-d", help="Date to format YYYY-MM-DD")
 @click.option("--latest", is_flag=True, help="Download latest file available")
 def download(date, latest):
-    """Télécharger un fichier pour une date donnée"""
+    """Download file for a given date"""
     Logger.info(f"Run task download")
     downloader = AISDownloader()
     if latest:
@@ -41,7 +41,7 @@ def download(date, latest):
 #
 
 # === Workflows defs ===
-WORKFLOWS = {
+PIPELINES = {
     "load-vessels": [
         (extract_data_from_file, {"selected_map": [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
         "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",]}),
@@ -57,16 +57,16 @@ WORKFLOWS = {
 
 
 @cli.command()
-@click.option("--workflow", "-w", required=True, help="Workflow name (ex: load_vessels, monthly)")
+@click.option("--pipeline", "-p", required=True, help="Pipeline name (ex: load_vessels, monthly)")
 @click.option("--file", "-f", help="File path (ex: ./data/file.csv)")
-@click.option("--fail-fast", "-ff", is_flag=True, help="Stop workflow on first error (by default)")
-@click.option("--continue-on-error", "-coe", is_flag=True, help="Continue workflow to next call function")
+@click.option("--fail-fast", "-ff", is_flag=True, help="Stop pipeline on first error (by default)")
+@click.option("--continue-on-error", "-coe", is_flag=True, help="Continue pipeline to next call function")
 @click.option("--use-timer", "-t", is_flag=True, help="Measure execution time for each task")
-@click.option("--workflow-name", "-n", type=str, help="Optional name for this workflow run")
-def run(workflow, file, fail_fast, continue_on_error, use_timer, workflow_name):
-    tasks = WORKFLOWS.get(workflow)
+@click.option("--workflow-name", "-n", type=str, help="Optional name for this pipeline run")
+def run_pipeline(pipeline, file, fail_fast, continue_on_error, use_timer, workflow_name):
+    tasks = PIPELINES.get(pipeline)
     if not tasks:
-        Logger.error(f"Workflow '{workflow}' not found. Options: {list(WORKFLOWS.keys())}")
+        Logger.error(f"Pipeline '{pipeline}' not found. Options: {list(PIPELINES.keys())}")
         return
 
     workflow_id = workflow_name or str(uuid.uuid4())[:8]
@@ -78,7 +78,7 @@ def run(workflow, file, fail_fast, continue_on_error, use_timer, workflow_name):
         workflow_id=workflow_id,
     )
 
-    Logger.info(f"[W-{workflow_id}] Start workflow '{workflow}'")
+    Logger.info(f"[W-{workflow_id}] Start pipeline '{pipeline}'")
     workflow_start = time.time()
 
     for func, kwargs in tasks:
@@ -93,8 +93,8 @@ def run(workflow, file, fail_fast, continue_on_error, use_timer, workflow_name):
             if continue_on_error:
                 continue
             else:
-                Logger.error(f"[W-{workflow_id}] Workflow '{workflow}' fail fast stop")
+                Logger.error(f"[W-{workflow_id}] Pipeline '{pipeline}' fail fast stop")
                 break
 
     Logger.success(
-        f"[W-{workflow_id}] Workflow '{workflow}' finished successfully in {time.time() - workflow_start:.2f}s")
+        f"[W-{workflow_id}] Pipeline '{pipeline}' finished successfully in {time.time() - workflow_start:.2f}s")
