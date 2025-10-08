@@ -1,139 +1,106 @@
-# etl/etl/load/load_vessel_db.py
-import os
-from typing import List, Optional, Dict, Iterable
+from typing import List, Optional, Dict, Tuple
 
 import pandas as pd
-import psycopg2
-from psycopg2.extras import execute_values
+from sqlalchemy import MetaData, Table
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-# --- Chargement de la configuration depuis .env ---
-# Essaie d'abord ./.env (racine), sinon tests/.env.exemple
-try:
-    from dotenv import load_dotenv, find_dotenv  # type: ignore
-    dotenv_path = find_dotenv(".env", usecwd=True) or find_dotenv("tests/.env.exemple", usecwd=True)
-    if dotenv_path:
-        load_dotenv(dotenv_path=dotenv_path)
-except Exception:
-    # si python-dotenv n'est pas installé, on ignore et on se base sur l'env du système
-    pass
+from etl.models.context import VesselContext
+from etl.utils.db import get_session, engine
+from etl.utils.logger import Logger
 
-# --- Connexion DB via .env / variables d'env ---
-PGHOST = os.getenv("DB_HOST", os.getenv("PGHOST", "127.0.0.1"))
-PGPORT = int(os.getenv("DB_PORT", os.getenv("PGPORT", "5432")))
-PGUSER = os.getenv("DB_USER", os.getenv("PGUSER", "postgres"))
-PGPASSWORD = os.getenv("DB_PASSWORD", os.getenv("PGPASSWORD", "postgres"))
-PGDATABASE = os.getenv("DB_NAME", os.getenv("PGDATABASE", "ais"))
 
-def _connect():
-    return psycopg2.connect(
-        host=PGHOST, port=PGPORT, user=PGUSER,
-        password=PGPASSWORD, dbname=PGDATABASE
-    )
+def _split_table(fullname: str) -> Tuple[Optional[str], str]:
+    if "." in fullname:
+        schema, table = fullname.split(".", 1)
+        return schema, table
+    return None, fullname
+
+import numpy as np
+
+def normalize_types(df: pd.DataFrame):
+    df = df.copy()
+    for col in df.columns:
+        # Si la colonne est float mais ne contient que des valeurs entières → convertir en int
+        if df[col].dtype == "float64":
+            # Vérifie que toutes les valeurs non nulles sont entières
+            if all(df[col].dropna().apply(lambda x: float(x).is_integer())):
+                df[col] = df[col].astype("Int64")  # int nullable (compatible NaN)
+        # Convertit les NaN textuels en None
+        if df[col].dtype == "object":
+            df[col] = df[col].replace({np.nan: None, "nan": None})
+    return df
+
 
 def load_vessel_to_db(
-    data: pd.DataFrame,
-    *,
+    context: VesselContext,
     table: str,
     upsert_keys: Optional[List[str]] = None,
-    column_mapping: Optional[Dict[str, str]] = None,  # {"df_col": "db_col"}
-    chunk_size: int = 10_000
-) -> int:
+    column_mapping: Optional[Dict[str, str]] = None,
+    chunk_size: int = 10_000):
     """
-    Insère (ou upsert) un DataFrame `data` dans la table Postgres `table`.
-    - table: "schema.table"
-    - upsert_keys: colonnes de conflit -> ON CONFLICT DO UPDATE
-    - column_mapping: si les noms DF != noms DB (ex: {"MMSI":"mmsi"})
-    - chunk_size: taille des batchs d'insertion
-    Retourne le nombre total de lignes traitées.
+    Insert (or upsert) a pandas DataFrame into a Postgres table using SQLAlchemy.
+    Raises:
+        ValueError: if inputs are invalid.
     """
-    if data is None or data.empty:
-        return 0
+    data = context.df
+    data = normalize_types(data)
 
-    df = data.copy()
+    if data.empty:
+        raise ValueError("`data` is empty.")
+    if not table or not isinstance(table, str):
+        raise ValueError("`table` must be a non-empty string like 'schema.table' or 'table'.")
+    if chunk_size <= 0:
+        raise ValueError("`chunk_size` must be a positive integer.")
 
-    # Harmonise les noms de colonnes vers la DB si nécessaire
     if column_mapping:
-        rename_map = {k: v for k, v in column_mapping.items() if k in df.columns}
+        rename_map = {k: v for k, v in column_mapping.items() if k in data.columns}
         if rename_map:
-            df = df.rename(columns=rename_map)
+            data.rename(columns=rename_map, inplace=True)
 
-    cols: List[str] = list(df.columns)
-    cols_sql = ",".join(f'"{c}"' for c in cols)  # protège les noms
-    template = "(" + ",".join(["%s"] * len(cols)) + ")"
-
-    # Construire la clause UPSERT si demandé
-    if upsert_keys:
-        conflict_cols = ",".join(f'"{c}"' for c in upsert_keys)
-        set_cols = ",".join(
-            f'"{c}" = EXCLUDED."{c}"' for c in cols if c not in upsert_keys
-        ) or ""
-        upsert_sql = f' ON CONFLICT ({conflict_cols}) DO UPDATE SET {set_cols}' if set_cols else " ON CONFLICT DO NOTHING"
-    else:
-        upsert_sql = ""
-
-    sql = f'INSERT INTO {table} ({cols_sql}) VALUES %s{upsert_sql}'
+    schema, tbl_name = _split_table(table)
 
     total = 0
-    with _connect() as conn:
-        with conn.cursor() as cur:
-            for start in range(0, len(df), chunk_size):
-                sub = df.iloc[start:start + chunk_size]
-                # Convertit NaN pandas -> None (NULL Postgres)
-                rows = [tuple(None if pd.isna(x) else x for x in r) for r in sub.to_numpy()]
-                if not rows:
-                    continue
-                execute_values(cur, sql, rows, template=template)
-                total += len(sub)
-        conn.commit()
-    return total
+    with get_session() as session:
+        metadata = MetaData()
+        tbl = Table(tbl_name, metadata, autoload_with=session.bind, schema=schema)
 
-# --- Tâche à brancher à la fin du workflow ---
-def task_load_vessel_to_db(
-    payload,
-    *,
-    table: str,
-    upsert_keys: Optional[List[str]] = None,
-    column_mapping: Optional[Dict[str, str]] = None
-):
-    """
-    Tâche pipeline: prend un DataFrame en entrée (payload), insère dans Postgres.
-    Retourne un petit récapitulatif.
-    """
-    if not isinstance(payload, pd.DataFrame):
-        raise TypeError("task_load_vessel_to_db attend un pandas.DataFrame en entrée")
-    count = load_vessel_to_db(
-        payload,
-        table=table,
-        upsert_keys=upsert_keys,
-        column_mapping=column_mapping,
-    )
-    return {"table": table, "rows_in_df": len(payload), "rows_inserted_or_merged": count}
+        db_cols = [c.name for c in tbl.columns]
+        target_cols = [c for c in db_cols if c in data.columns]
+        if not target_cols:
+            raise ValueError(
+                f"No common columns between DataFrame and target table '{table}'. "
+                f"DF columns={list(data.columns)}; DB columns={db_cols}"
+            )
 
-# --- Test local (exécutable avec: python -m etl.etl.load.load_vessel_db) ---
-if __name__ == "__main__":
-    # DataFrame de test aligné avec public.vessel
-    # - mmsi/imo en texte (varchar dans la table)
-    # - call_sign (et pas callsign)
-    import pandas as pd
+        if upsert_keys:
+            missing = [k for k in upsert_keys if k not in target_cols]
+            if missing:
+                raise ValueError(
+                    f"`upsert_keys` not found in insertable columns: missing={missing}; "
+                    f"available={target_cols}"
+                )
 
-    df = pd.DataFrame({
-        "mmsi": ["111111111", "222222222"],      # varchar(9)
-        "imo":  ["1234567",   None],             # varchar(7) (None accepté)
-        "vessel_name": ["NEPTUNE", "POSEIDON"],
-        "call_sign":   ["AAA111",  "BBB222"],    # nom de colonne exact
-        # tu peux ajouter d'autres colonnes si tu veux (length, width, ...)
-    })
+        for start in range(0, len(data), chunk_size):
+            sub = data.iloc[start : start + chunk_size]
+            if sub.empty:
+                continue
 
-    target_table = "public.vessel"
+            sub = sub.where(sub.notna(), None)[target_cols]
+            records = sub.to_dict(orient="records")
+            if not records:
+                continue
 
-    # upsert sur la contrainte unique mmsi (elle existe dans ta table)
-    try:
-        inserted = load_vessel_to_db(
-            df,
-            table=target_table,
-            upsert_keys=["mmsi"]   # correspond à "vessel_mmsi_key"
-            # pas besoin de column_mapping: on a déjà call_sign
-        )
-        print(f"✅ {inserted} lignes insérées/merge dans {target_table}.")
-    except Exception as e:
-        print(f" Échec insertion: {e}")
+            stmt = pg_insert(tbl).values(records)
+
+            if upsert_keys:
+                update_cols = {c: stmt.excluded[c] for c in target_cols if c not in upsert_keys}
+                if update_cols:
+                    stmt = stmt.on_conflict_do_update(index_elements=upsert_keys, set_=update_cols)
+                else:
+                    stmt = stmt.on_conflict_do_nothing(index_elements=upsert_keys)
+
+            session.execute(stmt)
+            total += len(sub)
+
+        session.commit()
+        Logger.info(f"Inserted {total} records.")
