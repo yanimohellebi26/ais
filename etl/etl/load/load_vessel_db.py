@@ -46,7 +46,8 @@ def load_vessel_to_db(
     data = normalize_types(data)
 
     if data.empty:
-        raise ValueError("`data` is empty.")
+        Logger.info("L-Vessels No data to insert.")
+        return
     if not table or not isinstance(table, str):
         raise ValueError("`table` must be a non-empty string like 'schema.table' or 'table'.")
     if chunk_size <= 0:

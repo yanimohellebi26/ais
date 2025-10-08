@@ -19,22 +19,20 @@ def get_vessels_db(context : VesselContext ,**kwargs) -> VesselContext:
             """
             SELECT 
                 v.id AS vessel_id,
-                v.mmsi AS mmsi,
-                v.imo AS imo,
-                v.vessel_name as vessel_name,
-                v.call_sign as call_sign,
-                v.vessel_type_id as vessel_type_id,
-                v.cargo_type_id as cargo_type_id,
-                v.length as length,
-                v.width as width,
-                v.draft as draft,
-                v.transceiver_class as transceiver_class,
-                v.locked as locked,
-                v.created_at as created_at,
-                v.last_update as last_update,
-                vt.id AS vessel_type_id
+                v.mmsi,
+                v.imo,
+                v.vessel_name,
+                v.call_sign,
+                v.vessel_type_id,
+                v.cargo_type_id,
+                v.length,
+                v.width,
+                v.draft,
+                v.transceiver_class,
+                v.locked,
+                v.created_at,
+                v.base_date_time
             FROM vessel v 
-            LEFT JOIN public.vessel_type vt on v.vessel_type_id = vt.id
             """
 
         )).mappings().all()
@@ -77,7 +75,6 @@ def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
         # Case when value different and no-null -> check differences
         mask = (~merged[f"{col}_new"].isna()) & (merged[f"{col}_new"] != merged[col])
         has_changes |= mask
-
         # Case when new value, different, AND older value null -> complete an empty field
         mask_fill = (~merged[f"{col}_new"].isna()) & (merged[col].isna())
         fills_missing_info |= mask_fill
@@ -86,7 +83,7 @@ def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
     mask_updates = (
             (~merged["vessel_id"].isna()) &
             (merged["locked"] == False) &
-            (merged["last_update_new"] >= merged["last_update"]) &
+            (merged["base_date_time_new"] >= merged["base_date_time"]) &
             has_changes
     )
 

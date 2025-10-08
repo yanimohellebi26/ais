@@ -49,7 +49,7 @@ WORKFLOWS = {
         (clean_vessel_duplication, {}),
         (get_vessels_db, {}),
         (transform_vessel_delta, {}),
-        (load_vessel_to_db,{"table":"vessel"})
+        (load_vessel_to_db,{"table":"vessel", "upsert_keys": ["mmsi"] })
 
     ]
 }

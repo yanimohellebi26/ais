@@ -24,7 +24,7 @@ def extract_vessels(context: VesselContext, **kwargs) -> VesselContext:
     file_path = file_path.resolve()
 
     # Pre-processing
-    selected_map = [ "mmsi", "last_update", "vessel_name", "imo", "call_sign",
+    selected_map = [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
         "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",
     ]
 
