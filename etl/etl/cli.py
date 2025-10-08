@@ -4,10 +4,8 @@ import uuid
 import click
 from dotenv import load_dotenv
 
-from datetime import date as datetime_date
-
 from etl.extract.AISDownloader import AISDownloader
-from etl.extract.extract_vessels import extract_vessels
+from etl.extract.extract_ais import extract_data_from_file
 from etl.transform.transform_vessel_duplication import clean_vessel_duplication
 from etl.transform.transform_vessel_delta import transform_vessel_delta, get_vessels_db
 from etl.load.load_vessel_db import load_vessel_to_db
@@ -45,12 +43,15 @@ def download(date, latest):
 # === Workflows defs ===
 WORKFLOWS = {
     "load-vessels": [
-        (extract_vessels, {}),
+        (extract_data_from_file, {"selected_map": [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
+        "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",]}),
         (clean_vessel_duplication, {}),
         (get_vessels_db, {}),
         (transform_vessel_delta, {}),
         (load_vessel_to_db,{"table":"vessel", "upsert_keys": ["mmsi"] })
-
+    ],
+    "load-positions": [
+        (extract_data_from_file,{"selected_map": [ "mmsi", "base_date_time", "lon","lat","sog","cog","heading"]})
     ]
 }
 
