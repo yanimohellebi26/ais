@@ -51,12 +51,15 @@ def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
     new_df = context.df
     db_df = context.df_db
 
+    if len(db_df) == 0:
+        Logger.info(f"T-Vessel delta : database empty all lines selected")
+        return context
+
     #Change type for merge on key mmsi
     new_df['mmsi'] = new_df['mmsi'].astype(str)
     db_df['mmsi'] = db_df['mmsi'].astype(str)
     # Merge
     merged = pd.merge(new_df, db_df, how='left', on='mmsi', suffixes=('_new', ''))
-
     # Detect new from (new MMSI)
     new_boats = merged[merged["vessel_id"].isna()]
 
