@@ -3,6 +3,7 @@ package com.iem.backend.service;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
 import com.iem.backend.exception.UserNotFoundException;
+import com.iem.backend.exception.VesselAlreadyOwnedException;
 import com.iem.backend.repository.UserAccountRepository;
 import com.iem.backend.repository.VesselRepository;
 import jakarta.transaction.Transactional;
@@ -35,7 +36,7 @@ public class VesselService {
             boolean hasOwner = vessel.getUsers().stream()
                     .anyMatch(u -> "OWNER".equalsIgnoreCase(u.getRole().getName()));
             if (hasOwner) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This vessel already has an OWNER");
+                throw new VesselAlreadyOwnedException();
             }
         }
 
