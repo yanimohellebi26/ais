@@ -13,6 +13,7 @@ public class HelloController {
         this.apiLogger = apiLogger;
     }
 
+
     @GetMapping("/api/HelloWorld")
     public String helloWorld() {
         apiLogger.success("Hello World");
