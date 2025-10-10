@@ -1,4 +1,4 @@
-package com.iem.backend.auth.controller;
+package com.iem.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iem.backend.entity.Role;
