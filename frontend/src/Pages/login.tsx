@@ -1,25 +1,64 @@
 import React, { useState } from "react";
-import Input from "../components/Input";
-import Button from "../components/Button";
-import FormWrapper from "../components/FormWrapper";
-import TitleH1 from "../components/titleh1";
-import TitleH2 from "../components/titleh2";
-import P from "../components/p";
+import Input from "../components/BaseComponents/Input";
+import Button from "../components/BaseComponents/Button";
+import FormWrapper from "../components/BaseComponents/FormWrapper";
+import TitleH1 from "../components/BaseComponents/TitleH1";
+import TitleH2 from "../components/BaseComponents/TitleH2";
+import P from "../components/BaseComponents/P";
 import arrowLeft from "../assets/arrow-left.svg"
 import shipIcon from "../assets/ship-icon.svg"
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const navigate = useNavigate(); 
+  const [error,setError] = useState<string | null>(null);
+
+
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (token) {
+    if (role === "ADMIN") {
+      navigate("/admin");
+    } else {
+      navigate("/dashboard");
+    }
+  }
+}, [navigate]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login data:", formData);
+    setError(null);
+
+    try{
+      const rep = await fetch("https://localhost:8080/api/v1/auth/login",{
+        method : "POST",
+        headers : {
+          "Content-Type" : "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await rep.json();
+  
+      if (!rep.ok){
+        throw new Error(data.message || "Wrong mail or password.")
+      }
+      localStorage.setItem("token",data.token);
+    }
+    catch (err: any) {
+      console.error("Error while login", err);
+      setError(err.message || "Error, try again");
+    }
   };
 
   return (
@@ -71,19 +110,24 @@ const Login: React.FC = () => {
           </Button>
         </form>
 
-        <div className="flex justify-between mt-4 text-sm text-black">
-          <Button
-            onClick={() => alert("Forgot password clicked")}
-            className="bg-transparent text-blue-700 hover:underline px-0 py-0"
-          >
-            Forgot your password?
-          </Button>
-          <Button
-            onClick={() => alert("Create account clicked")}
-            className="bg-transparent text-blue-700 hover:underline px-0 py-0"
-          >
-            Don't have an account? Create an account
-          </Button>
+        <div className="flex font-bold mt-4 items-center text-sm text-black">
+          
+            <Button
+              onClick={() => alert("Forgot password clicked")}
+              className="bg-transparent text-blue-700 hover:underline px-0 py-0"
+            >
+              Forgot your password?
+            </Button>
+          <div className="hidden sm:block h-4 w-px bg-gray-300 mx-4"></div>
+          <div className="flex items-center gap-0 ">
+            <P className="m-0 p-0 gap-0">No account?</P>
+            <Button
+              onClick={() => navigate("/register")}
+              className="bg-transparent text-blue-700 hover:underline px-0 py-0">
+              Create an account
+            </Button>
+          </div>
+          
         </div>
       </FormWrapper>
     </div>
