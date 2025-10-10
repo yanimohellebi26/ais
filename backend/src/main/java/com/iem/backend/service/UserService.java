@@ -2,6 +2,8 @@ package com.iem.backend.service;
 
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.entity.User;
+import com.iem.backend.entity.Role;
+import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Service
@@ -19,6 +22,9 @@ public class UserService {
 
     @Autowired
     private ApiLogger apiLogger;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -33,17 +39,27 @@ public class UserService {
 
         User user = optionalUser.get();
 
-        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
             
             String passwordEncoded = passwordEncoder.encode(dto.getPassword());
             user.setPasswordHash(passwordEncoded);
             apiLogger.info("Password updated for user id " + dto.getId());
         }
 
-        if (dto.getStatus() != null && !dto.getStatus().isEmpty()) {
-            user.setStatus(dto.getStatus());
-            apiLogger.info("Status updated for user id " + dto.getId() + " to " + dto.getStatus());
+        if (dto.getRole() != null && !dto.getRole().isBlank()) {
+            Optional<Role> optionalRole = roleRepository.findByNameIgnoreCase(dto.getRole());
+
+            if (optionalRole.isEmpty()) {
+                apiLogger.warn("Role not found for " + dto.getRole());
+                throw new Exception("Role not found");
+            }
+
+            Role role = optionalRole.get();
+            user.setRole(role);
+            apiLogger.info("Role updated for id " + dto.getId() + " with " + dto.getRole());
         }
+
+        user.setLastUpdate(OffsetDateTime.now());
 
         User updatedUser = userRepository.save(user);
         apiLogger.success("User updated successfully: id " + updatedUser.getId());
