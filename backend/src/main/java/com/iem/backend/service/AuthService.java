@@ -5,7 +5,7 @@ import com.iem.backend.dto.RegisterResponse;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.RoleRepository;
-import com.iem.backend.repository.UserAccountRepository;
+import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,16 +16,16 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AuthService {
 
-    private final UserAccountRepository userAccountRepository;
+    private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApiLogger apiLogger;
 
-    public AuthService(UserAccountRepository userAccountRepository,
+    public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        ApiLogger apiLogger) {
-        this.userAccountRepository = userAccountRepository;
+        this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.apiLogger = apiLogger;
@@ -37,11 +37,11 @@ public class AuthService {
         String email = request.email().trim().toLowerCase();
         String roleName = request.role().trim();
 
-        if (userAccountRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         }
 
-        if (userAccountRepository.existsByUsernameIgnoreCase(username)) {
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already in use");
         }
 
@@ -54,7 +54,7 @@ public class AuthService {
         user.setRole(role);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
-        User saved = userAccountRepository.save(user);
+        User saved = userRepository.save(user);
         apiLogger.success("User registered: " + saved.getEmail());
 
         return new RegisterResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole().getName());
