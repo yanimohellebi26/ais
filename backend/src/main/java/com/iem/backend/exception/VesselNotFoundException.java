@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 
 public class VesselNotFoundException extends ApiException {
     public VesselNotFoundException() {
-        super("Vessel not found", HttpStatus.BAD_REQUEST);
+        super("Vessel not found", HttpStatus.NOT_FOUND);
     }
 
     public VesselNotFoundException(String message) {
