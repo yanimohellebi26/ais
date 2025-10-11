@@ -6,6 +6,14 @@ from etl.utils.logger import Logger
 
 
 def load_vessel_type(data: pd.DataFrame, output_path : str = "insert_vessels_type.sql"):
+    """
+    Generate SQL migration for vessels types
+    Args:
+        data: vessels code data
+        output_path: sql migration file path to generate
+
+    Returns:
+    """
     download_folder = os.getenv("GENERATED_FOLDER")
     path = os.path.join(download_folder, output_path)
 
