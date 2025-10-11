@@ -26,7 +26,8 @@ public class AuthConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/swagger-ui.html"
     };
 
     public AuthConfig(AuthEntryPointJwt unauthorizedHandler,
