@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS vessel_type (
        id SERIAL PRIMARY KEY,
        description VARCHAR(100),
-       vessel_group VARCHAR(20)
+       vessel_group VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS vessel (
