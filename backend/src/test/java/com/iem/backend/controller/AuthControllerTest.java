@@ -1,4 +1,4 @@
-package com.iem.backend.auth.controller;
+package com.iem.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iem.backend.entity.Role;
@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.url=jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
+        "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.show-sql=false"
 })
@@ -51,10 +52,16 @@ class AuthControllerTest {
     void setUp() {
         userAccountRepository.deleteAll();
         roleRepository.deleteAll();
+
         Role admin = new Role();
-        admin.setName("admin");
+        admin.setName("ADMIN");
         roleRepository.save(admin);
+
+        Role user = new Role();
+        user.setName("USER");
+        roleRepository.save(user);
     }
+
 
     @Test
     @DisplayName("should register user successfully")
@@ -63,7 +70,7 @@ class AuthControllerTest {
                 "captain_john",
                 "john.doe@example.com",
                 "StrongPass1!",
-                "admin"
+                "USER"
         ));
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -73,7 +80,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.username").value("captain_john"))
                 .andExpect(jsonPath("$.email").value("john.doe@example.com"))
-                .andExpect(jsonPath("$.role").value("admin"));
+                .andExpect(jsonPath("$.role").value("USER"));
 
         User saved = userAccountRepository.findByEmailIgnoreCase("john.doe@example.com").orElseThrow();
         assertThat(saved.getPasswordHash()).isNotEqualTo("StrongPass1!");
@@ -83,19 +90,19 @@ class AuthControllerTest {
     @Test
     @DisplayName("should reject duplicate email")
     void register_conflict_email() throws Exception {
-        Role adminRole = roleRepository.findByNameIgnoreCase("admin").orElseThrow();
+        Role userRole = roleRepository.findByNameIgnoreCase("USER").orElseThrow();
         User existing = new User();
         existing.setUsername("existingUser");
         existing.setEmail("john.doe@example.com");
         existing.setPasswordHash(passwordEncoder.encode("StrongPass1!"));
-        existing.setRole(adminRole);
+        existing.setRole(userRole);
         userAccountRepository.save(existing);
 
         String payload = objectMapper.writeValueAsString(new RegisterPayload(
                 "anotherUser",
                 "john.doe@example.com",
                 "StrongPass1!",
-                "admin"
+                "USER"
         ));
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -111,7 +118,7 @@ class AuthControllerTest {
                 "captain_john",
                 "captain.john@example.com",
                 "weakpass",
-                "admin"
+                "USER"
         ));
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -119,6 +126,23 @@ class AuthControllerTest {
                         .content(payload))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("should forbid direct admin creation")
+    void register_forbid_admin() throws Exception {
+        String payload = objectMapper.writeValueAsString(new RegisterPayload(
+                "evil_admin",
+                "evil@example.com",
+                "StrongPass1!",
+                "ADMIN"
+        ));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isForbidden());
+    }
+
 
     private record RegisterPayload(String username, String email, String password, String role) {
     }

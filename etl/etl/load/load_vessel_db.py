@@ -15,19 +15,37 @@ def _split_table(fullname: str) -> Tuple[Optional[str], str]:
         return schema, table
     return None, fullname
 
-import numpy as np
 
-def normalize_types(df: pd.DataFrame):
+def normalize_types(df: pd.DataFrame) -> pd.DataFrame:
+    """ Temp normalize function -
+
+    Will be removed in the future, pending other transformation scripts
+
+    """
     df = df.copy()
-    for col in df.columns:
-        # Si la colonne est float mais ne contient que des valeurs entières → convertir en int
-        if df[col].dtype == "float64":
-            # Vérifie que toutes les valeurs non nulles sont entières
-            if all(df[col].dropna().apply(lambda x: float(x).is_integer())):
-                df[col] = df[col].astype("Int64")  # int nullable (compatible NaN)
-        # Convertit les NaN textuels en None
-        if df[col].dtype == "object":
-            df[col] = df[col].replace({np.nan: None, "nan": None})
+
+    for col in ("mmsi", "imo", "vessel_name", "call_sign", "transceiver_class"):
+        if col in df.columns:
+            df[col] = df[col].astype(str).replace({"nan": None, "<NA>": None, "None": None})
+
+    if "mmsi" in df.columns:
+        df = df[df["mmsi"].apply(lambda x: x is not None and len(x) <= 9)]
+
+    for col in ("vessel_type_id", "cargo_type_id"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+
+    for col in ("length", "width", "draft"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
+
+    if "base_date_time" in df.columns:
+        df["base_date_time"] = pd.to_datetime(df["base_date_time"], errors="coerce")
+
+    if "locked" in df.columns:
+        df["locked"] = df["locked"].apply(lambda x: bool(int(x)) if pd.notna(x) else False)
+
+    df = df.where(df.notna(), None)
     return df
 
 

@@ -5,13 +5,13 @@
 CREATE TABLE IF NOT EXISTS vessel_type (
        id SERIAL PRIMARY KEY,
        description VARCHAR(100),
-       vessel_group VARCHAR(20)
+       vessel_group VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS vessel (
       id SERIAL PRIMARY KEY,
       mmsi VARCHAR(9) NOT NULL UNIQUE,
-      imo VARCHAR(10) UNIQUE,
+      imo VARCHAR(20),
       vessel_name VARCHAR(100),
       call_sign VARCHAR(20),
       vessel_type_id INT REFERENCES vessel_type(id),

@@ -2,10 +2,12 @@ import time
 import uuid
 
 import click
+import pandas as pd
 from dotenv import load_dotenv
 
 from etl.extract.AISDownloader import AISDownloader
 from etl.extract.extract_ais import extract_data_from_file
+from etl.load.generate_vessel_type import load_vessel_type
 from etl.transform.transform_vessel_duplication import clean_vessel_duplication
 from etl.transform.transform_vessel_delta import transform_vessel_delta, get_vessels_db
 from etl.load.load_vessel_db import load_vessel_to_db
@@ -36,6 +38,17 @@ def download(date, latest):
         y, m, d = map(int, date.split("-"))
         downloader.get_file(y, m, d)
 
+@cli.command()
+@click.option("--file", "-f", help="File path to csv")
+@click.option("--output-file", "-o", help="Output file path for SQL")
+def generate_vessel_type(file, output_file):
+    """Generate vessel type migration sql"""
+    Logger.info(f"Run task generate_vessel_type")
+    data = pd.read_csv(file,sep = ';')
+    if output_file is None:
+        load_vessel_type(data)
+    else:
+        load_vessel_type(data, output_file)
 #
 # ===== WORKFLOWS / PIPELINES =====
 #
