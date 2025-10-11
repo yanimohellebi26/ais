@@ -60,7 +60,7 @@ class AISDownloader(FileDownloader):
         """
         # Colonnes standard
         standard_columns = [
-            "mmsi", "last_update", "lon", "lat", "sog", "cog",
+            "mmsi", "base_date_time", "lon", "lat", "sog", "cog",
             "heading", "vessel_name", "imo", "call_sign", "vessel_type_id",
             "status", "length", "width", "draft", "cargo_type_id", "transceiver_class"
         ]

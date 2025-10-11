@@ -5,24 +5,25 @@
 CREATE TABLE IF NOT EXISTS vessel_type (
        id SERIAL PRIMARY KEY,
        description VARCHAR(100),
-       vessel_group VARCHAR(20)
+       vessel_group VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS vessel (
       id SERIAL PRIMARY KEY,
       mmsi VARCHAR(9) NOT NULL UNIQUE,
-      imo VARCHAR(7) UNIQUE,
+      imo VARCHAR(20),
       vessel_name VARCHAR(100),
       call_sign VARCHAR(20),
       vessel_type_id INT REFERENCES vessel_type(id),
       cargo_type_id INT REFERENCES vessel_type(id),
-      length NUMERIC(6,2),
-      width NUMERIC(6,2),
-      draft NUMERIC(4,2),
+      length DOUBLE PRECISION,
+      width DOUBLE PRECISION,
+      draft DOUBLE PRECISION,
       transceiver_class VARCHAR(1),
       locked BOOLEAN default false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      base_date_time TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_vessel_type_id ON vessel(vessel_type_id);
