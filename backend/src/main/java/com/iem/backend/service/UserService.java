@@ -2,6 +2,7 @@ package com.iem.backend.service;
 
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.UserAccountRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,13 +32,17 @@ public class UserService implements UserDetailsService {
      * @throws UsernameNotFoundException if no user is found with the given email
      */
     @Override
-    public UserDetails loadUserByUsername(String email){
+    public UserDetails loadUserByUsername(String email) {
+        User user = userAccountRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
 
-        User user = this.userAccountRepository.findByEmailIgnoreCase(email).orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + email));
+        var authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().getName());
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),
-                Collections.emptyList()
+                Collections.singletonList(authority)
         );
     }
+
 }

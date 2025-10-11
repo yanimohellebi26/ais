@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,14 +15,17 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+@Slf4j
 @Component
 public class AuthTokenFilter extends OncePerRequestFilter {
-    @Autowired
-    private JwtUtil jwtUtils;
-    @Autowired
-    private UserService userDetailsService;
-    @Autowired
-    private ApiLogger apiLogger;
+
+    private final JwtUtil jwtUtils;
+    private final UserService userDetailsService;
+
+    public AuthTokenFilter(UserService userDetailsService, JwtUtil jwtUtils) {
+        this.userDetailsService = userDetailsService;
+        this.jwtUtils = jwtUtils;
+    }
 
     /**
      * Filters each HTTP request to extract and validate the JWT from the Authorization header.
@@ -55,7 +59,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             }
         }
         catch (Exception e) {
-            apiLogger.error("Cannot set user authentication: " , e);
+            log.error("Cannot set user authentication: " , e);
         }
         filterChain.doFilter(request, response);
     }

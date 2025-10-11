@@ -1,9 +1,11 @@
 package com.iem.backend.config;
 
+import com.iem.backend.entity.Role;
 import com.iem.backend.utils.ApiLogger;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -15,9 +17,9 @@ import java.nio.file.Path;
 import java.util.Date;
 @PropertySource({"classpath:application-docker.properties","classpath:application.properties"})
 @Component
+@Slf4j
 public class JwtUtil {
 
-    private final ApiLogger apiLogger;
     @Value("${jwt.secret}")
     private String jwtSecret;
 
@@ -25,10 +27,6 @@ public class JwtUtil {
     private int jwtExpirationMs;
 
     private SecretKey key;
-
-    public JwtUtil(ApiLogger apiLogger) {
-        this.apiLogger = apiLogger;
-    }
 
     /**
      * Initializes the key
@@ -44,16 +42,17 @@ public class JwtUtil {
      * @param email To generate Token from user's email
      * @return Token
      */
-    public String generateToken(String email) {
+    public String generateToken(String email, String roleName) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", "ROLE_" + roleName) // simple et clair
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    /**
+    /**s
      * Get email from JWT token
      *
      * @param token To connect
@@ -78,15 +77,15 @@ public class JwtUtil {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (SecurityException e) {
-            apiLogger.error("Invalid JWT signature: ", e);
+            log.error("Invalid JWT signature: ", e);
         } catch (MalformedJwtException e) {
-            apiLogger.error("Invalid JWT token: ", e);
+            log.error("Invalid JWT token: ", e);
         } catch (ExpiredJwtException e) {
-            apiLogger.error("JWT token is expired: ", e);
+            log.error("JWT token is expired: ", e);
         } catch (UnsupportedJwtException e) {
-            apiLogger.error("JWT token is unsupported: ", e);
+            log.error("JWT token is unsupported: ", e);
         } catch (IllegalArgumentException e) {
-            apiLogger.error("JWT claims string is empty: ", e);
+            log.error("JWT claims string is empty: ", e);
         }
         return false;
     }

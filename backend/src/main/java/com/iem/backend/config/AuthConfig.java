@@ -1,8 +1,11 @@
 package com.iem.backend.config;
 
+import com.iem.backend.service.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,17 +16,25 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
+@EnableMethodSecurity
 public class AuthConfig {
 
     private final AuthEntryPointJwt unauthorizedHandler;
+    private final JwtUtil jwtUtil;
+    private final UserService userService;
 
-    /**
-     * Configures the authentication entry point for handling unauthorized access.
-     *
-     * @param unauthorizedHandler handles unauthorized access attempts
-     */
-    public AuthConfig(AuthEntryPointJwt unauthorizedHandler) {
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/api/v1/auth/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
+    };
+
+    public AuthConfig(AuthEntryPointJwt unauthorizedHandler,
+                      JwtUtil jwtUtil,
+                      UserService userService) {
         this.unauthorizedHandler = unauthorizedHandler;
+        this.jwtUtil = jwtUtil;
+        this.userService = userService;
     }
 
     /**
@@ -42,8 +53,8 @@ public class AuthConfig {
      * @return an AuthTokenFilter instance
      */
     @Bean
-    public AuthTokenFilter authenticationJwtTokenFilter() {
-        return new AuthTokenFilter();
+    public AuthTokenFilter authenticationJwtTokenFilter(JwtUtil jwtUtils, UserService userDetailsService) {
+        return new AuthTokenFilter(userService, jwtUtil);
     }
 
     /**
@@ -72,20 +83,16 @@ public class AuthConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);
 
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(authenticationJwtTokenFilter(jwtUtil, userService),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
