@@ -16,7 +16,6 @@ public class UserController {
     private final UserService userService;
     private final ApiLogger apiLogger;
 
-    @Autowired
     public UserController(UserService userService, ApiLogger apiLogger) {
         this.userService = userService;
         this.apiLogger = apiLogger;
