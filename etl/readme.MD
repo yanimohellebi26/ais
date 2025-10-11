@@ -59,12 +59,12 @@ Pour lancer uniquement le container docker de la base de donnée :
 
 ## 🧩 Système de Workflows ETL 
 
-Ce module permet de définir, exécuter et superviser des workflows ETL composés de plusieurs étapes de traitement chaînées.
+Ce module permet de définir, exécuter et superviser des workflows / pipelines ETL composés de plusieurs étapes de traitement chaînées.
 Chaque workflow est une suite de fonctions qui reçoivent et retournent un objet de contexte typé contenant les données manipulées tout au long du pipeline.
 
-Les worflow sont définis dans le dictionnaire **WORKFLOWS**: 
+Les pipelines sont définis dans le dictionnaire **PIPELINES**: 
 ```python
-WORKFLOWS = {
+PIPELINES = {
     "load-vessels": [
         (extract_function, {}),
         (transform_function, {}),
@@ -111,12 +111,12 @@ Le projet contient des commandes CLI définies avec Click
 Exemple
 ```bash 
    poetry run etl-cli download
-   poetry run etl-cli run -w load-vessels -f file.csv
+   poetry run etl-cli run-pipeline -p load-vessels -f file.csv
 ```
 
 Les options disponibles pour les workflows : 
 ```bash
---workflow, -w -> "Nom du workflow"
+--pipeline, -p -> "Nom du workflow"
 --file, -f -> "Fichier a analyser"
 --continue-on-error, -coe -> "Le workflow ne s'interrompt pas si une erreur survient"
 --use-timer, -t -> "Log les temps d éxécution de chaque traitement"

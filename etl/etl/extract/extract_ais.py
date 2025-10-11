@@ -6,7 +6,7 @@ import pandas as pd
 from etl.models.context import VesselContext
 
 
-def extract_vessels(context: VesselContext, **kwargs) -> VesselContext:
+def extract_data_from_file(context: VesselContext, selected_map: list[str]) -> VesselContext:
     file = context.file
     if not file:
         raise ValueError("No file provided in context")
@@ -22,11 +22,6 @@ def extract_vessels(context: VesselContext, **kwargs) -> VesselContext:
             raise ValueError(f"File not found: {file_path}")
 
     file_path = file_path.resolve()
-
-    # Pre-processing
-    selected_map = [ "mmsi", "last_update", "vessel_name", "imo", "call_sign",
-        "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",
-    ]
 
     # Extract file
     new_data = pd.read_csv(file_path)

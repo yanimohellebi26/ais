@@ -5,7 +5,7 @@ from etl.utils.logger import Logger
 
 def clean_vessel_duplication(context : VesselContext ,**kwargs) -> VesselContext:
     df = context.df
-    date_col = 'last_update'
+    date_col = 'base_date_time'
     id_col = 'mmsi'
     df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
