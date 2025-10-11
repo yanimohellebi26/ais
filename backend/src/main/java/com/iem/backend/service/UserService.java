@@ -6,7 +6,6 @@ import com.iem.backend.entity.Role;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,17 +16,17 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    @Autowired
     private UserRepository userRepository;
-
-    @Autowired
     private ApiLogger apiLogger;
-
-    @Autowired
     private RoleRepository roleRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, ApiLogger apiLogger, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.apiLogger = apiLogger;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Transactional
     public User updateUser(UpdateUserRequest dto) throws Exception {

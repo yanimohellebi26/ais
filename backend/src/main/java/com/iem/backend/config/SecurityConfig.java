@@ -18,10 +18,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests(auth -> {
-            auth.requestMatchers("/admin").hasRole("ADMIN");
-            auth.anyRequest().authenticated();
-        }).formLogin(Customizer.withDefaults()).build();
+        return http
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers("/api/v1/users").hasRole("ADMIN");
+                auth.anyRequest().authenticated();
+            }).formLogin(Customizer.withDefaults()).build();
     }
 
     @Bean
