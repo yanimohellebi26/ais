@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,7 +60,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-    // All other cases
+    // Forbidden: user authenticated but lacks permissions
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AuthorizationDeniedException ex, HttpServletRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.FORBIDDEN,
+                "Access denied: insufficient permissions.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // Unauthorized: user not logged in
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ApiError> handleAuthMissing(AuthenticationCredentialsNotFoundException ex, HttpServletRequest request) {
+        log.warn("Unauthorized access attempt: {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication required.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // Fallback for unexpected exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleOtherExceptions(Exception ex, HttpServletRequest request) {
         log.error("Unhandled Exception", ex);
@@ -67,6 +93,6 @@ public class GlobalExceptionHandler {
                 "Internal server error",
                 request.getRequestURI()
         );
-        return ResponseEntity.status(500).body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
