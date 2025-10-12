@@ -14,20 +14,34 @@ Interface SeaSight AIS construite avec React, Vite et React Router.
 
 Le bundle utilise `import.meta.env.VITE_API_URL` pour toutes les requêtes HTTP (login, register, etc.).
 
-## Lancer en développement
+## Lancer en développement local
 
+- Le backend API doit être lancé (lance automatiquement la base de donnée + API + migrations flyway)
 ```bash
-npm install
-npm run dev
+   docker compose up backend -d
+```
+- Lancer le serveur web de développement
+```bash
+   npm install
+   npm run dev
 ```
 
 Le serveur Vite démarre en général sur <http://localhost:5173>.
 
-## Build Docker
+## Lancer en développement local sur Docker
+Lancer tous les services
+```bash
+   docker compose up -d
+```
+
+Le container frontend execute un serveur de développement avec `npm run dev` comme on le ferais en local, donc le serveur démarre également sur :
+<http://localhost:5173>.
+
+## Build Docker PRODUCTION (à tester)
 
 ```bash
-docker build -t seasight-frontend .
-docker run --rm -p 8081:80 --env-file .env.production seasight-frontend
+   docker build -t seasight-frontend .
+   docker run --rm -p 8081:80 --env-file .env.production seasight-frontend
 ```
 
 - L'image est construite en Node 20 (phase build) puis servie via Nginx.

@@ -13,3 +13,21 @@ services:
   flyway:
     environment:
       - FLYWAY_CLEAN_DISABLED=true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ais-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    networks:
+      - ais-net
+
+

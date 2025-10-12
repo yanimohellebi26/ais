@@ -32,11 +32,10 @@ const SelectRole: React.FC<SelectRoleProps> = ({
         <option value="" disabled hidden> 
           Select your role
         </option>
-        <option value="ship-owner">Ship Owner</option>
-        <option value="maritime-expert">Maritime Expert</option>
-        <option value="captain">Captain</option>
-        <option value="financial-analyst">Financial Analyst</option>
-        <option value="others">Others</option>
+        <option value="OWNER">Ship Owner</option>
+        <option value="MARITIME_EXPERT">Maritime Expert</option>
+        <option value="CAPTAIN">Captain</option>
+        <option value="FINANCIAL_ANALYST">Financial Analyst</option>
       </select>
     </div>
   );
