@@ -5,7 +5,7 @@ import com.iem.backend.entity.Vessel;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.exception.VesselAlreadyOwnedException;
 import com.iem.backend.exception.VesselNotFoundException;
-import com.iem.backend.repository.UserAccountRepository;
+import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
@@ -16,16 +16,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class VesselService {
 
     private final VesselRepository vesselRepository;
-    private final UserAccountRepository userAccountRepository;
+    private final UserRepository userRepository;
 
-    public VesselService(VesselRepository vesselRepository, UserAccountRepository userAccountRepository) {
+    public VesselService(VesselRepository vesselRepository, UserRepository userRepository) {
         this.vesselRepository = vesselRepository;
-        this.userAccountRepository = userAccountRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
     public void relateUserToVessel(Integer userId, String mmsi) {
-        User user = userAccountRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
         Vessel vessel = vesselRepository.findByMmsi(mmsi)
