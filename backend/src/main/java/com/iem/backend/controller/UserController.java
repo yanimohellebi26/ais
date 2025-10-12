@@ -1,9 +1,13 @@
 package com.iem.backend.controller;
 
 import com.iem.backend.dto.UpdateUserRequest;
+import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.entity.User;
 import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +26,13 @@ public class UserController {
 
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUser(@RequestBody UpdateUserRequest dto) {
+    public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
         try {
-            User updated = userService.updateUser(dto);
+            UpdateUserResponse updated = userService.updateUser(dto);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             apiLogger.error("Failed to update user id " + dto.getId(), e);
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(null);
         }
     }
 }

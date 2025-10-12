@@ -1,6 +1,7 @@
 package com.iem.backend.service;
 
 import com.iem.backend.dto.UpdateUserRequest;
+import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Role;
 import com.iem.backend.repository.RoleRepository;
@@ -43,7 +44,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User updateUser(UpdateUserRequest dto) throws Exception {
+    public UpdateUserResponse updateUser(UpdateUserRequest dto) throws Exception {
         Optional<User> optionalUser = userRepository.findById(dto.getId());
         if (optionalUser.isEmpty()) {
             apiLogger.warn("User not found with id " + dto.getId());
@@ -77,7 +78,12 @@ public class UserService implements UserDetailsService {
         User updatedUser = userRepository.save(user);
         apiLogger.success("User updated successfully: id " + updatedUser.getId());
 
-        return updatedUser;
+        return new UpdateUserResponse(
+            updatedUser.getId(),
+            updatedUser.getEmail(),
+            updatedUser.getRole().getName(),
+            updatedUser.getLastUpdate()
+        );
     }
 
     /**
