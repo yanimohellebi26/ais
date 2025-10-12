@@ -9,18 +9,32 @@ import com.iem.backend.utils.ApiLogger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
+import java.util.Collections;
+
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private UserRepository userRepository;
     private ApiLogger apiLogger;
     private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
 
+    /**
+     * Initializes the service with the user account repository.
+     *
+     * @param userRepository repository for accessing user data
+     * @param apiLogger used for logs
+     * @param roleRepository repository for accessing role data
+     * @param passwordEncoder user for encoding password
+     */
     public UserService(UserRepository userRepository, ApiLogger apiLogger, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.apiLogger = apiLogger;
@@ -65,4 +79,26 @@ public class UserService {
 
         return updatedUser;
     }
+
+    /**
+     * Loads a user by their email address for authentication.
+     *
+     * @param email user's email
+     * @return user details for authentication
+     * @throws UsernameNotFoundException if no user is found with the given email
+     */
+    @Override
+    public UserDetails loadUserByUsername(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
+
+        var authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().getName());
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPasswordHash(),
+                Collections.singletonList(authority)
+        );
+    }
+
 }

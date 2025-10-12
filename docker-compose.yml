@@ -24,6 +24,11 @@ services:
   flyway:
     image: flyway/flyway
     container_name: ais-flyway
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://db:5432/ais
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_CLEAN_DISABLED=true
     depends_on:
       db:
         condition: service_healthy
