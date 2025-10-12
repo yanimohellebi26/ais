@@ -1,31 +1,49 @@
 # Frontend React + Vite
 
-Salut à tous,
+Interface SeaSight AIS construite avec React, Vite et React Router.
 
-Voici le frontend de notre projet, développé avec React et Vite. Ce setup nous permet de bénéficier d'un rechargement à chaud (HMR) pour un développement rapide, ainsi que d'une configuration ESLint de base pour garder un code propre.
+## Configuration des variables d'environnement
 
-## C'est quoi ce projet ?
+1. Copiez le fichier `.env.example` vers l'environnement souhaité :
 
-Ce dossier contient toute la partie interface utilisateur de notre application. On utilise React pour construire les composants et Vite pour le bundling et le serveur de développement.
-
-## Comment lancer le projet ?
-
-Pour démarrer le frontend en local :
-
-1. Placez-vous dans ce dossier (`frontend`).
-2. Installez les dépendances :
    ```bash
-   npm install
+   cp .env.example .env.development
    ```
-3. Lancez le serveur de développement :
-   ```bash
-   npm run dev
-   ```
-4. Ouvrez votre navigateur à l'adresse indiquée dans le terminal (en général http://localhost:5173).
 
-## Plugins utilisés
+2. Ajustez la valeur de `VITE_API_URL` si l'API ne tourne pas sur `http://localhost:8080`.
 
-On utilise principalement deux plugins React pour Vite :
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) (Babel)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) (SWC)
+Le bundle utilise `import.meta.env.VITE_API_URL` pour toutes les requêtes HTTP (login, register, etc.).
+
+## Lancer en développement
+
+```bash
+npm install
+npm run dev
+```
+
+Le serveur Vite démarre en général sur <http://localhost:5173>.
+
+## Build Docker
+
+```bash
+docker build -t seasight-frontend .
+docker run --rm -p 8081:80 --env-file .env.production seasight-frontend
+```
+
+- L'image est construite en Node 20 (phase build) puis servie via Nginx.
+- La configuration Nginx inclut un fallback SPA (`try_files $uri /index.html`).
+- Pensez à créer un fichier `.env.production` (par exemple via `cp .env.example .env.production`) avant de lancer le conteneur.
+
+## Structure rapide
+
+- `src/Pages` contient les écrans principaux (Home, Login, Register, pages par rôle).
+- `src/components/BaseComponents` rassemble les composants UI partagés.
+- `Dockerfile` permet de builder et servir la version statique.
+
+## Scripts utiles
+
+- `npm run dev` : mode développement
+- `npm run build` : build de production (output `dist/`)
+- `npm run preview` : prévisualisation du build
+- `npm run lint` : linting ESlint
 
