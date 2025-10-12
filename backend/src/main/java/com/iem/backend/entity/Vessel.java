@@ -24,7 +24,7 @@ public class Vessel {
     @Column(length = 9, nullable = false, unique = true)
     private String mmsi;
 
-    @Column(length = 10, unique = true)
+    @Column(length = 20, unique = true)
     private String imo;
 
     @Column(name = "vessel_name", length = 100)
