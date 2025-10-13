@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from etl.extract.AISDownloader import AISDownloader
 from etl.extract.extract_ais import extract_data_from_file
 from etl.load.generate_vessel_type import load_vessel_type
+from etl.transform.transform_general_ais import remove_rows_with_empty, remove_rows_with_wrong_format, normalize_ais
 from etl.transform.transform_vessel_duplication import clean_vessel_duplication
 from etl.transform.transform_vessel_delta import transform_vessel_delta, get_vessels_db
 from etl.load.load_vessel_db import load_vessel_to_db
@@ -58,6 +59,9 @@ PIPELINES = {
     "load-vessels": [
         (extract_data_from_file, {"selected_map": [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
         "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class",]}),
+        (normalize_ais, {}),
+        (remove_rows_with_empty, {"required": ["mmsi", "base_date_time"]}),
+        (remove_rows_with_wrong_format, {}),
         (clean_vessel_duplication, {}),
         (get_vessels_db, {}),
         (transform_vessel_delta, {}),

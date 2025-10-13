@@ -50,7 +50,7 @@ def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
     db_df = context.df_db
 
     if len(db_df) == 0:
-        Logger.info(f"T-Vessel delta : database empty all lines selected")
+        Logger.info(f"T-Vessel delta : {len(new_df)}/{len(new_df)} (100%) lines selected")
         return context
 
     #Change type for merge on key mmsi
