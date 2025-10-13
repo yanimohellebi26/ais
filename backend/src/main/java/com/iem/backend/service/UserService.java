@@ -3,6 +3,8 @@ package com.iem.backend.service;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.entity.User;
+import com.iem.backend.exception.RoleNotFoundException;
+import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.entity.Role;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
@@ -16,17 +18,16 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 
 import java.util.Collections;
 
 @Service
 public class UserService implements UserDetailsService {
 
-    private UserRepository userRepository;
-    private ApiLogger apiLogger;
-    private RoleRepository roleRepository;
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final ApiLogger apiLogger;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Initializes the service with the user account repository.
@@ -44,33 +45,28 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public UpdateUserResponse updateUser(UpdateUserRequest dto) throws Exception {
-        Optional<User> optionalUser = userRepository.findById(dto.getId());
-        if (optionalUser.isEmpty()) {
-            apiLogger.warn("User not found with id " + dto.getId());
-            throw new Exception("User not found");
-        }
+    public UpdateUserResponse updateUser(UpdateUserRequest dto) {
+        User user = userRepository.findById(dto.id())
+            .orElseThrow(() -> {
+                apiLogger.warn("User not found with id " + dto.id());
+                return new UserNotFoundException(dto.id());
+            });
 
-        User user = optionalUser.get();
-
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            
-            String passwordEncoded = passwordEncoder.encode(dto.getPassword());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            String passwordEncoded = passwordEncoder.encode(dto.password());
             user.setPasswordHash(passwordEncoded);
-            apiLogger.info("Password updated for user id " + dto.getId());
+            apiLogger.info("Password updated for user id " + dto.id());
         }
 
-        if (dto.getRole() != null && !dto.getRole().isBlank()) {
-            Optional<Role> optionalRole = roleRepository.findByNameIgnoreCase(dto.getRole());
+        if (dto.role() != null && !dto.role().isBlank()) {
+            Role role = roleRepository.findByNameIgnoreCase(dto.role())
+                .orElseThrow(() -> {
+                    apiLogger.warn("Role not found for " + dto.role());
+                    return new RoleNotFoundException(dto.role());
+                });
 
-            if (optionalRole.isEmpty()) {
-                apiLogger.warn("Role not found for " + dto.getRole());
-                throw new Exception("Role not found");
-            }
-
-            Role role = optionalRole.get();
             user.setRole(role);
-            apiLogger.info("Role updated for id " + dto.getId() + " with " + dto.getRole());
+            apiLogger.info("Role updated for id " + dto.id() + " with " + dto.role());
         }
 
         user.setLastUpdate(OffsetDateTime.now());

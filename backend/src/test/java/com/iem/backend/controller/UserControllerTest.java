@@ -80,9 +80,7 @@ public class UserControllerTest {
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
     @DisplayName("should update user password successfully")
     void updateUserPasswordSuccess() throws Exception {
-        UpdateUserRequest payload = new UpdateUserRequest();
-        payload.setId(existingUser.getId());
-        payload.setPassword("newPassword@456");
+        UpdateUserRequest payload = new UpdateUserRequest(existingUser.getId(), "newPassword@456", null);
 
         mockMvc.perform(put("/api/v1/users")
             .contentType(MediaType.APPLICATION_JSON)
@@ -93,16 +91,14 @@ public class UserControllerTest {
 
         User updated = userRepository.findById(existingUser.getId()).orElseThrow();
         assertThat(passwordEncoder.matches("newPassword@456", updated.getPasswordHash())).isTrue();
-            
+    
     }
 
     @Test
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
     @DisplayName("should update user role successfully")
     void updateUserRoleSuccess() throws Exception {
-        UpdateUserRequest payload = new UpdateUserRequest();
-        payload.setId(existingUser.getId());
-        payload.setRole("ADMIN");
+        UpdateUserRequest payload = new UpdateUserRequest(existingUser.getId(), null, "ADMIN");
 
         mockMvc.perform(put("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -119,10 +115,7 @@ public class UserControllerTest {
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
     @DisplayName("should update user passsword and role successfully")
     void updateUserRoleAndPasswordSuccess() throws Exception {
-        UpdateUserRequest payload = new UpdateUserRequest();
-        payload.setId(existingUser.getId());
-        payload.setRole("ADMIN");
-        payload.setPassword("newPassword@456");
+        UpdateUserRequest payload = new UpdateUserRequest(existingUser.getId(), "newPassword@456", "ADMIN");
 
         mockMvc.perform(put("/api/v1/users")
             .contentType(MediaType.APPLICATION_JSON)
@@ -139,29 +132,25 @@ public class UserControllerTest {
 
     @Test
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
-    @DisplayName("should return bad request for non-existing user")
+    @DisplayName("should return not found for non-existing user")
     void updateUserNonExistingUser() throws Exception {
-        UpdateUserRequest payload = new UpdateUserRequest();
-        payload.setId(0);
-        payload.setPassword("newPassword@456");
+        UpdateUserRequest payload = new UpdateUserRequest(0, "newPassword@456", null);
 
         mockMvc.perform(put("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
-        .andExpect(status().isBadRequest());
+        .andExpect(status().isNotFound());
     }
 
     @Test
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
-    @DisplayName("should return bad request for invalid role")
+    @DisplayName("should return not found for invalid role")
     void updateUserWithInvalidRole() throws Exception {
-        UpdateUserRequest payload = new UpdateUserRequest();
-        payload.setId(existingUser.getId());
-        payload.setRole("INVALID_ROLE");
+        UpdateUserRequest payload = new UpdateUserRequest(existingUser.getId(), null, "INVALID_ROLE");
 
         mockMvc.perform(put("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
-        .andExpect(status().isBadRequest());
+        .andExpect(status().isNotFound());
     }
 }

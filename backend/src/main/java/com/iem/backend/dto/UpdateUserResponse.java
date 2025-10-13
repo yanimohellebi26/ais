@@ -2,22 +2,21 @@ package com.iem.backend.dto;
 
 import java.time.OffsetDateTime;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Getter
-@Setter
-public class UpdateUserResponse {
+public record UpdateUserResponse(
+
+    @JsonProperty("id")
+    Integer id,
     
-    private Integer id;
-    private String email;
-    private String role;
-    private OffsetDateTime lastUpdate;
+    @JsonProperty("email")
+    String email,
 
-    public UpdateUserResponse(Integer id, String email, String role, OffsetDateTime lastUpdate) {
-        this.id = id;
-        this.email = email;
-        this.role = role;
-        this.lastUpdate = lastUpdate;
-    }
+    @JsonProperty("role")
+    String role,
+    
+    @JsonProperty("last_update")
+    OffsetDateTime lastUpdate
+
+) {
 }
