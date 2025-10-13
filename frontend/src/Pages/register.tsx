@@ -1,0 +1,180 @@
+import React, { ChangeEvent, FormEvent, useState } from "react";
+import Input from "../components/BaseComponents/Input";
+import Button from "../components/BaseComponents/Button";
+import FormWrapper from "../components/BaseComponents/FormWrapper";
+import TitleH1 from "../components/BaseComponents/TitleH1";
+import TitleH2 from "../components/BaseComponents/TitleH2";
+import P from "../components/BaseComponents/P";
+import SelectRole from "../components/SelectRole";
+import arrowLeft from "../assets/arrow-left.svg";
+import shipIcon from "../assets/ship-icon.svg";
+import { useNavigate } from "react-router-dom";
+
+type RegisterForm = {
+  username: string;
+  email: string;
+  password: string;
+  role: string;
+};
+
+type RegisterErrorResponse = {
+  message?: string;
+};
+
+const Register = () => {
+  const [formData, setFormData] = useState<RegisterForm>({
+    email: "",
+    password: "",
+    username: "",
+    role: "",
+  });
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRoleChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setFormData((prev) => ({ ...prev, role: event.target.value }));
+  };
+
+  const validPassword = (password: string) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+    return regex.test(password);
+  };
+
+  const validEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    if (!formData.username || !formData.email || !formData.password || !formData.role) {
+      setError("Fill all the fields");
+      return;
+    }
+
+    if (!validEmail(formData.email)) {
+      setError("Enter a valid email");
+      return;
+    }
+
+    if (!validPassword(formData.password)) {
+      setError(
+        "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+
+      if (!apiBaseUrl) {
+        throw new Error("La variable d'environnement VITE_API_URL est manquante.");
+      }
+
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const dataError = (await response.json()) as RegisterErrorResponse;
+        throw new Error(dataError.message || "Registration failed");
+      }
+
+      alert("Account created");
+      navigate("/login");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-10 flex flex-col items-center">
+      <div className="flex justify-center w-full max-w-md mb-4 text-center ">
+        <Button
+          onClick={() => navigate("/")}
+          className="flex gap-2 items-center bg-transparent hover:bg-gray-300 text-gray-600 "
+        >
+          <img src={arrowLeft} alt="Back" className="w-4 h-4" />
+          Back to Home
+        </Button>
+      </div>
+      <div className="w-full max-w-md flex justify-center gap-4 items-center pb-5">
+        <img src={shipIcon} alt="Back" className="w-8 h-8 " />
+        <TitleH1 className="">SeaSight</TitleH1>
+      </div>
+
+      <FormWrapper>
+        <TitleH2 className="mb-2 text-center text-black font-bold">Create Account</TitleH2>
+        <P className="mb-4 text-center">
+          Join the maritime tracking platform
+        </P>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <Input
+              label="Username"
+              type="text"
+              name="username"
+              value={formData.username}
+              placeholder="Lucas"
+              onChange={handleChange}
+            />
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              placeholder="Enter your mail"
+              onChange={handleChange}
+            />
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={formData.password}
+              placeholder="Create your password"
+              onChange={handleChange}
+            />
+
+            <SelectRole name="role" value={formData.role} onChange={handleRoleChange} />
+            <Button
+              type="submit"
+              className="w-full px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? "Creating..." : "Create Account"}
+            </Button>
+          </div>
+        </form>
+
+        {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+
+        <div className="flex  mt-4 text-sm font-bold items-center text-black">
+          <P>Already have an account ?</P>
+          <Button
+            onClick={() => navigate("/login")}
+            className="bg-transparent text-blue-700 hover:underline px-0 py-0"
+          >
+            Sign in
+          </Button>
+        </div>
+      </FormWrapper>
+    </div>
+  );
+};
+
+export default Register;
