@@ -1,10 +1,10 @@
 package com.iem.backend.repository;
 
-import com.iem.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserAccountRepository extends JpaRepository<User, Integer> {
+import com.iem.backend.entity.User;
 
+public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmailIgnoreCase(String email);
 
     boolean existsByUsernameIgnoreCase(String username);

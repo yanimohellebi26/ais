@@ -21,7 +21,6 @@ public class AuthConfig {
 
     private final AuthEntryPointJwt unauthorizedHandler;
     private final JwtUtil jwtUtil;
-    private final UserService userService;
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
@@ -32,11 +31,9 @@ public class AuthConfig {
     };
 
     public AuthConfig(AuthEntryPointJwt unauthorizedHandler,
-                      JwtUtil jwtUtil,
-                      UserService userService) {
+                      JwtUtil jwtUtil) {
         this.unauthorizedHandler = unauthorizedHandler;
         this.jwtUtil = jwtUtil;
-        this.userService = userService;
     }
 
     /**
@@ -56,7 +53,7 @@ public class AuthConfig {
      */
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter(JwtUtil jwtUtils, UserService userDetailsService) {
-        return new AuthTokenFilter(userService, jwtUtil);
+        return new AuthTokenFilter(userDetailsService, jwtUtil);
     }
 
     /**
@@ -79,7 +76,7 @@ public class AuthConfig {
      * @throws Exception if an error occurs during setup
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserService userService) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})

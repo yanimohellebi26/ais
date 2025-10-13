@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.RoleRepository;
-import com.iem.backend.repository.UserAccountRepository;
+import com.iem.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,14 +43,14 @@ class AuthControllerTest {
     private RoleRepository roleRepository;
 
     @Autowired
-    private UserAccountRepository userAccountRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
-        userAccountRepository.deleteAll();
+        userRepository.deleteAll();
         roleRepository.deleteAll();
 
         Role admin = new Role();
@@ -82,7 +82,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("john.doe@example.com"))
                 .andExpect(jsonPath("$.role").value("USER"));
 
-        User saved = userAccountRepository.findByEmailIgnoreCase("john.doe@example.com").orElseThrow();
+        User saved = userRepository.findByEmailIgnoreCase("john.doe@example.com").orElseThrow();
         assertThat(saved.getPasswordHash()).isNotEqualTo("StrongPass1!");
         assertThat(passwordEncoder.matches("StrongPass1!", saved.getPasswordHash())).isTrue();
     }
@@ -96,7 +96,7 @@ class AuthControllerTest {
         existing.setEmail("john.doe@example.com");
         existing.setPasswordHash(passwordEncoder.encode("StrongPass1!"));
         existing.setRole(userRole);
-        userAccountRepository.save(existing);
+        userRepository.save(existing);
 
         String payload = objectMapper.writeValueAsString(new RegisterPayload(
                 "anotherUser",

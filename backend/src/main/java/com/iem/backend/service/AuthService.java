@@ -8,7 +8,7 @@ import com.iem.backend.dto.TokenResponse;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.RoleRepository;
-import com.iem.backend.repository.UserAccountRepository;
+import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,7 +29,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtils;
 
-    private final UserAccountRepository userAccountRepository;
+    private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -42,12 +42,12 @@ public class AuthService {
      * @param jwtUtils utility for handling JWT creation and validation
      * @param authenticationManager authentication manager for verifying credentials
      */
-    public AuthService(UserAccountRepository userAccountRepository,
+    public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtils,
                        AuthenticationManager authenticationManager) {
-        this.userAccountRepository = userAccountRepository;
+        this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
@@ -67,11 +67,11 @@ public class AuthService {
         String email = request.email().trim().toLowerCase();
         String roleName = request.role().trim();
 
-        if (userAccountRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         }
 
-        if (userAccountRepository.existsByUsernameIgnoreCase(username)) {
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already in use");
         }
 
@@ -88,7 +88,7 @@ public class AuthService {
         user.setRole(role);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
 
-        User saved = userAccountRepository.save(user);
+        User saved = userRepository.save(user);
         log.info("User registered: {}", saved.getEmail());
 
         return new RegisterResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole().getName());
