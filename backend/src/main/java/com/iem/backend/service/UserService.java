@@ -1,5 +1,6 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.DeleteUserResponse;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.entity.User;
@@ -79,6 +80,26 @@ public class UserService implements UserDetailsService {
             updatedUser.getEmail(),
             updatedUser.getRole().getName(),
             updatedUser.getLastUpdate()
+        );
+    }
+
+    @Transactional
+    public DeleteUserResponse deleteUserById(Integer id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> {
+                apiLogger.warn("Attempt to delete user with id " + id + " but was not found");
+                return new UserNotFoundException(id);
+            });
+
+        userRepository.delete(user);
+        apiLogger.success("User with id "+ id + " deleted successfuly");
+
+        return new DeleteUserResponse(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole().getName(),
+            OffsetDateTime.now()
         );
     }
 
