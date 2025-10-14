@@ -1,6 +1,7 @@
 package com.iem.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -23,6 +24,8 @@ import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
+
+import ch.qos.logback.core.encoder.EchoEncoder;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,6 +57,7 @@ public class UserControllerTest {
     private Role adminRole;
     private Role ownerRole;
     private User existingUser;
+    private User otherUser;
 
     @BeforeEach
     void setUp() {
@@ -74,7 +78,16 @@ public class UserControllerTest {
         existingUser.setPasswordHash(passwordEncoder.encode("oldPassword#123"));
         existingUser.setRole(ownerRole);
         userRepository.save(existingUser);
+
+        otherUser = new User();
+        otherUser.setUsername("adminUser");
+        otherUser.setEmail("test2@example.com");
+        otherUser.setPasswordHash(passwordEncoder.encode("oldPassword#123"));
+        otherUser.setRole(adminRole);
+        userRepository.save(otherUser);
     }
+
+    // ============ UPDATE USER ============ //
 
     @Test
     @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
@@ -152,5 +165,18 @@ public class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(payload)))
         .andExpect(status().isNotFound());
+    }
+
+    // ============ VISUALIZE USERS ============ //
+
+    @Test
+    @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
+    @DisplayName("should return all users with admin role")
+    void getAllUsersByAdminSuccess() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].username").value("testUser"))
+            .andExpect(jsonPath("$[1].username").value("adminUser"));
     }
 }
