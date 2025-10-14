@@ -2,14 +2,14 @@ package com.iem.backend.controller;
 
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
+import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-
+import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -59,7 +59,7 @@ public class UserController {
         }
     )
     @GetMapping("/{id}")
-    public ResponseEntity<UpdateUserResponse> getUserById(@PathVariable Long id,Principal principal){//@pathvariable long id = id courant et principal = user connecté
+    public ResponseEntity<UpdateUserResponse> getUserById(@PathVariable int id,Principal principal){
         UpdateUserResponse user = userService.getUserById(id,principal);
         return ResponseEntity.ok(user);
     }
@@ -71,17 +71,19 @@ public class UserController {
     )
     @ApiResponses(
         value = {
-            @ApiResponse(responseCode = "204", description = "Password updated successfully"),
+            @ApiResponse(responseCode = "200", description = "Password updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request or validation failed"),
             @ApiResponse(responseCode = "403", description = "Access denied: user cannot update this password"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @PutMapping("/{id}/password")
-    public ResponseEntity<Void> updatePassword(@PathVariable Long id,
+    public ResponseEntity<String> updatePassword(@PathVariable int id,
                                                @Valid @RequestBody UpdatePasswordRequest dto,
                                                Principal principal) {
         userService.updatePassword(id, dto, principal);
-        return ResponseEntity.noContent().build(); 
+        return ResponseEntity.ok("password update success"); 
     }
+
+    
 
 }
