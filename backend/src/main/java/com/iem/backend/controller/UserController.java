@@ -53,7 +53,7 @@ public class UserController {
     )
     @ApiResponses(
         value = {
-            @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+            @ApiResponse(responseCode = "200", description = "User Deleted Successfully"),
             @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role"),
             @ApiResponse(responseCode = "404", description = "User Not Found")
         }
