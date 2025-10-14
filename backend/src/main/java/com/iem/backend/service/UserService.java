@@ -2,6 +2,7 @@ package com.iem.backend.service;
 
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
+import com.iem.backend.dto.UserResponse;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.RoleNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
@@ -20,6 +21,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.time.OffsetDateTime;
 
 import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -80,6 +82,17 @@ public class UserService implements UserDetailsService {
             updatedUser.getRole().getName(),
             updatedUser.getLastUpdate()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAllUsers() {
+        List<User> users = userRepository.findAll();
+
+        apiLogger.info("Retrieved " + users.size() + " users from the database.");
+
+        return users.stream()
+            .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole().getName(), user.getCreatedAt(), user.getLastUpdate()))
+            .toList();
     }
 
     /**
