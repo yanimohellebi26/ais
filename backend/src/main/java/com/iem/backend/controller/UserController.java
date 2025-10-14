@@ -4,7 +4,6 @@ import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.dto.UserResponse;
 import com.iem.backend.service.UserService;
-import com.iem.backend.utils.ApiLogger;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,11 +22,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final ApiLogger apiLogger;
 
-    public UserController(UserService userService, ApiLogger apiLogger) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.apiLogger = apiLogger;
     }
 
     @Operation(
