@@ -45,4 +45,43 @@ public class UserController {
         UpdateUserResponse updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
+
+    //UC-07 GET user by id (self ou admin)
+    @Operation(
+        summary = "get user by id",
+        description = "user can acces now own account or admin can acces any account"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: user cannot access this account"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+        }
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<UpdateUserResponse> getUserById(@PathVariable Long id,Principal principal){//@pathvariable long id = id courant et principal = user connecté
+        UpdateUserResponse user = userService.getUserById(id,principal);
+        return ResponseEntity.ok(user);
+    }
+
+    //UC-07 PUT password 
+    @Operation(
+        summary = "update own password",
+        description = "uer can update their password only"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "204", description = "Password updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed"),
+            @ApiResponse(responseCode = "403", description = "Access denied: user cannot update this password"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Void> updatePassword(@PathVariable Long id,
+                                               @Valid @RequestBody UpdatePasswordRequest dto,
+                                               Principal principal) {
+        userService.updatePassword(id, dto, principal);
+        return ResponseEntity.noContent().build(); 
+    }
+
 }
