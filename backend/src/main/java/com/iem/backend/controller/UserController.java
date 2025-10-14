@@ -1,5 +1,6 @@
 package com.iem.backend.controller;
 
+import com.iem.backend.dto.DeleteUserResponse;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.service.UserService;
@@ -44,5 +45,23 @@ public class UserController {
     public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
         UpdateUserResponse updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
+    }
+
+    @Operation(
+        summary = "Delete an user",
+        description = "Delete an user by ID, only by ADMIN users"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role"),
+            @ApiResponse(responseCode = "404", description = "User Not Found")
+        }
+    )
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DeleteUserResponse> deleteUser(@PathVariable Integer id) {
+        DeleteUserResponse response = userService.deleteUserById(id);
+        return ResponseEntity.ok(response);
     }
 }
