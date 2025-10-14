@@ -2,6 +2,7 @@ package com.iem.backend.controller;
 
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdateUserResponse;
+import com.iem.backend.dto.UserResponse;
 import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
 
@@ -9,6 +10,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,5 +47,21 @@ public class UserController {
     public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
         UpdateUserResponse updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
+    }
+
+    @Operation(
+    summary = "Visualize all users",
+    description = "Visualizes all users in the database, only by ADMIN users"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "Users Visualized Successfuly"),
+            @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role")
+        }
+    )
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 }
