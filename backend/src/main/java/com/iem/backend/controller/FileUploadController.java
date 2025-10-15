@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.security.Principal;
 
 @RestController
@@ -41,10 +39,6 @@ public class FileUploadController {
     })
     @PostMapping(path = "/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file, Principal principal) {
-        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Utilisateur non authentifié");
-        }
-
         FileUploadResponse response = fileUploadService.store(file, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

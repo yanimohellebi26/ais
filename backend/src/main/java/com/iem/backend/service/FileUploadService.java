@@ -3,6 +3,7 @@ package com.iem.backend.service;
 import com.iem.backend.dto.FileUploadResponse;
 import com.iem.backend.entity.FileUpload;
 import com.iem.backend.entity.User;
+import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.FileUploadRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
@@ -71,19 +72,21 @@ public class FileUploadService {
     @Transactional
     public FileUploadResponse store(MultipartFile file, String userEmail) {
         if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le fichier est vide ou manquant");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty or missing");
         }
 
         if (file.getSize() > maxFileSize) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "La taille du fichier dépasse la limite de 10 Mo");
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Maximum upload size exceeded (10 MB)");
         }
 
         User user = userRepository.findByEmailIgnoreCase(userEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Utilisateur introuvable"));
+        .orElseThrow(UserNotFoundException::new);
 
         enforcePerUserLimit(user);
 
-        String originalName = StringUtils.hasText(file.getOriginalFilename()) ? Objects.requireNonNull(file.getOriginalFilename()).trim() : "fichier";
+        String originalName = StringUtils.hasText(file.getOriginalFilename())
+        ? Objects.requireNonNull(file.getOriginalFilename()).trim()
+        : "file";
         String extension = extractExtension(originalName);
         String hashedName = hashFilename(originalName);
         String storedFilename = hashedName + extension;
@@ -92,8 +95,8 @@ public class FileUploadService {
         try (InputStream inputStream = file.getInputStream()) {
             Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            apiLogger.error("Erreur lors de l'enregistrement du fichier", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Impossible d'enregistrer le fichier", e);
+            apiLogger.error("Failed to store uploaded file", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store the uploaded file", e);
         }
 
         FileUpload upload = new FileUpload();
@@ -103,7 +106,7 @@ public class FileUploadService {
         upload.setFileSize(file.getSize());
 
         fileUploadRepository.save(upload);
-        apiLogger.success("Fichier " + originalName + " enregistré pour l'utilisateur " + userEmail);
+        apiLogger.success("File " + originalName + " stored for user " + userEmail);
 
         String pathToReturn = buildResponsePath(storedFilename);
 
@@ -118,7 +121,7 @@ public class FileUploadService {
         long uploadsCount = fileUploadRepository.countByUser_Id(user.getId());
         if (uploadsCount >= perUserLimit) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Limite de " + perUserLimit + " fichiers atteinte pour cet utilisateur");
+                    "Per-user upload limit of " + perUserLimit + " files reached");
         }
     }
 
