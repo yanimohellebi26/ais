@@ -19,9 +19,6 @@ const App: React.FC = () => {
         <Route path="/financialanalyst" element={<FinancialAnalyst />} />
         <Route path="/maritimeexpert" element={<MaritimeExpert />} />
         <Route path="/shipowner" element={<ShipOwner />} />
-        
-        
-
       </Routes>
     </Router>
   );

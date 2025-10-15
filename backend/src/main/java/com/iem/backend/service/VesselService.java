@@ -1,5 +1,6 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
 import com.iem.backend.exception.UserNotFoundException;
@@ -8,9 +9,15 @@ import com.iem.backend.exception.VesselNotFoundException;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 public class VesselService {
@@ -47,4 +54,14 @@ public class VesselService {
         }
     }
 
+    public Page<VesselResponseDto> getAllVessels(int page, int size, String sortField, String sortDirection) {
+        Sort sort = sortDirection.equalsIgnoreCase("desc")
+                ? Sort.by(sortField).descending()
+                : Sort.by(sortField).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return vesselRepository.findAll(pageable)
+                .map(VesselResponseDto::fromEntity);
+    }
 }

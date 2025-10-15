@@ -1,17 +1,29 @@
 /* Import Tailwind base styles */
 @import "tailwindcss";
-
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@plugin "daisyui" {
+  themes:
+          light --default,
+          aqua --prefersdark;
 }
 
-body {
-  margin: 0;
-  background-color: #edf6f8; 
-  color: #000; 
+@theme{
+    --color-primary-focus: #0F172C;
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  --color-primary: #155DFC;
+  --color-primary-focus: #0F172C;
+}
+
+@plugin "daisyui/theme" {
+    name: "aqua";
+    --color-primary-focus: #c2d1f1;
 }
 
 
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
