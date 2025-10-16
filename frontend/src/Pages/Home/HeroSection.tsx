@@ -1,4 +1,4 @@
-import Button from "../BaseComponents/Button";
+import Button from "../../components/BaseComponents/Button";
 import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
@@ -15,11 +15,11 @@ const HeroSection = () => {
                         Advanced vessel tracking and maritime analytics platform...
                     </p>
                     <div className="space-x-4">
-                        <Button className="btn btn-xl btn-primary" onClick={() => navigate("signup")}>
+                        <Button className="btn btn-xl btn-primary" onClick={() => navigate("dashboard")}>
                             Get Started
                         </Button>
-                        <Button className="btn btn-xl btn-outline" onClick={() => navigate("login")}>
-                            Login
+                        <Button className="btn btn-xl btn-outline" onClick={() => navigate("register")}>
+                            Register
                         </Button>
                     </div>
                 </div>

@@ -9,6 +9,7 @@ import SelectRole from "../components/SelectRole";
 import arrowLeft from "../assets/arrow-left.svg";
 import shipIcon from "../assets/ship-icon.svg";
 import { useNavigate } from "react-router-dom";
+import {toast} from "react-toastify";
 
 type RegisterForm = {
   username: string;
@@ -56,16 +57,19 @@ const Register = () => {
     setError(null);
 
     if (!formData.username || !formData.email || !formData.password || !formData.role) {
+      toast.warning("Fill all the fields");
       setError("Fill all the fields");
       return;
     }
 
     if (!validEmail(formData.email)) {
+      toast.warning("Enter a valid email");
       setError("Enter a valid email");
       return;
     }
 
     if (!validPassword(formData.password)) {
+      toast.warning("Password must contain at least 8 characters, including uppercase, lowercase, number, and special character");
       setError(
         "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
       );
@@ -77,6 +81,7 @@ const Register = () => {
       const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
 
       if (!apiBaseUrl) {
+        toast.error("Internal error");
         throw new Error("La variable d'environnement VITE_API_URL est manquante.");
       }
 
@@ -88,12 +93,14 @@ const Register = () => {
 
       if (!response.ok) {
         const dataError = (await response.json()) as RegisterErrorResponse;
+        toast.error("Registration failed")
         throw new Error(dataError.message || "Registration failed");
       }
 
-      alert("Account created");
       navigate("/login");
+      toast.success("Account created ! You can logged in now")
     } catch (err) {
+      toast.error("Registration failed");
       const message = err instanceof Error ? err.message : "Registration failed";
       setError(message);
     } finally {
