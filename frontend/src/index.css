@@ -3,7 +3,7 @@
 @plugin "daisyui" {
   themes:
           light --default,
-          aqua --prefersdark;
+          aqua;
 }
 
 @theme{
