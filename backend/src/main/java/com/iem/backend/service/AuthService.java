@@ -36,7 +36,7 @@ public class AuthService {
     /**
      * Initializes the authentication service with required dependencies.
      *
-     * @param userAccountRepository repository for managing user accounts
+     * @param userRepository repository for managing user accounts
      * @param roleRepository repository for managing user roles
      * @param passwordEncoder encoder for hashing user passwords
      * @param jwtUtils utility for handling JWT creation and validation
