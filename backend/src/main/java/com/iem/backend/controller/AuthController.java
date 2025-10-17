@@ -1,7 +1,9 @@
 package com.iem.backend.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.RegisterRequest;
-import com.iem.backend.dto.RegisterResponse;
+import com.iem.backend.dto.UserDTO;
+import com.iem.backend.dto.Views;
 import com.iem.backend.dto.TokenRequest;
 import com.iem.backend.dto.TokenResponse;
 import com.iem.backend.service.AuthService;
@@ -33,8 +35,9 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Error during registration")
     })
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        RegisterResponse response = authService.register(request);
+    @JsonView(Views.Public.class)
+    public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
+        UserDTO response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

@@ -1,6 +1,7 @@
 package com.iem.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -178,5 +179,26 @@ public class UserControllerTest {
             .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].username").value("testUser"))
             .andExpect(jsonPath("$[1].username").value("adminUser"));
+    }
+
+    // ============ DELETE USERS ============ //
+
+    @Test
+    @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
+    @DisplayName("should delete user successfuly")
+    void deleteUserByAdminSuccess() throws Exception {
+
+        mockMvc.perform(delete("/api/v1/users/{id}", existingUser.getId()))
+            .andExpect(status().isOk());
+
+        assertThat(userRepository.findById(existingUser.getId())).isNotPresent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin@test.fr", roles = {"ADMIN"})
+    @DisplayName("should return not found when deleting non-existing user")
+    void deleteNonExistingUser() throws Exception {
+        mockMvc.perform(delete("/api/v1/users/{id}", 9999))
+                .andExpect(status().isNotFound());
     }
 }

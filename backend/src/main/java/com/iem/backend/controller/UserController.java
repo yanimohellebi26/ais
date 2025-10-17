@@ -1,8 +1,9 @@
 package com.iem.backend.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UpdateUserResponse;
-import com.iem.backend.dto.UserResponse;
+import com.iem.backend.dto.UserDTO;
+import com.iem.backend.dto.Views;
 import com.iem.backend.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,14 +42,34 @@ public class UserController {
     )
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
-        UpdateUserResponse updated = userService.updateUser(dto);
+    @JsonView(Views.Update.class)
+    public ResponseEntity<UserDTO> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
+        UserDTO updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
     @Operation(
-    summary = "Visualize all users",
-    description = "Visualizes all users in the database, only by ADMIN users"
+        summary = "Delete an user",
+        description = "Delete an user by ID, only by ADMIN users"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "User Deleted Successfully"),
+            @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role"),
+            @ApiResponse(responseCode = "404", description = "User Not Found")
+        }
+    )
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @JsonView(Views.Delete.class)
+    public ResponseEntity<UserDTO> deleteUser(@PathVariable Integer id) {
+        UserDTO response = userService.deleteUserById(id);
+        return ResponseEntity.ok(response);
+    }
+    
+    @Operation(
+        summary = "Visualize all users",
+        description = "Visualizes all users in the database, only by ADMIN users"
     )
     @ApiResponses(
         value = {
@@ -58,7 +79,8 @@ public class UserController {
     )
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    @JsonView(Views.Admin.class)
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 }
