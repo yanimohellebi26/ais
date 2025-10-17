@@ -9,4 +9,6 @@ public class Views {
     public interface Update extends Public {}
 
     public interface Delete extends Public {}
+
+    public interface Admin extends Public {}
 }

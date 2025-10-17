@@ -79,7 +79,7 @@ public class UserController {
     )
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @JsonView(Views.Public.class)
+    @JsonView(Views.Admin.class)
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
