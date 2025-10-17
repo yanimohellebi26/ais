@@ -7,19 +7,19 @@ import com.fasterxml.jackson.annotation.JsonView;
 
 public record UserDTO (
 
-    @JsonView(Views.Public.class)
+    @JsonView({Views.Public.class, Views.Create.class, Views.Update.class, Views.Delete.class})
     @JsonProperty("id")
     Integer id,
 
-    @JsonView(Views.Create.class)
+    @JsonView({Views.Public.class, Views.Create.class, Views.Update.class, Views.Delete.class})
     @JsonProperty("username")
     String username,
 
-    @JsonView(Views.Public.class)
+    @JsonView({Views.Public.class, Views.Create.class, Views.Update.class, Views.Delete.class})
     @JsonProperty("email")
     String email,
 
-    @JsonView(Views.Public.class)
+    @JsonView({Views.Public.class, Views.Create.class, Views.Update.class, Views.Delete.class})
     @JsonProperty("role")
     String role,
 
