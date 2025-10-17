@@ -1,9 +1,7 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.DeleteUserResponse;
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UpdateUserResponse;
-import com.iem.backend.dto.UserResponse;
+import com.iem.backend.dto.UserDTO;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.RoleNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
@@ -48,7 +46,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public UpdateUserResponse updateUser(UpdateUserRequest dto) {
+    public UserDTO updateUser(UpdateUserRequest dto) {
         User user = userRepository.findById(dto.id())
             .orElseThrow(() -> {
                 apiLogger.warn("User not found with id " + dto.id());
@@ -77,16 +75,19 @@ public class UserService implements UserDetailsService {
         User updatedUser = userRepository.save(user);
         apiLogger.success("User updated successfully: id " + updatedUser.getId());
 
-        return new UpdateUserResponse(
+        return new UserDTO(
             updatedUser.getId(),
+            updatedUser.getUsername(),
             updatedUser.getEmail(),
             updatedUser.getRole().getName(),
-            updatedUser.getLastUpdate()
+            null,
+            updatedUser.getLastUpdate(),
+            null
         );
     }
 
     @Transactional
-    public DeleteUserResponse deleteUserById(Integer id) {
+    public UserDTO deleteUserById(Integer id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 apiLogger.warn("Attempt to delete user with id " + id + " but was not found");
@@ -96,23 +97,33 @@ public class UserService implements UserDetailsService {
         userRepository.delete(user);
         apiLogger.success("User with id "+ id + " deleted successfuly");
 
-        return new DeleteUserResponse(
+        return new UserDTO(
             user.getId(),
             user.getUsername(),
             user.getEmail(),
             user.getRole().getName(),
+            null,
+            null,
             OffsetDateTime.now()
         );
     }
     
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
+    public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
 
         apiLogger.info("Retrieved " + users.size() + " users from the database.");
 
         return users.stream()
-            .map(user -> new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole().getName(), user.getCreatedAt(), user.getLastUpdate()))
+            .map(user -> new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().getName(),
+                user.getCreatedAt(),
+                user.getLastUpdate(),
+                null
+            ))
             .toList();
     }
 

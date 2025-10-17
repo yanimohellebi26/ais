@@ -1,9 +1,9 @@
 package com.iem.backend.controller;
 
-import com.iem.backend.dto.DeleteUserResponse;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UpdateUserResponse;
-import com.iem.backend.dto.UserResponse;
+import com.iem.backend.dto.UserDTO;
+import com.iem.backend.dto.Views;
 import com.iem.backend.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,8 +42,9 @@ public class UserController {
     )
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
-        UpdateUserResponse updated = userService.updateUser(dto);
+    @JsonView(Views.Update.class)
+    public ResponseEntity<UserDTO> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
+        UserDTO updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
@@ -60,8 +61,9 @@ public class UserController {
     )
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DeleteUserResponse> deleteUser(@PathVariable Integer id) {
-        DeleteUserResponse response = userService.deleteUserById(id);
+    @JsonView(Views.Delete.class)
+    public ResponseEntity<UserDTO> deleteUser(@PathVariable Integer id) {
+        UserDTO response = userService.deleteUserById(id);
         return ResponseEntity.ok(response);
     }
     
@@ -77,7 +79,8 @@ public class UserController {
     )
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    @JsonView(Views.Public.class)
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 }
