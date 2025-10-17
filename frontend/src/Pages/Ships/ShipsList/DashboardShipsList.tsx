@@ -1,8 +1,9 @@
 import React from "react";
+import TableShips from "./TableShips";
 
 const DashboardShipsList: React.FC = () => {
     return (
-        <h1>List ships</h1>
+        <TableShips />
     );
 };
 
