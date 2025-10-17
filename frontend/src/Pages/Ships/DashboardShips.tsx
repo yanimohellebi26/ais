@@ -1,8 +1,15 @@
 import React from "react";
+import {Route, Routes} from "react-router-dom";
+import DashboardShipsList from "./pages/DashboardShipsList";
+import DashboardShipsMyShips from "./pages/DashboardShipsMyShips";
 
 const DashboardShips: React.FC = () => {
     return (
-        <h1>Ships</h1>
+        <Routes>
+            <Route index element={<DashboardShipsList />} />
+            <Route path="list" element={<DashboardShipsList />} />
+            <Route path="my-ships" element={<DashboardShipsMyShips />} />
+        </Routes>
     );
 };
 
