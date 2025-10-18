@@ -5,7 +5,6 @@ import Captain from './pages/RolePages/Captain';
 import FinancialAnalyst from './pages/RolePages/FinancialAnalyst';
 import MaritimeExpert from './pages/RolePages/MaritimeExpert';
 import ShipOwner from './pages/RolePages/ShipOwner';
-import Account from './pages/account';
 import {BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home/Home';
@@ -35,16 +34,8 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />}/>
-        <Route path="/captain" element={<Captain />} />
-        <Route path="/financialanalyst" element={<FinancialAnalyst />} />
-        <Route path="/maritimeexpert" element={<MaritimeExpert />} />
-        <Route path="/shipowner" element={<ShipOwner />} />
-        <Route path="/account" element ={<Account />}/>
-        
-        
-
-        <Route
+        <Route path="/register" element={<Register />}/>  
+        <Route  
             path="/dashboard/*"
             element={
           <ProtectedRoute>
