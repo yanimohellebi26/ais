@@ -26,12 +26,12 @@ export const GenericTable = <T,>({
 
     return (
         <div className={`overflow-x-auto ${className}`}>
-            <table className="min-w-full border border-gray-300 rounded-lg bg-white shadow-sm">
+            <table className="table table-pin-rows w-full">
                 <thead className="bg-gray-100">
                 {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="px-4 py-2 text-left cursor-pointer select-none" onClick={header.column.getToggleSortingHandler()}>
+                        <th key={header.id} className="cursor-pointer select-none" onClick={header.column.getToggleSortingHandler()}>
                             <div className="flex items-center gap-1">
                                 {
                                     flexRender(
@@ -55,10 +55,9 @@ export const GenericTable = <T,>({
                 {table.getRowModel().rows.map((row, rowIndex) => (
                     <tr
                     key={row.id}
-                    className={"border-t bg-gray-50"}
                     >
                     {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-4 py-2">
+                        <td key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                     ))}
