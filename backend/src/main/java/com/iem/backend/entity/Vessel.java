@@ -1,5 +1,6 @@
 package com.iem.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -64,6 +65,7 @@ public class Vessel {
             joinColumns = @JoinColumn(name = "vessel_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
+    @JsonIgnore
     private List<User> users = new ArrayList<>();
 
 

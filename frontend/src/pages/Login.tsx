@@ -8,6 +8,9 @@ import P from "../components/BaseComponents/P";
 import arrowLeft from "../assets/arrow-left.svg";
 import shipIcon from "../assets/ship-icon.svg";
 import { useNavigate } from "react-router-dom";
+import {useAuth} from "../context/AuthContext"
+import {useApi} from "../utils/api";
+import { toast } from 'react-toastify';
 
 type LoginForm = {
   email: string;
@@ -23,19 +26,16 @@ const Login = () => {
   const [formData, setFormData] = useState<LoginForm>({ email: "", password: "" });
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const { login, user } = useAuth();
+  const api = useApi();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-
-    if (token) {
-      if (role === "ADMIN") {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+    if (user.token && user.role) {
+      if (user.role === "ROLE_ADMIN") navigate("/dashboard");
+      else navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [user, navigate]);
+
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -48,33 +48,28 @@ const Login = () => {
     setError(null);
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
 
-      if (!apiBaseUrl) {
-        throw new Error("La variable d'environnement VITE_API_URL est manquante.");
-      }
-
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
+      const data = await api<LoginResponse>(`/api/v1/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const data = (await response.json()) as LoginResponse;
-
-      if (!response.ok || !data.token) {
+      if (!data.token) {
+        toast.error("Wrong mail or password");
         throw new Error(data.message || "Wrong mail or password.");
       }
 
-      localStorage.setItem("token", data.token);
+      login(data.token);
+      toast.success("Login successfully");
+
     } catch (err) {
-      console.error("Error while login", err);
+      toast.error("Error while login");
       const message = err instanceof Error ? err.message : "Error, try again";
       setError(message);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-100  py-10 flex flex-col items-center">

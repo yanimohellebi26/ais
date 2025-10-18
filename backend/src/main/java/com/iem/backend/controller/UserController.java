@@ -1,15 +1,22 @@
 package com.iem.backend.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UpdateUserResponse;
 import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.service.UserService;
 import com.iem.backend.utils.ApiLogger;
+import com.iem.backend.dto.UserDTO;
+import com.iem.backend.dto.Views;
+import com.iem.backend.service.UserService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import java.security.Principal;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,11 +27,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final ApiLogger apiLogger;
 
-    public UserController(UserService userService, ApiLogger apiLogger) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.apiLogger = apiLogger;
     }
 
     @Operation(
@@ -41,8 +46,9 @@ public class UserController {
     )
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UpdateUserResponse> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
-        UpdateUserResponse updated = userService.updateUser(dto);
+    @JsonView(Views.Update.class)
+    public ResponseEntity<UserDTO> updateUser(@Valid @RequestBody UpdateUserRequest dto) {
+        UserDTO updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
@@ -59,8 +65,9 @@ public class UserController {
         }
     )
     @GetMapping("/{id}")
-    public ResponseEntity<UpdateUserResponse> getUserById(@PathVariable int id,Principal principal){
-        UpdateUserResponse user = userService.getUserById(id,principal);
+    @JsonView(Views.Public.class)
+    public ResponseEntity<UserDTO> getUserById(@PathVariable int id,Principal principal){
+        UserDTO user = userService.getUserById(id,principal);
         return ResponseEntity.ok(user);
     }
 
@@ -86,4 +93,39 @@ public class UserController {
 
     
 
+    @Operation(
+        summary = "Delete an user",
+        description = "Delete an user by ID, only by ADMIN users"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "User Deleted Successfully"),
+            @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role"),
+            @ApiResponse(responseCode = "404", description = "User Not Found")
+        }
+    )
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @JsonView(Views.Delete.class)
+    public ResponseEntity<UserDTO> deleteUser(@PathVariable Integer id) {
+        UserDTO response = userService.deleteUserById(id);
+        return ResponseEntity.ok(response);
+    }
+    
+    @Operation(
+        summary = "Visualize all users",
+        description = "Visualizes all users in the database, only by ADMIN users"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "Users Visualized Successfuly"),
+            @ApiResponse(responseCode = "403", description = "Access Denied : Requires ADMIN Role")
+        }
+    )
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @JsonView(Views.Admin.class)
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
 }

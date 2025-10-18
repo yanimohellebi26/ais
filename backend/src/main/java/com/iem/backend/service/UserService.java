@@ -2,7 +2,7 @@ package com.iem.backend.service;
 
 import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UpdateUserResponse;
+import com.iem.backend.dto.UserDTO;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.RoleNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
@@ -22,6 +22,7 @@ import java.security.Principal;
 import java.time.OffsetDateTime;
 
 import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -47,7 +48,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public UpdateUserResponse updateUser(UpdateUserRequest dto) {
+    public UserDTO updateUser(UpdateUserRequest dto) {
         User user = userRepository.findById(dto.id())
             .orElseThrow(() -> {
                 apiLogger.warn("User not found with id " + dto.id());
@@ -76,12 +77,56 @@ public class UserService implements UserDetailsService {
         User updatedUser = userRepository.save(user);
         apiLogger.success("User updated successfully: id " + updatedUser.getId());
 
-        return new UpdateUserResponse(
+        return new UserDTO(
             updatedUser.getId(),
+            updatedUser.getUsername(),
             updatedUser.getEmail(),
             updatedUser.getRole().getName(),
-            updatedUser.getLastUpdate()
+            null,
+            updatedUser.getLastUpdate(),
+            null
         );
+    }
+
+    @Transactional
+    public UserDTO deleteUserById(Integer id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> {
+                apiLogger.warn("Attempt to delete user with id " + id + " but was not found");
+                return new UserNotFoundException(id);
+            });
+
+        userRepository.delete(user);
+        apiLogger.success("User with id "+ id + " deleted successfuly");
+
+        return new UserDTO(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole().getName(),
+            null,
+            null,
+            OffsetDateTime.now()
+        );
+    }
+    
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+
+        apiLogger.info("Retrieved " + users.size() + " users from the database.");
+
+        return users.stream()
+            .map(user -> new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().getName(),
+                user.getCreatedAt(),
+                user.getLastUpdate(),
+                null
+            ))
+            .toList();
     }
 
     /**
@@ -106,7 +151,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public UpdateUserResponse getUserById(int id, Principal principal){
+    public UserDTO getUserById(int id, Principal principal){
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 apiLogger.warn("User not found with id " + id);
@@ -124,11 +169,14 @@ public class UserService implements UserDetailsService {
             throw new UserAccessDeniedException("You are not allowed to see this account ");
         }
 
-        return new UpdateUserResponse(
+        return new UserDTO(
             user.getId(),
+            null,
             user.getEmail(),
             user.getRole().getName(),
-            user.getLastUpdate()
+            null,
+            null,
+            OffsetDateTime.now()
         );
     }
 

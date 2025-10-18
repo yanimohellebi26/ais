@@ -19,3 +19,10 @@ export interface User {
     createAt: string;
     lastUpdate: string;
 }
+
+export interface ApiError extends Error {
+    statusCode: number;
+    message: string;
+    path: string;
+    timestamp: string;
+}

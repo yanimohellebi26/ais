@@ -1,28 +1,76 @@
 import pandas as pd
-import re
 
-def remove_rows_with_empty(df: pd.DataFrame, required: list) -> pd.DataFrame:
+from etl.models.context import VesselContext
+from etl.utils.logger import Logger
+
+
+def remove_rows_with_empty(context: VesselContext, required: list) -> VesselContext:
+    df = context.df
+    before = len(df)
     df.dropna(subset=required, inplace=True)
+    Logger.info(f"T-Empty : {len(df)}/{before} ({round(len(df)/before * 100,2)}%) lines selected")
+    context.df = df
+    return context
 
-def remove_rows_with_wrong_format(df: pd.DataFrame, required: list) -> pd.DataFrame:
-
+def remove_rows_with_wrong_format(context: VesselContext) -> VesselContext:
+    df = context.df
+    before = len(df)
     #cleaning rules
-    df.drop(index=df[~df['mmsi'].astype(str).str.fullmatch(r'\d{9}', na=False)].index, inplace=True)
-    df.drop(index=df[~(df['vessel_name'].isna() | (df['vessel_name'].astype(str).str.len() <= 50))].index, inplace=True)
-    df.drop(index=df[~(df['call_sign'].isna() | df['call_sign'].astype(str).str.fullmatch(r'[A-Z0-9]{4,7}', na=False))].index, inplace=True)
-    df.drop(index=df[~(df['vessel_type_id'].isna() | df['vessel_type_id'].astype(str).str.strip().str.replace(r'\.0$', '', regex=True).str.fullmatch(r'[1-9][0-9]?'))].index, inplace=True)
-    df.drop(index=df[pd.to_numeric(df['length'], errors='coerce').notna() & (pd.to_numeric(df['length'], errors='coerce').gt(500) | pd.to_numeric(df['length'], errors='coerce').le(0))].index, inplace=True)
-    df.drop(index=df[pd.to_numeric(df['width'], errors='coerce').notna() &(pd.to_numeric(df['width'], errors='coerce').gt(80) | pd.to_numeric(df['width'], errors='coerce').le(0))].index, inplace=True)
+    if 'mmsi' in df.columns:
+        df.drop(index=df[~df['mmsi'].astype(str).str.fullmatch(r'\d{9}', na=False)].index, inplace=True)
 
-    #remove '.0'
-    int_like = ['status', 'length', 'width', 'cargo', 'vessel_type_id']
-    for col in int_like:
+    if 'vessel_name' in df.columns:
+        df.drop(index=df[~(df['vessel_name'].isna() | (df['vessel_name'].astype(str).str.len() <= 100))].index, inplace=True)
+
+    if 'call_sign' in df.columns:
+        df.drop(index=df[~(df['call_sign'].isna() | df['call_sign'].astype(str).str.len() <= 20)].index, inplace=True)
+
+    for col in ['vessel_type_id', 'cargo_type_id']:
         if col in df.columns:
-            df[col] = df[col].fillna('').astype(str).str.replace(r'\.0$', '', regex=True)
+            df.drop(index=df[~(df[col].isna() | ((df[col] >= 0) & (df[col] <= 1025)))].index, inplace=True)
 
-    #remove 'nan' or '<NA>'
-    if 'imo' in df.columns:
-        df['imo'] = df['imo'].fillna('').astype(str).replace({'nan': '', '<NA>': ''}).str.strip()
+    if 'length' in df.columns:
+        df.drop(index=df[~(df['length'].isna() | ((df['length'] >= 0) & (df['length'] <= 370)))].index, inplace=True)
 
-    df['mmsi'] = df['mmsi'].astype(str)
-    return df
+    if 'width' in df.columns:
+        df.drop(index=df[~(df['width'].isna() | ((df['width'] >= 0) & (df['width'] <= 60)))].index, inplace=True)
+
+    if 'draft' in df.columns:
+        df.drop(index=df[~(df['draft'].isna() | ((df['draft'] >= 0) & (df['draft'] <= 25)))].index, inplace=True)
+
+    if 'base_date_time' in df.columns:
+        df.drop(index=df[df['base_date_time'].isna() |
+                         (df['base_date_time'] > pd.Timestamp.now())].index, inplace=True)
+    if 'transceiver_class' in df.columns:
+        df['transceiver_class'] = df['transceiver_class'].astype(str).str.strip().str.upper()
+        df.drop(index=df[~df['transceiver_class'].isin(['A', 'B'])].index, inplace=True)
+
+    Logger.info(f"T-QC : {len(df)}/{before} ({round(len(df)/before * 100,2)}%) lines selected")
+
+    context.df = df
+    return context
+
+def normalize_ais(context: VesselContext) -> VesselContext:
+    """
+    Normalize AIS data
+    """
+    df = context.df
+
+    # Replace all null value by None
+    df = df.astype(str).replace({"nan": None, "<NA>": None, "None": None}).replace("None", None)
+
+    # Type int fields
+    for col in ("vessel_type_id", "cargo_type_id"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+
+    # Type double fields
+    for col in ("length", "width", "draft"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
+
+    # Date field
+    df["base_date_time"] = pd.to_datetime(df["base_date_time"], errors="coerce")
+
+    context.df = df
+    return context

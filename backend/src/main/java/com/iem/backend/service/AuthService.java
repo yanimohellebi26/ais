@@ -2,14 +2,13 @@ package com.iem.backend.service;
 
 import com.iem.backend.config.JwtUtil;
 import com.iem.backend.dto.RegisterRequest;
-import com.iem.backend.dto.RegisterResponse;
 import com.iem.backend.dto.TokenRequest;
 import com.iem.backend.dto.TokenResponse;
+import com.iem.backend.dto.UserDTO;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
-import com.iem.backend.utils.ApiLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
@@ -36,7 +35,7 @@ public class AuthService {
     /**
      * Initializes the authentication service with required dependencies.
      *
-     * @param userAccountRepository repository for managing user accounts
+     * @param userRepository repository for managing user accounts
      * @param roleRepository repository for managing user roles
      * @param passwordEncoder encoder for hashing user passwords
      * @param jwtUtils utility for handling JWT creation and validation
@@ -62,7 +61,7 @@ public class AuthService {
      * @throws ResponseStatusException if the email or username already exists, or the role is invalid
      */
     @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public UserDTO register(RegisterRequest request) {
         String username = request.username().trim();
         String email = request.email().trim().toLowerCase();
         String roleName = request.role().trim();
@@ -91,7 +90,7 @@ public class AuthService {
         User saved = userRepository.save(user);
         log.info("User registered: {}", saved.getEmail());
 
-        return new RegisterResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole().getName());
+        return new UserDTO(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole().getName(), null, null, null);
     }
 
     /**
