@@ -7,6 +7,7 @@ import com.iem.backend.dto.TokenResponse;
 import com.iem.backend.dto.UserDTO;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
+import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
+
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -112,9 +115,15 @@ public class AuthService {
         String role = userDetails.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
-                .orElse("ROLE_USER"); // Valeur par défaut
+                .orElse("ROLE_USER");
 
-        String token = jwtUtils.generateToken(userDetails.getUsername(), role);
+        Integer id = userRepository
+                .findByEmailIgnoreCase(request.email())
+                .orElseThrow(() -> new UserNotFoundException("User not found"))
+                .getId();
+
+
+        String token = jwtUtils.generateToken(userDetails.getUsername(), role, id);
         return new TokenResponse(token);
     }
 
