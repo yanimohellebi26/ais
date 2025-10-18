@@ -1,22 +1,22 @@
 import pandas as pd
 from datetime import datetime
-from etl.utils.logger import Logger
-from etl.utils.timer import timer
 
-@timer
-def downsample_ais(context, group_cols=None, time_col="BaseDateTime"):
+from etl.models.context import VesselContext
+from etl.utils.logger import Logger
+
+def downsample_ais(context: VesselContext, group_cols=None, time_col="base_date_time"):
     """
     Downsample AIS data in a context.df DataFrame:
     - Keep only the first and last timestamp per group (default MMSI, LAT, LON)
     - Organize them in consecutive pairs
     """
+
     if group_cols is None:
-        group_cols = ["MMSI", "LAT", "LON"]
+        group_cols = ["mmsi", "lat", "lon"]
 
     df = context.df
-    Logger.info(f"[{datetime.now():%H:%M:%S}] Starting downsampling AIS data ...")
-    original_len = len(df)
 
+    original_len = len(df)
     # Validate required columns
     required = group_cols + [time_col]
     missing = [c for c in required if c not in df.columns]
@@ -42,8 +42,7 @@ def downsample_ais(context, group_cols=None, time_col="BaseDateTime"):
 
     reduced_len = len(df_downsampled)
     reduction_pct = 100 * (original_len - reduced_len) / original_len
-    Logger.info(f"[{datetime.now():%H:%M:%S}] Downsampling complete: "
-                f"{original_len} → {reduced_len} rows ({reduction_pct:.2f}% reduction)")
+    Logger.info(f" T-Downsampling {reduced_len} / {original_len} rows ({reduction_pct:.2f}% reduction)")
 
     # Update context and return
     context.df = df_downsampled
