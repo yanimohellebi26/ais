@@ -6,6 +6,7 @@ const DashboardAdminPage: React.FC = () => {
     return (
         <Routes>
             <Route index element={<AdminAllUsers />}></Route>
+            <Route path="list-users" element={<AdminAllUsers />}></Route>
         </Routes>
     );
 };
