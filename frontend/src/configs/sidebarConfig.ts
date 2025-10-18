@@ -1,4 +1,4 @@
-import {LayoutDashboard, Ship, List, ShipWheel} from "lucide-react";
+import {LayoutDashboard, Ship, ShieldUser, List, ShipWheel, Shield} from "lucide-react";
 import React from "react";
 
 export type Role = "ROLE_ADMIN" | "ROLE_CAPTAIN" | "ROLE_FINANCIAL_ANALYST" | "ROLE_MARITIME_EXPERT" | "ROLE_OWNER";
@@ -14,6 +14,12 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "Admin",
+        icon: ShieldUser,
+        path: "/dashboard/admin",
+        roles: ["ROLE_ADMIN"],
+        children: []
+    },
     { label: "Ships",
         icon: Ship,
         path: "/dashboard/ships",
@@ -24,3 +30,4 @@ export const menuItems: MenuItem[] = [
         ]
     }
 ];
+
