@@ -10,7 +10,7 @@ const DashboardLayout: React.FC = () => {
         <div className="drawer lg:drawer-open">
             <input id="dashboard-drawer" type="checkbox" className="drawer-toggle" />
 
-            <div className="drawer-content flex flex-col bg-gray-100">
+            <div className="drawer-content flex flex-col bg-base-300">
                 {/* Navbar mobile*/}
                 <div className="w-full navbar bg-base-100 shadow-sm lg:hidden">
                     <div className="flex-none">

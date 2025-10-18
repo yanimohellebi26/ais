@@ -33,12 +33,13 @@ public class VesselController {
     public ResponseEntity<Page<VesselResponseDto>> getAllVessels(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
-            @RequestParam(defaultValue = "id,asc") String[] sort
+            @RequestParam(defaultValue = "id,asc") String[] sort,
+            @RequestParam(required = false) String search
     ) {
         String sortField = sort[0];
         String sortDirection = sort.length > 1 ? sort[1] : "asc";
 
-        Page<VesselResponseDto> vesselsPage = vesselService.getAllVessels(page, size, sortField, sortDirection);
+        Page<VesselResponseDto> vesselsPage = vesselService.getAllVessels(page, size, sortField, sortDirection, search);
         return ResponseEntity.ok(vesselsPage);
     }
 }

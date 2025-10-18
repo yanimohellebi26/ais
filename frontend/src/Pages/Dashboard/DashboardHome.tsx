@@ -1,8 +1,9 @@
 import React from "react";
+import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
 
 const DashboardHome: React.FC = () => {
     return (
-        <h1 className="text-2xl font-bold">Welcome to your dashboard</h1>
+        <Breadcrumbs/>
     );
 };
 

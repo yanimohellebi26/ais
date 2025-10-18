@@ -1,4 +1,5 @@
 import { useAuth } from "../context/AuthContext";
+import type { ApiError } from "../types"; // adapte le chemin selon ton projet
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
 if (!API_BASE_URL) throw new Error("Missing VITE_API_URL env variable");
@@ -20,11 +21,19 @@ export function useApi() {
         if (contentType?.includes("application/json")) data = await response.json();
         else data = await response.text();
 
-        if (!response.ok) throw new Error((data && data.message) || `API error: ${response.status}`);
+        if (!response.ok) {
+            const apiError: ApiError = {
+                name: "ApiError",
+                message: data?.message || `API error: ${response.status}`,
+                statusCode: data?.statusCode ?? response.status,
+                path: data?.path ?? endpoint,
+                timestamp: data?.timestamp ?? new Date().toISOString(),
+            };
+            throw apiError;
+        }
 
         return data as T;
     };
 
     return apiFetch;
 }
-

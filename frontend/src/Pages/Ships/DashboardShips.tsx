@@ -1,7 +1,7 @@
 import React from "react";
 import {Route, Routes} from "react-router-dom";
-import DashboardShipsList from "./pages/DashboardShipsList";
-import DashboardShipsMyShips from "./pages/DashboardShipsMyShips";
+import DashboardShipsList from "./ShipsList/DashboardShipsList";
+import DashboardShipsMyShips from "./MyShips/DashboardShipsMyShips";
 
 const DashboardShips: React.FC = () => {
     return (
