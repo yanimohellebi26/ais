@@ -4,12 +4,22 @@ import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
 import TitleH1 from "../../../components/BaseComponents/TitleH1";
 import { useApi } from "../../../utils/api";
+import { GenericTable } from "../../../components/BaseComponents/GenericTable";
 
 const TableUsers: React.FC = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
 
     const api = useApi();
+
+    const columns = [
+        {id: "id", accessorKey: "id", header: "ID"},
+        {id: "username", accessorKey: "username", header: "Username"},
+        {id: "email", accessorKey: "email", header: "Email"},
+        {id: "role", accessorKey: "role", header: "Role"},
+        {id: "create_at", accessorKey: "created_at", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
+        {id: "last_update", accessorKey: "last_update", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()}
+    ]
 
     useEffect(() => {
         const fetchData = async () => {
@@ -25,35 +35,11 @@ const TableUsers: React.FC = () => {
         fetchData();
     }, [user.token]);
 
-
     return (
         <div>
             <TitleH1>All Users</TitleH1>
 
-            <table className="min-w-full border border-gray-300 rounded-lg">
-                <thead className="bg-gray-100">
-                <tr>
-                    <th className="px-4 py-2 text-left">ID</th>
-                    <th className="px-4 py-2 text-left">Username</th>
-                    <th className="px-4 py-2 text-left">Email</th>
-                    <th className="px-4 py-2 text-left">Role</th>
-                    <th className="px-4 py-2 text-left">Created At</th>
-                    <th className="px-4 py-2 text-left">Last Update</th>
-                </tr>
-                </thead>
-                <tbody>
-                {users.map((u) => (
-                    <tr key={u.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-2">{u.id}</td>
-                    <td className="px-4 py-2">{u.username}</td>
-                    <td className="px-4 py-2">{u.email}</td>
-                    <td className="px-4 py-2">{u.role}</td>
-                    <td className="px-4 py-2">{new Date(u.created_at).toLocaleDateString()}</td>
-                    <td className="px-4 py-2">{new Date(u.last_update).toLocaleDateString()}</td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+            <GenericTable data={users} columns={columns} className="mt-4"/>
         </div>
     );
 };
