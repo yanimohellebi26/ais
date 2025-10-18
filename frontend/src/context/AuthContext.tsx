@@ -55,13 +55,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (!decoded.exp) return;
 
             const expiresIn = decoded.exp * 1000 - Date.now();
+
+            const MAX_TIMEOUT = 2147483647;
+
             if (expiresIn <= 0) {
                 logout();
                 return;
             }
 
-            if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+            if (expiresIn > MAX_TIMEOUT) {
+                return;
+            }
 
+            if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
             logoutTimerRef.current = setTimeout(() => {
                 console.log("Token expired, auto logout");
                 logout();
