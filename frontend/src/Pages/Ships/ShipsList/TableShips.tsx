@@ -1,26 +1,12 @@
-import React, {useEffect, useState, useMemo} from 'react';
-import {useReactTable, getCoreRowModel, ColumnDef, flexRender} from '@tanstack/react-table';
-import {useApi} from '../../../utils/api';
-import {toast} from "react-toastify";
-import {ApiError} from "../../../types";
-
-type Vessel = {
-    id: number;
-    mmsi: string;
-    imo: string | null;
-    vesselName: string;
-    callSign: string | null;
-    vesselType: number | null;
-    vesselTypeName: string;
-    cargoType: number | null;
-    cargoTypeName: string;
-    length: number | null;
-    width: number | null;
-    draft: number | null;
-    transceiverClass: string | null;
-    locked: boolean;
-    baseDateTime: string;
-};
+import React, { useEffect, useMemo, useState } from "react";
+import { useReactTable, getCoreRowModel, ColumnDef } from "@tanstack/react-table";
+import { useApi } from "../../../utils/api";
+import { toast } from "react-toastify";
+import { ApiError } from "../../../types";
+import TableControls from "./TableControls";
+import TableDisplay from "./TableDisplay";
+import TablePagination from "./TablePagination";
+import { Vessel } from "./types";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);
@@ -28,7 +14,7 @@ const TableShips: React.FC = () => {
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(50);
 
-    const [visibleColumns] = useState<string[]>([
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([
         'mmsi',
         'imo',
         'vesselType',
@@ -37,43 +23,58 @@ const TableShips: React.FC = () => {
         'locked'
     ]);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortColumn, setSortColumn] = useState<string>('mmsi');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const api = useApi();
+
     const allColumns = useMemo<ColumnDef<Vessel, any>[]>(() => [
-        {id: 'mmsi', accessorKey: 'mmsi', header: 'MMSI'},
-        {id: 'imo', accessorKey: 'imo', header: 'IMO'},
-        {id: 'callSign', accessorKey: 'callSign', header: 'Call Sign'},
-        {id: 'vesselType', accessorKey: 'vesselType', header: 'Vessel Type'},
-        {id: 'vesselTypeName', accessorKey: 'vesselTypeName', header: 'Vessel Type Name'},
-        {id: 'cargoType', accessorKey: 'cargoType', header: 'Cargo Type'},
-        {id: 'cargoTypeName', accessorKey: 'cargoTypeName', header: 'Cargo Type Name'},
-        {id: 'length', accessorKey: 'length', header: 'Length'},
-        {id: 'width', accessorKey: 'width', header: 'Width'},
-        {id: 'draft', accessorKey: 'draft', header: 'Draft'},
-        {id: 'transceiverClass', accessorKey: 'transceiverClass', header: 'Transceiver Class'},
-        {id: 'baseDateTime', accessorKey: 'baseDateTime', header: 'Base Date Time'},
-        {id: 'locked',accessorKey: 'locked',header: 'Locked', cell : props => {
-            return !props.getValue() ?
-                <button className="btn btn-xs btn-primary btn-outline">Request ship</button> : null;
+        { id: 'mmsi', accessorKey: 'mmsi', header: 'MMSI' },
+        { id: 'imo', accessorKey: 'imo', header: 'IMO' },
+        { id: 'vesselName', accessorKey: 'vesselName', header: 'Name' },
+        { id: 'vesselType', accessorKey: 'vesselType', header: 'Vessel Type' },
+        { id: 'vesselTypeName', accessorKey: 'vesselTypeName', header: 'Vessel Type Name' },
+        { id: 'cargoType', accessorKey: 'cargoType', header: 'Cargo Type' },
+        { id: 'cargoTypeName', accessorKey: 'cargoTypeName', header: 'Cargo Type Name' },
+        { id: 'length', accessorKey: 'length', header: 'Length' },
+        { id: 'width', accessorKey: 'width', header: 'Width' },
+        { id: 'draft', accessorKey: 'draft', header: 'Draft' },
+        { id: 'transceiverClass', accessorKey: 'transceiverClass', header: 'Transceiver Class' },
+        { id: 'baseDateTime', accessorKey: 'baseDateTime', header: 'Base Date Time' },
+        {
+            id: 'locked',
+            accessorKey: 'locked',
+            header: 'Locked',
+            cell: props => {
+                return !props.getValue() ? (
+                    <button className="btn btn-xs btn-primary btn-outline">Request</button>
+                ) : null;
             }
         },
     ], []);
-
 
     const columns = useMemo(
         () => allColumns.filter(col => visibleColumns.includes(col.id as string)),
         [allColumns, visibleColumns]
     );
 
-    const api = useApi();
-
     useEffect(() => {
         async function fetchData() {
             try {
-                const response = await api(
-                    `/api/v1/vessels?page=${pageIndex + 1}&size=${pageSize}`,
-                    {method: 'GET', headers: {'Content-Type': 'application/json'}}
-                );
+                const query = new URLSearchParams({
+                    page: (pageIndex).toString(),
+                    size: pageSize.toString(),
+                    search: searchTerm,
+                    sort: `${sortColumn},${sortOrder}`,
+                });
 
-                const cleaned = response.content.map((v: any) => ({
+                const response = await api(`/api/v1/vessels?${query.toString()}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const cleaned = (response.content || []).map((v: any) => ({
                     id: v.id ?? '-',
                     mmsi: v.mmsi ?? '-',
                     imo: v.imo ?? '-',
@@ -87,14 +88,14 @@ const TableShips: React.FC = () => {
                     width: v.width ?? '-',
                     draft: v.draft ?? '-',
                     transceiverClass: v.transceiverClass ?? '-',
-                    locked: v.locked ?? '-',
+                    locked: v.locked ?? false,
                     baseDateTime: v.baseDateTime
                         ? new Date(v.baseDateTime).toISOString().split('T')[0]
                         : '-',
-                }));
+                })) as Vessel[];
 
                 setData(cleaned);
-                setTotalItems(response.page.totalElements);
+                setTotalItems(response.page?.totalElements ?? 0);
             } catch (e) {
                 if ("statusCode" in (e as any)) {
                     const err = e as ApiError;
@@ -104,69 +105,61 @@ const TableShips: React.FC = () => {
                 }
             }
         }
-        fetchData();
-    }, [pageIndex, pageSize]);
 
+        fetchData();
+    }, [pageIndex, pageSize, searchTerm, sortColumn, sortOrder]);
 
     const table = useReactTable({
         data,
         columns,
         pageCount: Math.ceil(totalItems / pageSize),
-        state: {pagination: {pageIndex, pageSize}},
+        state: { pagination: { pageIndex, pageSize } },
         manualPagination: true,
         getCoreRowModel: getCoreRowModel(),
     });
+
+    const toggleColumn = (colId: string) => {
+        setVisibleColumns(prev =>
+            prev.includes(colId) ? prev.filter(c => c !== colId) : [...prev, colId]
+        );
+    };
+
+    const toggleSort = (col: string) => {
+        if (col === sortColumn) setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        else {
+            setSortColumn(col);
+            setSortOrder('asc');
+        }
+    };
+
     return (
         <div>
-            <div className="overflow-y-auto h-126">
-                <table className="table table-pin-rows ">
-                    <thead>
-                    {table.getHeaderGroups().map(headerGroup => (
-                        <tr key={headerGroup.id}>
-                            {headerGroup.headers.map(header => (
-                                <th key={header.id}>
-                                    {header.isPlaceholder
-                                        ? null
-                                        : (header.column.columnDef.header as React.ReactNode ?? '-')}
-                                </th>
-                            ))}
-                        </tr>
-                    ))}
-                    </thead>
+            <h1 className="text-2xl font-bold mb-4">All ships available</h1>
 
-                    <tbody>
-                    {table.getRowModel().rows.map(row => (
-                        <tr key={row.id}>
-                            {row.getVisibleCells().map(cell => (
-                                <td key={cell.id}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
+            <TableControls
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                allColumns={allColumns.map(c => ({
+                    id: c.id,
+                    header: typeof c.header === 'string' ? c.header : '-'
+                }))}
+                visibleColumns={visibleColumns}
+                toggleColumn={toggleColumn}
+            />
 
-            </div>
-            <div className="flex justify-between items-center mt-4">
-                <button
-                    className="btn btn-sm"
-                    onClick={() => setPageIndex(old => Math.max(old - 1, 0))}
-                    disabled={pageIndex === 0}
-                >
-                    Previous
-                </button>
-                <span>Page {pageIndex + 1} / {Math.ceil(totalItems / pageSize)}</span>
-                <button
-                    className="btn btn-sm"
-                    onClick={() =>
-                        setPageIndex(old => Math.min(old + 1, Math.ceil(totalItems / pageSize) - 1))
-                    }
-                    disabled={pageIndex + 1 >= Math.ceil(totalItems / pageSize)}
-                >
-                    Next
-                </button>
-            </div>
+            <TableDisplay
+                table={table}
+                sortColumn={sortColumn}
+                sortOrder={sortOrder}
+                toggleSort={toggleSort}
+            />
+
+            <TablePagination
+                pageIndex={pageIndex}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                setPageIndex={setPageIndex}
+            />
         </div>
     );
 };

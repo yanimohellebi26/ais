@@ -54,14 +54,24 @@ public class VesselService {
         }
     }
 
-    public Page<VesselResponseDto> getAllVessels(int page, int size, String sortField, String sortDirection) {
+    public Page<VesselResponseDto> getAllVessels(int page, int size, String sortField, String sortDirection, String search) {
         Sort sort = sortDirection.equalsIgnoreCase("desc")
                 ? Sort.by(sortField).descending()
                 : Sort.by(sortField).ascending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return vesselRepository.findAll(pageable)
-                .map(VesselResponseDto::fromEntity);
+        Page<Vessel> vesselsPage;
+
+        if (search == null || search.isEmpty()) {
+            vesselsPage = vesselRepository.findAll(pageable);
+        } else if (search.matches("\\d+")) {
+            vesselsPage = vesselRepository.searchByMmsiOrVesselName(search, pageable);
+        } else {
+            vesselsPage = vesselRepository.searchByVesselName(search, pageable);
+        }
+        
+        return vesselsPage.map(VesselResponseDto::fromEntity);
     }
+
 }
