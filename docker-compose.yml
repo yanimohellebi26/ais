@@ -1,45 +1,9 @@
 version: "3.9"
 
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: ais-backend
-    ports:
-      - "8080:8080"
-    environment:
-      - JAVA_OPTS=
-    networks:
-      - ais-net
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: ais-frontend
-    depends_on:
-      - backend
-    ports:
-      - "80:80"
-    networks:
-      - ais-net
-
-  etl:
-    build:
-      context: ./etl
-      dockerfile: Dockerfile
-    container_name: ais-etl
-    depends_on:
-      - db
-    networks:
-      - ais-net
-    # Décommentez pour exécuter l'ETL une seule fois puis quitter
-    # restart: "no"
-    # command: ["python","-m","etl.main"]
-
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.5
+    platform: linux/amd64 # Pour les utilisateurs ARM64
     container_name: ais-db
     environment:
       - POSTGRES_USER=postgres
@@ -51,12 +15,88 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway
+    container_name: ais-flyway
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://db:5432/ais
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_CLEAN_DISABLED=true
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: -connectRetries=10 -url=jdbc:postgresql://db:5432/ais -user=postgres -password=postgres migrate
+    restart: "no"
+    networks:
+      - ais-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ais-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - ais-net
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ais-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:80/ || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  etl:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    container_name: ais-etl
+    depends_on:
+      - db
+    networks:
+      - ais-net
+    # Pour exécuter l’ETL une seule fois puis quitter
+    # restart: "no"
+    # command: ["python","-m","etl.main"]
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: ais-pgadmin
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@local.dev
       - PGADMIN_DEFAULT_PASSWORD=admin
@@ -64,14 +104,21 @@ services:
       - "5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpassfile:/pgpassfile:ro
     networks:
       - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:80/ || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
-  # Données persistantes de PostgreSQL
   db_data:
-  # Données persistantes de pgAdmin
+    name: ais-db-data
   pgadmin_data:
+    name: ais-pgadmin-data
 
 networks:
   ais-net:

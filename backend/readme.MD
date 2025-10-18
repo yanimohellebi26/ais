@@ -29,3 +29,8 @@ Init with Spring Boot 3.x, Java 17, Maven.
 
 ## URL Swagger UI 
 http://localhost:8080/swagger-ui.html
+
+
+## Dev sur le backend :
+- Pendant le développement lancé simplement l'application spring en local (pas en conteneur)
+- Lancer uniquement le container de la base de donné (docker compose up db -d)'
