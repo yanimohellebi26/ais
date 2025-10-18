@@ -11,7 +11,7 @@ export default function ThemeToggle() {
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme(theme === "light" ? "aqua" : "light");
+        setTheme(theme === "light" ? "night" : "light");
     };
 
     return (
