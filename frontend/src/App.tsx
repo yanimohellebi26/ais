@@ -7,6 +7,7 @@ import FinancialAnalyst from './Pages/RolePages/FinancialAnalyst';
 import MaritimeExpert from './Pages/RolePages/MaritimeExpert';
 import ShipOwner from './Pages/RolePages/ShipOwner';
 import Register from './Pages/register';
+import Account from './Pages/account';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
         <Route path="/financialanalyst" element={<FinancialAnalyst />} />
         <Route path="/maritimeexpert" element={<MaritimeExpert />} />
         <Route path="/shipowner" element={<ShipOwner />} />
+        <Route path="/account" element ={<Account />}/>
         
         
 
