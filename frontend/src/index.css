@@ -3,7 +3,7 @@
 @plugin "daisyui" {
   themes:
           light --default,
-          aqua;
+          night;
 }
 
 @theme{
@@ -17,9 +17,11 @@
 }
 
 @plugin "daisyui/theme" {
-    name: "aqua";
-    --color-primary-focus: #c2d1f1;
+  name: "night";
+  --color-primary: #155DFC;
+  --color-primary-focus: #0F172C;
 }
+
 
 
 
