@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { useReactTable, getCoreRowModel, ColumnDef, flexRender } from "@tanstack/react-table";
+import React, { useMemo, useState } from "react";
+import { useReactTable, getCoreRowModel, ColumnDef, flexRender, SortingState, getSortedRowModel} from "@tanstack/react-table";
 
 type GenericTableProps<T> = {
     data: T[];
@@ -12,8 +12,16 @@ export const GenericTable = <T,>({
     columns,
     className = "",
 }: GenericTableProps<T>) => {
+    const [sorting, setSorting] = useState<SortingState>([]);
+
     const table = useReactTable({
-        data, columns, getCoreRowModel: getCoreRowModel()
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        state: { sorting },
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        manualSorting: false
     });
 
     return (
@@ -23,13 +31,21 @@ export const GenericTable = <T,>({
                 {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="px-4 py-2 text-left">
-                        {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                            )}
+                        <th key={header.id} className="px-4 py-2 text-left cursor-pointer select-none" onClick={header.column.getToggleSortingHandler()}>
+                            <div className="flex items-center gap-1">
+                                {
+                                    flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                    )
+                                }
+                                {
+                                    {
+                                        asc: "↑",
+                                        desc: "↓"
+                                    }[header.column.getIsSorted() as string] ?? null
+                                }
+                            </div>
                         </th>
                     ))}
                     </tr>
