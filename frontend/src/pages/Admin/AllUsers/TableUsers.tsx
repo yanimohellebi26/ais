@@ -132,6 +132,34 @@ const TableUsers: React.FC = () => {
         }
     }
 
+    const handleDelete = async (user: User) => {
+        if (user.id === currentUserId) {
+            toast.error("You can't delete you own account")
+            return;
+        }
+
+        const result = await MySwal.fire({
+            title: `Delete user ${user.username}?`,
+            text: "This is forever, and forever is long",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, outchi!",
+            cancelButtonText: "Cancel"
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api(`/api/v1/users/${user.id}`, {
+                    method: "DELETE",
+                });
+                toast.success(`User ${user.username} deleted successfully`);
+                setUsers(prev => prev.filter(u => u.id !== user.id));
+            } catch (error) {
+                toast.error("Failed to delete the user");
+            }
+        }
+    }
+
     const columns = [
         {id: "id", accessorKey: "id", header: "ID"},
         {id: "username", accessorKey: "username", header: "Username"},
@@ -140,7 +168,10 @@ const TableUsers: React.FC = () => {
         {id: "create_at", accessorKey: "created_at", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "last_update", accessorKey: "last_update", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "actions", accessorKey: "actions", header: "Actions", cell: ({ row }: any) => (
-            <Button className="btn btn-sm" onClick={() => handleModification(row.original)}>Edit</Button>
+            <div>
+                <Button className="btn btn-sm" onClick={() => handleModification(row.original)}>Edit</Button>
+                <Button className="btn btn-sm" onClick={() => handleDelete(row.original)}>Delete</Button>
+            </div>
         )}
     ]
 
