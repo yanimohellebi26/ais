@@ -9,14 +9,34 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { UpdateUserRequest } from "../../../types";
 import Button from "../../../components/BaseComponents/Button";
+import { jwtDecode } from "jwt-decode";
 
 const MySwal = withReactContent(Swal);
+
+interface TokenPayload {
+    id?: number;
+    role?: string;
+    email?: string;
+    [key: string]: any;
+}
+
+const getCurrentUserId = (token: string | null): number | undefined => {
+    if (!token) return undefined;
+    try {
+        const decoded = jwtDecode<TokenPayload>(token);
+        return decoded.id;
+    } catch (error) {
+        return undefined;
+    }
+}
 
 const TableUsers: React.FC = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
 
     const api = useApi();
+    
+    const currentUserId = getCurrentUserId(user.token);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -32,12 +52,14 @@ const TableUsers: React.FC = () => {
         fetchData();
     }, [user.token]);
 
-    const handleModification = async (user: User) => {
+    const handleModification = async (editedUser: User) => {
+        
         let newPassword = "";
-        let newRole = user.role;
+        let newRole = editedUser.role;
+        const isSelf = currentUserId === editedUser.id;
         
         const result = await MySwal.fire({
-            title: `Modifications for ${user.username}`,
+            title: `Modifications for ${editedUser.username}`,
             html: (
                 <div className="flex flex-col gap-2">
                     <input
@@ -50,6 +72,7 @@ const TableUsers: React.FC = () => {
                         className="swal2-select"
                         defaultValue={newRole}
                         onChange={(e) => (newRole = e.target.value)}
+                        disabled={isSelf}
                     >
                         <option value="ADMIN">Admin</option>
                         <option value="OWNER">Ship Owner</option>
@@ -57,6 +80,13 @@ const TableUsers: React.FC = () => {
                         <option value="CAPTAIN">Captain</option>
                         <option value="FINANCIAL_ANALYST">Financial Analyst</option>
                     </select>
+                    {
+                        isSelf && (
+                            <small className="text-gray-500">
+                                You can't change your own role
+                            </small>
+                        )
+                    }
                 </div>
             ),
             showCancelButton: true,
@@ -78,9 +108,9 @@ const TableUsers: React.FC = () => {
         if (result.isConfirmed && result.value) {
             try {
                 const payload: UpdateUserRequest = {
-                    id: user.id,
+                    id: editedUser.id,
                     password: result.value.password,
-                    role: result.value.role
+                    role: isSelf ? editedUser.role : result.value.role
                 };
 
                 await api<User>("/api/v1/users", {
@@ -89,11 +119,11 @@ const TableUsers: React.FC = () => {
                     body: JSON.stringify(payload)
                 });
 
-                toast.success(`User ${user.id} updated successfuly`)
+                toast.success(`User ${editedUser.id} updated successfuly`)
 
                 setUsers( prev => 
                     prev.map( u => 
-                        u.id === user.id ? {...u, role: result.value?.role ?? u.role } : u
+                        u.id === editedUser.id ? {...u, role: isSelf ? u.role : result.value.role } : u
                     )
                 )
             } catch (error) {
