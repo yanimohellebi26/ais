@@ -64,12 +64,12 @@ const TableUsers: React.FC = () => {
                 <div className="flex flex-col gap-2">
                     <input
                         type="password"
-                        className="swal2-input"
+                        className="input input-bordered w-full"
                         placeholder="New password (optional)"
                         onChange={(e) => (newPassword = e.target.value)}
                     />
                     <select
-                        className="swal2-select"
+                        className="select select-bordered w-full"
                         defaultValue={newRole}
                         onChange={(e) => (newRole = e.target.value)}
                         disabled={isSelf}
@@ -92,6 +92,11 @@ const TableUsers: React.FC = () => {
             showCancelButton: true,
             focusConfirm: false,
             confirmButtonText: "Save",
+            customClass: {
+                popup: "bg-base-100 dark:bg-base-200 text-base-content dark:text-base-content",
+                confirmButton: "btn btn-primary",
+                cancelButton: "btn btn-outline"
+            },
             preConfirm: () => {
                 if (newPassword) {
                     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
@@ -140,7 +145,7 @@ const TableUsers: React.FC = () => {
         {id: "create_at", accessorKey: "created_at", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "last_update", accessorKey: "last_update", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "actions", accessorKey: "actions", header: "Actions", cell: ({ row }: any) => (
-            <Button className="btn btn-primary" onClick={() => handleModification(row.original)}>Edit</Button>
+            <Button className="btn btn-sm" onClick={() => handleModification(row.original)}>Edit</Button>
         )}
     ]
 
