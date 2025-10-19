@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 
@@ -16,7 +17,7 @@ from etl.load.load_vessel_db import load_vessel_to_db
 from etl.utils.logger import Logger
 from etl.utils.timer import timer
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 
 @click.group()
@@ -26,6 +27,10 @@ def cli():
 #
 # ===== CLI COMMANDS =====
 #
+
+@cli.command()
+def hello():
+    print("hello")
 
 @cli.command()
 @click.option("--date", "-d", help="Date to format YYYY-MM-DD")

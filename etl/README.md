@@ -8,7 +8,7 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 
 - Python 3.10 à 3.12
 - [Poetry](https://python-poetry.org/) pour gérer les dépendances et l'environnement
-- Docker pour héberger la base de données PostgreSQL.
+- Docker
 ---
 
 ## 📦 Installation du projet
@@ -26,37 +26,19 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 3. Installer les dépendances : 
 ```bash
    poetry install
-   poetry install --with arm64 #Uniquement pour les utilisateur de systèmes ARM64 
 ```
 
 ## ⚙️ Configuration des variables d'environnement
 
-1. Copier le fichier d'exemple .env.example en .env :
+1. Copier le fichier d'environnement à la racine du projet 
 ```bash 
-   cp .env.example .env
+   cp ../.env.exemple ../.env
 ```
 
-2. Modifier les variables d'environnement pour correspondre à votre config
+2. Lancer les services dockers nécessaires :
 ```bash
-   ENV=dev
-   LOG_DIR=data/local/logs
-   AIS_DOWNLOAD_FOLDER=data/local/downloads
-   AIS_BASE_URL=https://coast.noaa.gov/htdata/CMSP/AISDataHandler
-   
-   DB_HOST=localhost
-   DB_PORT=5432        # ou 5433 selon votre installation si vous avez psotgresql d'installer notamment.
-   DB_NAME=ais
-   DB_USER=postgres
-   DB_PASSWORD=postgres
-   DB_DRIVER=psycopg    # mettre 'pg8000' si vous êtes sur ARM64
+  docker compose run db -d
 ```
-Le paramètre DB_DRIVER permet de choisir le driver PostgreSQL : psycopg (classique) ou pg8000 (ARM64).
-
-Pour lancer uniquement le container docker de la base de donnée :
-```bash
-    docker compose up db -d
-```
-
 ## 🧩 Système de Workflows ETL 
 
 Ce module permet de définir, exécuter et superviser des workflows / pipelines ETL composés de plusieurs étapes de traitement chaînées.
@@ -75,30 +57,6 @@ PIPELINES = {
 Chaque fonction reçoit un objet **context** (dataclass) et retourne le même **contexte** mis à jour
 
 Le contexte est un objet servant à partager les données entre les étapes du workflow
-```python
-    from dataclasses import dataclass
-    from typing import Optional
-    import pandas as pd
-    
-    @dataclass
-    class VesselContext:
-        file: Optional[str] = None          
-        df: Optional[pd.DataFrame] = None   
-        df_db: Optional[pd.DataFrame] = None 
-        workflow_id: Optional[str] = None
-```
-
-Exemple de fonction de traitement 
-```python
-def my_task(context: VesselContext, **kwargs) -> VesselContext:
-    # 1. Lire les données depuis le contexte
-    df = context.df
-    # 2. Effectuer un traitement
-    df = df.dropna(subset=["mmsi"])
-    # 3. Mettre à jour le contexte
-    context.df = df
-    return context
-```
 
 ## 🚀 Lancer les commandes CLI avec Click
 
@@ -171,8 +129,6 @@ with db.get_session() as session:
         print(row["id"], row["name"])
 ```
 
-Si vous êtes sur ARM64 et que vous utilisez pg8000, cela fonctionne automatiquement via la variable DB_DRIVER.
-
 ## 🧪 Tests
 
 Lancer tous les tests:
@@ -181,15 +137,3 @@ Lancer tous les tests:
 ```
 
 Les tests incluent la connexion à la base de données et le bon fonctionnement des utilitaires ETL.
-
-## 📂 Structure du projet
-
-etl/
-- cli.py           **# Commandes CLI**
-- workflow.py      **# Scripts de workflow**
-- utils/
-  - db.py        **# Gestion des sessions SQLAlchemy**
-  - logger.py    **# Logger centralisé**
-- models/          **# Définition des modèles ORM**
-- tests/           **# Tests unitaires**
-- pyproject.toml   **# Configuration Poetry**

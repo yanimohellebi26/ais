@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
-@PropertySource({"classpath:application-docker.properties","classpath:application.properties"})
+@PropertySource({"classpath:application-prod.properties","classpath:application.properties"})
 @Component
 @Slf4j
 public class JwtUtil {

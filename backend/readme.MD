@@ -13,24 +13,23 @@ Init with Spring Boot 3.x, Java 17, Maven.
 
 ## Installation / setup
 
-1. Compiled project - Compiled project and generated JAR in `target/`
-    ```bash
-    mvn clean install 
-    # or with wrapper
+1. Copy .env in root : 
+```bash
+  cp ../.env.exemple ../.env 
+```
+
+2. Start app in dev mode
+```bash
+   docker compose up backend --build -d
+```
+
+## Compiled project 
+- Compiled project and generated JAR in `target/`
+ ```bash
+   mvn clean install 
+   # or with wrapper
    ./mvnw clean install  
-    ```
-
-2. Start app
-   ```bash
-   mvn spring-boot:run
-       # or with wrapper
-   ./mvnw spring-boot:run 
-   ```
-
+```
 ## URL Swagger UI 
 http://localhost:8080/swagger-ui.html
 
-
-## Dev sur le backend :
-- Pendant le développement lancé simplement l'application spring en local (pas en conteneur)
-- Lancer uniquement le container de la base de donné (docker compose up db -d)'

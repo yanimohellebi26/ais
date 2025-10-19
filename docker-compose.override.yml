@@ -1,19 +1,6 @@
 version: "3.9"
 
 services:
-  db:
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ais
-    ports:
-      - "5432:5432"
-      - "5433:5432"
-
-  flyway:
-    environment:
-      - FLYWAY_CLEAN_DISABLED=true
-
   frontend:
     build:
       context: ./frontend
@@ -26,8 +13,24 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    command: [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]
     networks:
       - ais-net
 
 
+  pgadmin:
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpassfile:/pgpassfile:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - ~/.m2:/root/.m2
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev

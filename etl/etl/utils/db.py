@@ -1,17 +1,19 @@
 # db.py
 import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use psycopg default, set pg8000 for arm user in .env
-DB_DRIVER = os.getenv("DB_DRIVER", "psycopg")  # Default psycopg
+
+DB_DRIVER = os.getenv("POSTGRES_DRIVER", "psycopg")  # Default psycopg
 DATABASE_URL = (
-    f"postgresql+{DB_DRIVER}://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-    f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    f"postgresql+{DB_DRIVER}://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
+    f"@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
 )
+print(DATABASE_URL)
 
 # Engine global SQLAlchemy
 engine = create_engine(DATABASE_URL, echo=False, future=True)
