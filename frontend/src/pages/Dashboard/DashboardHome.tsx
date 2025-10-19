@@ -89,7 +89,7 @@ const DashboardHome: React.FC = () => {
                             </div>
                         )}
                         <div className="card-actions justify-end">
-                            <Button onClick={() =>navigate("/")} className="btn btn-primary " >Change password</Button>
+                            <Button onClick={() =>navigate("password/")} className="btn btn-primary " >Change password</Button>
                         </div>
                     </div>
                     

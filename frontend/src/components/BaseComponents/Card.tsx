@@ -17,8 +17,6 @@ const Card: React.FC<CardsProps> = ({
                 shadow-md 
                 rounded-4xl 
                 overflow-hidden 
-                bg-gradient-to-br from-white/80 to-blue-100/60
-                dark:from-base-200/80 dark:to-base-300/60
                 backdrop-blur-sm
                 ${className ?? ""}
             `}
