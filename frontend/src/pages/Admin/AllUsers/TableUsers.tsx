@@ -64,12 +64,12 @@ const TableUsers: React.FC = () => {
                 <div className="flex flex-col gap-2">
                     <input
                         type="password"
-                        className="input input-bordered w-full"
+                        className="input input-bordered w-full text-base-content"
                         placeholder="New password (optional)"
                         onChange={(e) => (newPassword = e.target.value)}
                     />
                     <select
-                        className="select select-bordered w-full"
+                        className="select select-bordered w-full text-base-content bg-base-200"
                         defaultValue={newRole}
                         onChange={(e) => (newRole = e.target.value)}
                         disabled={isSelf}
@@ -92,11 +92,6 @@ const TableUsers: React.FC = () => {
             showCancelButton: true,
             focusConfirm: false,
             confirmButtonText: "Save",
-            customClass: {
-                popup: "bg-base-100 dark:bg-base-200 text-base-content dark:text-base-content",
-                confirmButton: "btn btn-primary",
-                cancelButton: "btn btn-outline"
-            },
             preConfirm: () => {
                 if (newPassword) {
                     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
