@@ -140,7 +140,7 @@ const TableUsers: React.FC = () => {
         {id: "create_at", accessorKey: "created_at", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "last_update", accessorKey: "last_update", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "actions", accessorKey: "actions", header: "Actions", cell: ({ row }: any) => (
-            <Button onClick={() => handleModification(row.original)}>Edit</Button>
+            <Button className="btn btn-primary" onClick={() => handleModification(row.original)}>Edit</Button>
         )}
     ]
 
