@@ -14,11 +14,6 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-    { label: "Account",
-        icon: UserRound,
-        path: "/dashboard/account",
-        roles: ["ROLE_CAPTAIN", "ROLE_OWNER", "ROLE_ADMIN","ROLE_CAPTAIN","ROLE_FINANCIAL_ANALYST","ROLE_MARITIME_EXPERT"]
-    },
     { label: "Admin",
         icon: ShieldUser,
         path: "/dashboard/admin",

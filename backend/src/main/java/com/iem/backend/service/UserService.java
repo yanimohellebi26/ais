@@ -171,7 +171,7 @@ public class UserService implements UserDetailsService {
 
         return new UserDTO(
             user.getId(),
-            null,
+            user.getUsername(),
             user.getEmail(),
             user.getRole().getName(),
             null,
