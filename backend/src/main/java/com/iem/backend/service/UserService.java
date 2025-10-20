@@ -14,6 +14,8 @@ import com.iem.backend.utils.ApiLogger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.tomcat.util.http.parser.Authorization;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -166,7 +168,7 @@ public class UserService implements UserDetailsService {
         boolean isAdmin = "ADMIN".equalsIgnoreCase(CurrentUser.getRole().getName());
 
         if(!isAdmin && !isSelf){
-            throw new UserAccessDeniedException("You are not allowed to see this account ");
+            throw new AuthorizationDeniedException("You are not allowed to see this account ");
         }
 
         return new UserDTO(
@@ -190,11 +192,11 @@ public class UserService implements UserDetailsService {
 
         String CurrentUserEmail = principal.getName();
         if (!CurrentUserEmail.equalsIgnoreCase(user.getEmail())){
-            throw new UserAccessDeniedException("You are not allowed to change this password");
+            throw new AuthorizationDeniedException("You are not allowed to change this password");
         }
 
         if (!passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
-            throw new UserAccessDeniedException("Old pasword is incorrect");
+            throw new AuthorizationDeniedException("Old pasword is incorrect");
         }
 
         String newEcodedPassword = passwordEncoder.encode(dto.newPassword());

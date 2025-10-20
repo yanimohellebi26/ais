@@ -73,8 +73,8 @@ public class UserController {
 
     //UC-07 PUT password 
     @Operation(
-        summary = "update own password",
-        description = "uer can update their password only"
+        summary = "Update own password",
+        description = "User can update their password only"
     )
     @ApiResponses(
         value = {
