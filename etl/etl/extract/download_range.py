@@ -88,7 +88,7 @@ def download_csv_range(
     if end < start:
         raise ValueError("end_date doit être >= start_date")
 
-    # === répertoire de sortie ===
+
     base_dir = Path(out_dir or os.getenv("AIS_DOWNLOAD_FOLDER", "."))
     base_dir.mkdir(parents=True, exist_ok=True)
 
@@ -98,7 +98,6 @@ def download_csv_range(
 
     days = list(_iter_days(start, end))
     if len(days) > max_allowed:
-        # Remplace par Logger.info si ton Logger n'a pas .warning
         Logger.warning(f"{len(days)} fichiers demandés, limitation à {max_allowed}.")
         days = days[:max_allowed]
 
@@ -106,7 +105,6 @@ def download_csv_range(
     written: List[Path] = []
 
     for day in days:
-        # Skip si un fichier existe déjà pour cette date (quelle que soit l'extension)
         existing = _find_downloaded_file(base_dir, day)
         if skip_existing and existing:
             Logger.info(f"{existing.name} déjà présent, on saute.")
@@ -117,10 +115,8 @@ def download_csv_range(
             Logger.info(f"Téléchargement {day:%Y-%m-%d}")
             dl.get_file(day.year, day.month, day.day)
 
-            #  Cherche dans le dossier cible
             found = _find_downloaded_file(base_dir, day)
 
-            # peut-être écrit dans le CWD → déplacer vers base_dir
             if not found:
                 cwd_found = _find_downloaded_file(Path("."), day)
                 if cwd_found:
