@@ -28,25 +28,22 @@ def cli():
 #
 
 @cli.command()
-@click.option("--date", "-d", help="Date à télécharger (YYYY-MM-DD)")
-@click.option("--latest", is_flag=True, help="Télécharger le dernier fichier disponible")
+@click.option("--date", "-d", help="Date to download (YYYY-MM-DD)")
+@click.option("--latest", is_flag=True, help="Download the latest available file")
 @click.option("--range", "-r", "range_dates", nargs=2, type=str,
-              help="Plage de dates (début fin) au format YYYY-MM-DD YYYY-MM-DD")
+              help="Date range (start end) as YYYY-MM-DD YYYY-MM-DD")
 @click.option("--max-files", type=int, default=None,
-              help="Plafond de sécurité (écrase env MAX_FILES). Défaut = env ou 50.")
+              help="Safety cap (overrides env MAX_FILES). Default = env or 50.")
 @click.option("--delay", "delay_seconds", type=float, default=0.0, show_default=True,
-              help="Pause en secondes entre téléchargements")
-@click.option("--overwrite/--skip-existing", default=False, help="Réécrire si le fichier existe déjà")
+              help="Pause in seconds between downloads")
+@click.option("--overwrite/--skip-existing", default=False, help="Overwrite if the file already exists")
 def download(date, latest, range_dates, max_files, delay_seconds, overwrite):
-    """
-    Télécharger un ou plusieurs fichiers CSV AIS (unitaire, latest, ou plage).
 
-    """
     Logger.info("Run task download")
 
     modes = [bool(date), bool(latest), bool(range_dates)]
     if sum(modes) != 1:
-        Logger.error("Spécifiez exactement un mode: --date | --latest | --range <début fin>.")
+        Logger.error("Specify exactly one mode: --date | --latest | --range <start end>.")
         return
 
     if latest:
@@ -57,15 +54,14 @@ def download(date, latest, range_dates, max_files, delay_seconds, overwrite):
         try:
             y, m, d = map(int, date.split("-"))
         except Exception:
-            Logger.error("Format invalide pour --date. Attendu: YYYY-MM-DD")
+            Logger.error("Invalid format for --date. Expected: YYYY-MM-DD")
             return
         AISDownloader().get_file(y, m, d)
         return
 
-    # Mode plage
     start_s, end_s = range_dates
     try:
-        files = download_csv_range(
+        download_csv_range(
             start_s,
             end_s,
             max_files=max_files,
@@ -75,9 +71,6 @@ def download(date, latest, range_dates, max_files, delay_seconds, overwrite):
     except ValueError as e:
         Logger.error(str(e))
         return
-
-    Logger.success(f"Terminé. {len(files)} fichiers disponibles dans le dossier courant.")
-
 
 @cli.command()
 @click.option("--file", "-f", help="File path to csv")
