@@ -70,7 +70,9 @@ PIPELINES = {
     ],
     "load-positions": [
         (extract_data_from_file,{"selected_map": [ "mmsi", "base_date_time", "lon","lat","sog","cog","heading"]}),
-        (downsample_ais,{})
+        (downsample_ais,{}),
+        (normalize_ais, {}),
+        (remove_rows_with_wrong_format, {}),
     ]
 }
 
