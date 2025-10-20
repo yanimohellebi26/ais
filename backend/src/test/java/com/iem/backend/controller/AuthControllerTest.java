@@ -13,10 +13,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,18 +50,27 @@ class AuthControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private User existingUser;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
         roleRepository.deleteAll();
 
         Role admin = new Role();
-        admin.setName("ADMIN");
+        admin.setName("ADMIN");;
         roleRepository.save(admin);
 
         Role user = new Role();
         user.setName("USER");
         roleRepository.save(user);
+
+        existingUser = new User();
+        existingUser.setUsername("testUser");
+        existingUser.setEmail("user@example.com");
+        existingUser.setPasswordHash(passwordEncoder.encode("oldPassword#123"));
+        existingUser.setRole(admin);
+        userRepository.save(existingUser);
     }
 
 
@@ -143,6 +154,51 @@ class AuthControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("should not login with a user not register")
+    void login_BadCredential() throws Exception {
+        String payload = objectMapper.writeValueAsString(new LoginPayload(
+                "a@example.com",
+                "StrongPass1!"
+        ));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("should login with a user register")
+    void login_success() throws Exception {
+        String payload = objectMapper.writeValueAsString(new LoginPayload(
+                "user@example.com",
+                "oldPassword#123"
+        ));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Need login to access private endpoint")
+    void request_Unauthorized() throws Exception {
+        mockMvc.perform(get("/api/HelloWorld"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", roles = {"ADMIN"})
+    @DisplayName("Need login to access private endpoint")
+    void request_authorized() throws Exception {
+        mockMvc.perform(get("/api/HelloWorld"))
+                .andExpect(status().isOk());
+    }
+
+    private record LoginPayload(String email, String password) {
+    }
 
     private record RegisterPayload(String username, String email, String password, String role) {
     }
