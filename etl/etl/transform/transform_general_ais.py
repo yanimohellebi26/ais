@@ -45,8 +45,26 @@ def remove_rows_with_wrong_format(context: VesselContext) -> VesselContext:
         df['transceiver_class'] = df['transceiver_class'].astype(str).str.strip().str.upper()
         df.drop(index=df[~df['transceiver_class'].isin(['A', 'B'])].index, inplace=True)
 
-    Logger.info(f"T-QC : {len(df)}/{before} ({round(len(df)/before * 100,2)}%) lines selected")
+    if 'lat' in df.columns:
+        df.drop(index=df[~(df['lat'].isna() | ((df['lat'] >= -90) & (df['lat'] <= 90)))].index, inplace=True)
 
+    if 'lon' in df.columns:
+        df.drop(index=df[~(df['lon'].isna() | ((df['lon'] >= -180) & (df['lon'] <= 180)))].index, inplace=True)
+
+    if 'heading' in df.columns:
+        df.drop(index=df[~(df['heading'].isna() | ((df['heading'] >= 0) & (df['heading'] < 360)))].index, inplace=True)
+
+    # COG ∈ [0, 360)
+    if 'cog' in df.columns:
+        df.drop(index=df[~(df['cog'].isna() | ((df['cog'] >= 0) & (df['cog'] < 360)))].index, inplace=True)
+
+    if 'sog' in df.columns:
+        df.drop(index=df[~(df['sog'].isna() | ((df['sog'] >= 0) & (df['sog'] <= 102.2)))].index, inplace=True)
+
+    if 'status' in df.columns:
+        df.drop(index=df[~(df['status'].isna() | ((df['status'] >= 0) & (df['status'] <= 15)))].index, inplace=True)
+
+    Logger.info(f"T-QC : {len(df)}/{before} ({round(len(df)/before * 100,2)}%) lines selected")
     context.df = df
     return context
 
@@ -55,22 +73,36 @@ def normalize_ais(context: VesselContext) -> VesselContext:
     Normalize AIS data
     """
     df = context.df
-
-    # Replace all null value by None
     df = df.astype(str).replace({"nan": None, "<NA>": None, "None": None}).replace("None", None)
 
-    # Type int fields
-    for col in ("vessel_type_id", "cargo_type_id"):
+
+    for col in ("vessel_type_id", "cargo_type_id", "status"):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
-    # Type double fields
+    # Latitude / Longitude (5 decimals)
+    for col in ("lat", "lon"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").round(5)
+
     for col in ("length", "width", "draft"):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
 
-    # Date field
-    df["base_date_time"] = pd.to_datetime(df["base_date_time"], errors="coerce")
+    if "base_date_time" in df.columns:
+        df["base_date_time"] = pd.to_datetime(df["base_date_time"], errors="coerce")
+
+    if "heading" in df.columns:
+        df["heading"] = pd.to_numeric(df["heading"], errors="coerce").astype("Int64")
+        df.loc[df["heading"] == 511, "heading"] = pd.NA
+
+    if "cog" in df.columns:
+        df["cog"] = pd.to_numeric(df["cog"], errors="coerce").round(2)
+        df.loc[df["cog"] == 360.0, "cog"] = 0.0
+
+    if "sog" in df.columns:
+        df["sog"] = pd.to_numeric(df["sog"], errors="coerce").round(2)
+        df.loc[df["sog"] == 102.3, "sog"] = pd.NA
 
     context.df = df
     return context
