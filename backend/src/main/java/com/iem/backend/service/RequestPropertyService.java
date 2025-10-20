@@ -46,8 +46,11 @@ public class RequestPropertyService {
         requestProperty.setVessel(vessel);
         requestProperty.setFile(fileUpload);
 
-        if (!vessel.getUsers().contains(user)) {
-            requestPropertyRepository.save(requestProperty);
+        boolean hasOwner = vessel.getUsers().stream().anyMatch(u -> "OWNER".equalsIgnoreCase(u.getRole().getName()));
+        if (hasOwner) {
+            throw new VesselAlreadyOwnedException();
         }
+
+        requestPropertyRepository.save(requestProperty);
     }
 }
