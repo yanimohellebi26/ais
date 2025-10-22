@@ -113,24 +113,6 @@ public class RequestPropertyController {
     }
 
     @Operation(
-            summary = "Delete ALL request property",
-            description = "An admin can delete ALL request property"
-    )
-    @ApiResponses(
-            value = {
-                    @ApiResponse(responseCode = "200", description = "ALL Request property are deleted"),
-                    @ApiResponse(responseCode = "400", description = "Invalid Request"),
-                    @ApiResponse(responseCode = "401", description = "Unauthorized")
-            }
-    )
-    @DeleteMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteAllRequestProperty() {
-        requestPropertyService.deleteRequestProperty();
-        return ResponseEntity.ok("All request properties deleted");
-    }
-
-    @Operation(
             summary = "Update a request property",
             description = "An admin can update a request property"
     )

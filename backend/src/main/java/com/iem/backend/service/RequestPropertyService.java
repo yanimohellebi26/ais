@@ -83,11 +83,6 @@ public class RequestPropertyService {
     }
 
     @Transactional
-    public void deleteRequestProperty() {
-        requestPropertyRepository.deleteAll();
-    }
-
-    @Transactional
     public RequestPropertyDto deleteRequestPropertyById(Integer id) {
         RequestProperty requestProperty = requestPropertyRepository.findById(id).orElseThrow(()-> new RequestPropertyNotFoundException());
         RequestPropertyDto responseDto = new RequestPropertyDto(
