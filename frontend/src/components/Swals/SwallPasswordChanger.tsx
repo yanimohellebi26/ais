@@ -1,6 +1,8 @@
 import Swal from "sweetalert2";
-import { useApi } from "../utils/api"; 
+import { useApi } from "../../hooks/useApi";
 import React from "react";
+import {toast} from "react-toastify";
+import {useLoading} from "../../context/LoadingContext";
 
 const validPassword = (password: string) => {
   return (
@@ -21,29 +23,21 @@ type newPass = {
 
 export const useChangePassword = (userId?: number | null) => {
     const api = useApi();
+    const {setLoading} = useLoading();
+
     const handleChangePassword = async () => {
         const { value: formValues } = await Swal.fire({
         title: "Change your password",
         html: `
-            <style>
-            .swal2-input { width: 100%; box-sizing: border-box; margin: 0.5rem 0; }
-            .swal2-popup { overflow-x: hidden; }
-            .password-rules { text-align: left; font-size: 13px; margin-top: 0.5rem; line-height: 1.4; }
-            .rule { display: flex; align-items: center; gap: 6px; }
-            .rule span { font-weight: 500; }
-            .rule.valid { color: #16a34a; }
-            .rule.invalid { color: #dc2626; }
-            </style>
+            <input id="oldPassword" type="password" class="input input-bordered w-full text-base-content mb-2" placeholder="Old password">
+            <input id="newPassword" type="password" class="input input-bordered w-full text-base-content" placeholder="New password">
 
-            <input id="oldPassword" type="password" class="swal2-input" placeholder="Old password">
-            <input id="newPassword" type="password" class="swal2-input" placeholder="New password">
-
-            <div class="password-rules">
-            <div id="rule-length" class="rule invalid">✗ At least 8 characters</div>
-            <div id="rule-upper" class="rule invalid">✗ One uppercase letter</div>
-            <div id="rule-lower" class="rule invalid">✗ One lowercase letter</div>
-            <div id="rule-number" class="rule invalid">✗ One number</div>
-            <div id="rule-special" class="rule invalid">✗ One special character (!@#$%^&*)</div>
+            <div class="password-rules flex flex-col items-start">
+                <span id="rule-length" class="rule invalid text-error">✗ At least 8 characters</span>
+                <span id="rule-upper" class="rule invalid text-error">✗ One uppercase letter</span>
+                <span id="rule-lower" class="rule invalid text-error">✗ One lowercase letter</span>
+                <span id="rule-number" class="rule invalid text-error">✗ One number</span>
+                <span id="rule-special" class="rule invalid text-error">✗ One special character (!@#$%^&*)</span>
             </div>
         `,
         confirmButtonText: "Update password",
@@ -56,8 +50,8 @@ export const useChangePassword = (userId?: number | null) => {
             const updateRule = (id: string, valid: boolean) => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                el.classList.toggle("valid", valid);
-                el.classList.toggle("invalid", !valid);
+                el.classList.toggle("text-success", valid);
+                el.classList.toggle("text-error", !valid);
                 el.textContent = valid
                 ? "✓ " + el.textContent?.replace(/^✗|✓/, "").trim()
                 : "✗ " + el.textContent?.replace(/^✗|✓/, "").trim();
@@ -89,29 +83,22 @@ export const useChangePassword = (userId?: number | null) => {
         });
 
         if (formValues) {
-        try {
-            await api<newPass>(`/api/v1/users/${userId}/password`, {
-            method: "PUT",
-            body: JSON.stringify({
-                oldPassword: formValues.oldPassword,
-                newPassword: formValues.newPassword,
-            }),
-            headers: { "Content-Type": "application/json" },
-            });
-
-            Swal.fire({
-            icon: "success",
-            title: "Password updated!",
-            text: "Your password has been successfully changed",
-            confirmButtonColor: "#3085d6",
-            });
-        } catch (error: any) {
-            Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: error.message || "Failed to change password.",
-            });
-        }
+            try {
+                setLoading(true);
+                await api<newPass>(`/api/v1/users/${userId}/password`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    oldPassword: formValues.oldPassword,
+                    newPassword: formValues.newPassword,
+                }),
+                headers: { "Content-Type": "application/json" },
+                });
+                toast.success("Your password has been successfully changed");
+            } catch (error: any) {
+                toast.error(error.message || "Failed to change password.");
+            } finally {
+                setLoading(false);
+            }
         }
     };
 

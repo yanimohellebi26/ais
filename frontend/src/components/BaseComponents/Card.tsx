@@ -13,6 +13,7 @@ const Card: React.FC<CardsProps> = ({
         <div
             className={`
                 card
+                bg-base-100
                 relative
                 shadow-md 
                 rounded-4xl 
@@ -21,10 +22,7 @@ const Card: React.FC<CardsProps> = ({
                 ${className ?? ""}
             `}
         >
-            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none"></div>
-            <div className="relative">
-                {children}
-            </div>
+            {children}
         </div>
     );
 }
