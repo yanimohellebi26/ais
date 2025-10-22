@@ -3,7 +3,7 @@ import { User } from "./types";
 import { useAuth } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
 import TitleH1 from "../../../components/BaseComponents/TitleH1";
-import { useApi } from "../../../utils/api";
+import { useApi } from "../../../hooks/useApi";
 import { GenericTable } from "../../../components/BaseComponents/GenericTable";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";

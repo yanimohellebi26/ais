@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useReactTable, getCoreRowModel, ColumnDef } from "@tanstack/react-table";
-import { useApi } from "../../../utils/api";
+import { useApi } from "../../../hooks/useApi";
 import { toast } from "react-toastify";
 import { ApiError } from "../../../types";
 import TableControls from "./TableControls";

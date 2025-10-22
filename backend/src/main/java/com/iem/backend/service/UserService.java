@@ -1,22 +1,26 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UserDTO;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.RoleNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.entity.Role;
+import com.iem.backend.exception.UserAccessDeniedException;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.tomcat.util.http.parser.Authorization;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
+import java.security.Principal;
 import java.time.OffsetDateTime;
 
 import java.util.Collections;
@@ -147,5 +151,61 @@ public class UserService implements UserDetailsService {
                 Collections.singletonList(authority)
         );
     }
+
+    @Transactional
+    public UserDTO getUserById(int id, Principal principal){
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> {
+                apiLogger.warn("User not found with id " + id);
+                return new UserNotFoundException(id);
+            });
+
+        String CurrentUserEmail = principal.getName();
+        User CurrentUser = userRepository.findByEmailIgnoreCase(CurrentUserEmail)
+            .orElseThrow(()-> new UserNotFoundException("user not found with "+CurrentUserEmail));
+        
+        boolean isSelf = CurrentUser.getId().equals(id);
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(CurrentUser.getRole().getName());
+
+        if(!isAdmin && !isSelf){
+            throw new AuthorizationDeniedException("You are not allowed to see this account ");
+        }
+
+        return new UserDTO(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole().getName(),
+            null,
+            null,
+            OffsetDateTime.now()
+        );
+    }
+
+    @Transactional
+    public void updatePassword(int id, UpdatePasswordRequest dto, Principal principal){
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> {
+                apiLogger.warn("User not found with id " + id);
+                return new UserNotFoundException(id);
+            });
+
+        String CurrentUserEmail = principal.getName();
+        if (!CurrentUserEmail.equalsIgnoreCase(user.getEmail())){
+            throw new AuthorizationDeniedException("You are not allowed to change this password");
+        }
+
+        if (!passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
+            throw new AuthorizationDeniedException("Old pasword is incorrect");
+        }
+
+        String newEcodedPassword = passwordEncoder.encode(dto.newPassword());
+        user.setPasswordHash(newEcodedPassword);
+        user.setLastUpdate(OffsetDateTime.now());
+        userRepository.save(user); //save en db
+    }
+
+
+
 
 }
