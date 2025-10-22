@@ -3,4 +3,6 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -B -e -DskipTests dependency:go-offline || true
 EXPOSE 8080
-CMD ["mvn", "spring-boot:run"]
+CMD ["mvn", "spring-boot:run", "-Dmaven.test.skip=true"]
+
+
