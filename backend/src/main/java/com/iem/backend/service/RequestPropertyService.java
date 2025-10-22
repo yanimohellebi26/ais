@@ -93,6 +93,7 @@ public class RequestPropertyService {
                 requestProperty.getCreatedAt()
         );
         requestPropertyRepository.deleteById(id);
+        fileUploadRepository.deleteById(requestProperty.getFile().getId());
         return responseDto;
     }
 
