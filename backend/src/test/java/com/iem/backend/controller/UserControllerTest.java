@@ -32,8 +32,10 @@ import com.iem.backend.repository.UserRepository;
 
 import ch.qos.logback.core.encoder.EchoEncoder;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 @SpringBootTest
+@Transactional
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
