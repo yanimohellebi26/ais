@@ -119,7 +119,7 @@ public class RequestPropertyControllerTest {
     @Test
     @WithMockUser(username = "test@example.com", roles = "USER")
     void CreateRequestPropertySuccessTest() throws Exception {
-        RequestPropertyDto payload = new RequestPropertyDto(user.getId(),vessel.getMmsi(),file.getId());
+        RequestPropertyDto payload = new RequestPropertyDto(1,user.getId(),vessel.getMmsi(),file.getId(),null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
@@ -129,17 +129,17 @@ public class RequestPropertyControllerTest {
     @Test
     @WithMockUser(username = "test@example.com", roles = "USER")
     void CreateRequestPropertyNotFoundTest() throws Exception {
-        RequestPropertyDto payload = new RequestPropertyDto(user.getId(),vessel.getMmsi(),-1);
+        RequestPropertyDto payload = new RequestPropertyDto(1,user.getId(),vessel.getMmsi(),-1,null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
-        payload = new RequestPropertyDto(user.getId(),"mmsifaux",file.getId());
+        payload = new RequestPropertyDto(1,user.getId(),"mmsifaux",file.getId(),null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
-        payload = new RequestPropertyDto(-1,vessel.getMmsi(),file.getId());
+        payload = new RequestPropertyDto(1,-1,vessel.getMmsi(),file.getId(),null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
@@ -148,7 +148,7 @@ public class RequestPropertyControllerTest {
 
     @Test
     void CreateRequestPropertyUnauthorizedTest() throws Exception {
-        RequestPropertyDto payload = new RequestPropertyDto(user.getId(),vessel.getMmsi(),file.getId());
+        RequestPropertyDto payload = new RequestPropertyDto(1,user.getId(),vessel.getMmsi(),file.getId(),null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
@@ -158,7 +158,7 @@ public class RequestPropertyControllerTest {
     @Test
     @WithMockUser(username = "test@example.com", roles = "OWNER")
     void CreateRequestPropertyOwnerTest() throws Exception {
-        RequestPropertyDto payload = new RequestPropertyDto(user.getId(),vesselOwner.getMmsi(),file.getId());
+        RequestPropertyDto payload = new RequestPropertyDto(1,user.getId(),vesselOwner.getMmsi(),file.getId(),null);
         mockMvc.perform(post("/api/v1/request-property")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
