@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface VesselRepository extends JpaRepository<Vessel, Integer> {
@@ -19,4 +20,6 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
     @Query("SELECT v FROM Vessel v WHERE v.mmsi = :mmsi OR UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :mmsi, '%'))")
     Page<Vessel> searchByMmsiOrVesselName(@Param("mmsi") String mmsi, Pageable pageable);
 
+    @Query("SELECT v.id FROM Vessel v JOIN v.users u WHERE u.id = :userId")
+    List<Integer> findVesselIdsByUserId(@Param("userId") Integer userId);
 }
