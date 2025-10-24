@@ -41,6 +41,4 @@ public class FileUpload {
         this.uploadedAt = OffsetDateTime.now();
     }
 
-    @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RequestProperty> requestProperties = new ArrayList<>();
 }
