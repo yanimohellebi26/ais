@@ -36,7 +36,7 @@ import org.springframework.http.MediaType;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.show-sql=false"
 })
-public class PositionsControllerTests {
+public class PositionsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
