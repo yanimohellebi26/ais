@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.iem.backend.dto.PositionVesselDTO;
 import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
@@ -22,7 +23,7 @@ public class PositionService {
     private final PositionVesselRepository positionRepo;
     private final VesselRepository vesselRepo;
 
-    public List<PositionVessel> getLatestPositions(User user, List<String> mmsiFilter) {
+    public List<PositionVesselDTO> getLatestPositions(User user, List<String> mmsiFilter) {
 
         List<Integer> authorizedVesselIds;
         
@@ -50,13 +51,24 @@ public class PositionService {
 
         if (authorizedVesselIds != null && filteredVesselIds != null) {
             authorizedVesselIds.retainAll(filteredVesselIds);
-            return positionRepo.findLatestPositions(authorizedVesselIds);
+            filteredVesselIds = authorizedVesselIds;
+        } else if (authorizedVesselIds != null) {
+            filteredVesselIds = authorizedVesselIds;
         }
 
-        if (authorizedVesselIds != null) {
-            return positionRepo.findLatestPositions(authorizedVesselIds);
-        }
+        List<PositionVessel> positions = positionRepo.findLatestPositions(filteredVesselIds);
 
-        return positionRepo.findLatestPositions(filteredVesselIds);
+        return positions.stream()
+            .map(pv -> new PositionVesselDTO(
+                pv.getVessel().getMmsi(),
+                pv.getBaseDateTime(),
+                pv.getSog(),
+                pv.getCog(),
+                pv.getHeading(),
+                pv.getStatusId(),
+                pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
+                pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
+                ))
+            .collect(Collectors.toList());
     }
 }
