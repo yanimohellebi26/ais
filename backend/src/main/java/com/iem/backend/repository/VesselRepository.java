@@ -4,6 +4,7 @@ import com.iem.backend.entity.Vessel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,5 +19,9 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
     @Query("SELECT v FROM Vessel v WHERE v.mmsi = :mmsi OR UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :mmsi, '%'))")
     Page<Vessel> searchByMmsiOrVesselName(@Param("mmsi") String mmsi, Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM User u JOIN u.vessels v WHERE u.id = :userId")
+    void deleteUserVesselLinks(@Param("userId") Integer userId);
 
 }

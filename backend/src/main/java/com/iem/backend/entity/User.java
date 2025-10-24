@@ -41,7 +41,9 @@ public class User {
     @Column(name = "last_update")
     private OffsetDateTime lastUpdate;
 
-    @ManyToMany(mappedBy = "users")
+    @ManyToMany(mappedBy = "users", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Vessel> vessels = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FileUpload> fileUploads = new ArrayList<>();
 }

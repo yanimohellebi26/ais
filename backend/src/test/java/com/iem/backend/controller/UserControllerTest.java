@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,10 +25,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
+import com.iem.backend.repository.FileUploadRepository;
+import com.iem.backend.repository.RequestPropertyRepository;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 
 import ch.qos.logback.core.encoder.EchoEncoder;
+import jakarta.persistence.EntityManager;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -53,7 +58,15 @@ public class UserControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private FileUploadRepository fileUploadRepository;
+
+    @Autowired
+    private RequestPropertyRepository requestPropertyRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired EntityManager entityManager;
 
     private Role adminRole;
     private Role ownerRole;
@@ -62,8 +75,15 @@ public class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        requestPropertyRepository.deleteAll();
+        fileUploadRepository.deleteAll();
+
+        entityManager.createNativeQuery("DELETE FROM user_vessel").executeUpdate();
+
         userRepository.deleteAll();
         roleRepository.deleteAll();
+
+        entityManager.flush();
 
         adminRole = new Role();
         adminRole.setName("ADMIN");
@@ -78,6 +98,7 @@ public class UserControllerTest {
         existingUser.setEmail("test@example.com");
         existingUser.setPasswordHash(passwordEncoder.encode("oldPassword#123"));
         existingUser.setRole(ownerRole);
+        existingUser.setFileUploads(new ArrayList<>());
         userRepository.save(existingUser);
 
         otherUser = new User();
@@ -85,6 +106,7 @@ public class UserControllerTest {
         otherUser.setEmail("test2@example.com");
         otherUser.setPasswordHash(passwordEncoder.encode("oldPassword#123"));
         otherUser.setRole(adminRole);
+        otherUser.setFileUploads(new ArrayList<>());
         userRepository.save(otherUser);
     }
 

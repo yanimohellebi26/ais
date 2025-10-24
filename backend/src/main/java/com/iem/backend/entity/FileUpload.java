@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -38,4 +40,7 @@ public class FileUpload {
     void onCreate() {
         this.uploadedAt = OffsetDateTime.now();
     }
+
+    @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RequestProperty> requestProperties = new ArrayList<>();
 }
