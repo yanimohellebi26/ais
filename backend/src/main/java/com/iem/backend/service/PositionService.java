@@ -14,14 +14,16 @@ import com.iem.backend.entity.Vessel;
 import com.iem.backend.repository.PositionVesselRepository;
 import com.iem.backend.repository.VesselRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class PositionService {
 
     private final PositionVesselRepository positionRepo;
     private final VesselRepository vesselRepo;
+
+    public PositionService(PositionVesselRepository positionRepo, VesselRepository vesselRepo) {
+        this.positionRepo = positionRepo;
+        this.vesselRepo = vesselRepo;
+    }
 
     public List<PositionVesselDTO> getLatestPositions(User user, List<String> mmsiFilter) {
 
