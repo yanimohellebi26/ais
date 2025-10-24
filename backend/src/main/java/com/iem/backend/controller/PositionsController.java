@@ -18,14 +18,16 @@ import com.iem.backend.service.PositionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/positions")
-@RequiredArgsConstructor
 public class PositionsController {
     
     private final PositionService positionService;
+
+    public PositionsController(PositionService positionService) {
+        this.positionService = positionService;
+    }
 
     @Operation(summary = "Get latest positions from users' vessels")
     @ApiResponses(value = {
