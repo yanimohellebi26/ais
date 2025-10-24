@@ -44,4 +44,6 @@ public class User {
     @ManyToMany(mappedBy = "users")
     private List<Vessel> vessels = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user")
+    private List<FileUpload> fileUploads = new ArrayList<>();
 }
