@@ -15,7 +15,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
