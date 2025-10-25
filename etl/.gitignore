@@ -214,5 +214,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-/data/local/
-.env
+data/
+
+../.env
+/.env
+*.env
+api_keys.json

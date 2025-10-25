@@ -14,7 +14,7 @@ def load_vessel_type(data: pd.DataFrame, output_path : str = "insert_vessels_typ
 
     Returns:
     """
-    download_folder = os.getenv("GENERATED_FOLDER")
+    download_folder = "data/generated"
     path = os.path.join(download_folder, output_path)
 
     values = []

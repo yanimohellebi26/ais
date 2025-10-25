@@ -3,13 +3,13 @@ import pandas as pd
 
 from sqlalchemy import text
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.timer import timer
 from etl.utils.db import get_session
 from etl.utils.logger import Logger
 
 
-def get_vessels_db(context : VesselContext ,**kwargs) -> VesselContext:
+def get_vessels_db(context : PipelineContext, **kwargs) -> PipelineContext:
     """
     Fetch all vessels data from the database
     :return:
@@ -40,7 +40,7 @@ def get_vessels_db(context : VesselContext ,**kwargs) -> VesselContext:
 
         context.df_db = df
         return context
-def transform_vessel_delta(context : VesselContext,**kwargs) -> VesselContext:
+def transform_vessel_delta(context : PipelineContext, **kwargs) -> PipelineContext:
     """
     Apply delta detection on new data, use current database vessel for comparison
     :param context: Must hold df, and db_df

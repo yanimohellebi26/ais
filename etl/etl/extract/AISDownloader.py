@@ -81,7 +81,7 @@ class AISDownloader(FileDownloader):
         base_url = os.getenv("AIS_BASE_URL")
 
         if download_folder is None:
-            download_folder = os.getenv("AIS_DOWNLOAD_FOLDER")
+            download_folder = "data/downloads"
 
         super().__init__(base_url, download_folder)
 
@@ -164,7 +164,10 @@ class AISDownloader(FileDownloader):
             return None
 
         file_name = self._construct_file_name(year, target_date)
-        csv_name = file_name.replace(".zip", ".csv").replace(".csv.zst", ".csv")
+        csv_name = (file_name
+                    .replace(".zip", ".csv")
+                    .replace(".csv.zst", ".csv")
+                    .replace("-","_"))
         csv_path = os.path.join(self.download_folder, csv_name)
 
         # If already downloaded (decompressed), skip
@@ -175,7 +178,7 @@ class AISDownloader(FileDownloader):
         # Check if file exists on server
         available_files = self._list_files_from_index(year)
         if file_name not in available_files:
-            Logger.error(f"File {file_name} not found on server")
+            Logger.error(f"File {file_name} not found on AIS data provider server")
             return None
 
         # Download file
