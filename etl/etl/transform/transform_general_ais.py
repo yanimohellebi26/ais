@@ -1,10 +1,10 @@
 import pandas as pd
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.logger import Logger
 
 
-def remove_rows_with_empty(context: VesselContext, required: list) -> VesselContext:
+def remove_rows_with_empty(context: PipelineContext, required: list) -> PipelineContext:
     df = context.df
     before = len(df)
     df.dropna(subset=required, inplace=True)
@@ -12,7 +12,7 @@ def remove_rows_with_empty(context: VesselContext, required: list) -> VesselCont
     context.df = df
     return context
 
-def remove_rows_with_wrong_format(context: VesselContext) -> VesselContext:
+def remove_rows_with_wrong_format(context: PipelineContext) -> PipelineContext:
     df = context.df
     before = len(df)
     #cleaning rules
@@ -68,7 +68,7 @@ def remove_rows_with_wrong_format(context: VesselContext) -> VesselContext:
     context.df = df
     return context
 
-def normalize_ais(context: VesselContext) -> VesselContext:
+def normalize_ais(context: PipelineContext) -> PipelineContext:
     """
     Normalize AIS data
     """

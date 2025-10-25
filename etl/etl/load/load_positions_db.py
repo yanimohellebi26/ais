@@ -1,13 +1,13 @@
 import io
 import pandas as pd
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.db import engine
 from etl.utils.logger import Logger
 
 
 
-def load_position_db(context: VesselContext, handle_missing: str = "skip", batch_size: int = 50_000):
+def load_position_db(context: PipelineContext, handle_missing: str = "skip", batch_size: int = 50_000):
     """
     @Warning temp function, will be removed in future versions
     """

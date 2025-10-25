@@ -11,7 +11,7 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 - Docker
 ---
 
-## 📦 Installation du projet
+## 1. 📦 Installation du projet
 
 1. Vérifier votre version de Python : 
 ```bash
@@ -28,7 +28,7 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
    poetry install
 ```
 
-## ⚙️ Configuration des variables d'environnement
+### 1.1 ⚙️ Configuration des variables d'environnement
 
 1. Copier le fichier d'environnement à la racine du projet 
 ```bash 
@@ -39,26 +39,46 @@ Cette partie du projet contient le pipeline ETL pour traiter et insérer des don
 ```bash
   docker compose run db -d
 ```
-## 🧩 Système de Workflows ETL 
+
+***
+
+
+## 2. 🧩 Système de Workflows ETL 
 
 Ce module permet de définir, exécuter et superviser des workflows / pipelines ETL composés de plusieurs étapes de traitement chaînées.
 Chaque workflow est une suite de fonctions qui reçoivent et retournent un objet de contexte typé contenant les données manipulées tout au long du pipeline.
 
-Les pipelines sont définis dans le dictionnaire **PIPELINES**: 
-```python
-PIPELINES = {
-    "load-vessels": [
-        (extract_function, {}),
-        (transform_function, {}),
-        (load_function, {})
-    ]
-}
+Les pipelines sont définis dans un fichier YAML **pipelines.yaml**: 
+```yaml
+load-vessels:
+  - func: extract_data_from_file
+    kwargs:
+      selected_map: [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
+        "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class"]
+  - func: normalize_ais
+    kwargs: {}
+  - func: remove_rows_with_empty
+    kwargs:
+      required: ["mmsi","base_date_time"]
+  - func: clean_vessel_duplication
+    kwargs: {}
+  - func: get_vessels_db
+    kwargs: {}
+  - func: transform_vessel_delta
+    kwargs: {}
+  - func: load_vessel_to_db
+    kwargs:
+      table: "vessel"
+      upsert_keys: ["mmsi"]
 ```
 Chaque fonction reçoit un objet **context** (dataclass) et retourne le même **contexte** mis à jour
 
 Le contexte est un objet servant à partager les données entre les étapes du workflow
 
-## 🚀 Lancer les commandes CLI avec Click
+***
+
+
+## 3. 🚀 Lancer les commandes CLI avec Click
 
 Le projet contient des commandes CLI définies avec Click
 
@@ -80,56 +100,86 @@ Les options disponibles pour les workflows :
 --use-timer, -t -> "Log les temps d éxécution de chaque traitement"
 --workflow-name, -n -> "Donner un nom au workflow"
 ```
+***
 
-## 📝 Logger et gestion des logs
+## 4. 🌐 API ETL Orchestrator
+L’API repose sur FastAPI et permet de piloter le système ETL à distance via des requêtes HTTP.
+Elle expose des endpoints pour :
+- exécuter les commandes CLI Click,
+- exécuter ou lister les pipelines ETL,
+- suivre l’état des tâches en cours,
+- consulter les logs,
+- et gérer les clés d’API pour l’authentification.
 
-Le projet utilise colorlog pour centraliser le logging.
-
-Exemple d'utilisation:
-```python   
-   from etl.utils.logger import Logger
-   Logger.info("Démarrage du traitement ETL")
-   Logger.error("Une erreur est survenue")
+Lancer le serveur en local
+```bash 
+  poetry run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Les logs seront écrits dans le dossier défini par LOG_DIR dans votre .env.
-
-## 💾 Accès à la base de données
-
-Le projet utilise SQLAlchemy avec un pattern singleton pour les sessions :
-
-
-```python
-   from etl.utils.db import get_session
-   from etl.models import User
-   
-   
-   with get_session() as session:
-       # Ajouter un utilisateur
-       user = User(name="Bob", age=30)
-       session.add(user)
-   
-       # Requête ORM
-       users = session.query(User).filter(User.age > 20).all()
-       for u in users:
-           print(u.id, u.name)
-
+Pour docker 
+```bash
+    docker compose up etl --build -d
 ```
 
+Le Swagger est accessible sur : 
+http://127.0.0.1:8000/docs#
+
+La super clé API par défaut : `superapikey`
+***
 
 
-Pour des requêtes SQL brutes :
-```python
-from sqlalchemy import text
-from etl.utils.db import get_session
-
-with db.get_session() as session:
-    result = session.execute(text("SELECT * FROM users WHERE age > :age"), {"age": 20}).mappings()
-    for row in result:
-        print(row["id"], row["name"])
+### 4.1 🔒 Authentification par clé d’API
+Toutes les routes (sauf /health) sont protégées par une clé d’API.
+Chaque requête doit inclure un en-tête HTTP :
+```http request 
+X-API-Key: <votre_clef_api>
 ```
+Les clés sont créées et supprimées via les endpoints /apiKeys, accessibles uniquement aux super-utilisateurs.
+- `POST /apiKeys/ → Créer une nouvelle clé d’API (superuser requis)`
+- `DELETE /apiKeys/{key} → Supprimer une clé existante`
 
-## 🧪 Tests
+***
+
+
+### 4.2 ⚙️ Commandes CLI exposées via l’API
+L’API ne redéfinit pas les commandes, elle utilise directement le code Click du projet.
+Cela signifie que toute commande CLI (etl-cli) est accessible à distance via HTTP.
+
+Exemple :
+```http request
+POST /commands/{name}
+```
+```json
+{
+  "param1": "value",
+  "flag_option": true
+}
+```
+- Chaque commande est automatiquement analysée à partir de Click, de sorte que :
+- Les paramètres sont validés dynamiquement.
+- Les options de type is_flag (booléens) sont gérées automatiquement.
+- Les erreurs de validation sont renvoyées sous forme de 422.
+
+***
+
+
+### 4.3 📋 Système de Tâches et de File d’Attente (Queue)
+Chaque exécution de commande ou de pipeline crée une tâche enregistrée dans une file d’attente interne.
+`GET /tasks/ → Liste des tâches (en cours, terminées, échouées)`
+
+`GET /tasks/{id} → Statut détaillé d’une tâche`
+
+`DELETE /tasks/{id} → Supprime une tâche terminée`
+
+Cela permet :
+
+- d’exécuter plusieurs commandes ou pipelines simultanément,
+- de suivre l’état d’avancement de chaque exécution,
+- de consulter les logs associés via /logs.
+
+***
+
+## 5. 🧪 Tests
 
 Lancer tous les tests:
 ```bash 

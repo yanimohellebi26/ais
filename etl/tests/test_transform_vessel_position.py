@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from unittest.mock import patch
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.transform.transform_vessel_position import detect_vessel_incoherent_positions, haversine_km, speed_kmh
 
 @pytest.mark.parametrize(
@@ -38,7 +38,7 @@ from etl.transform.transform_vessel_position import detect_vessel_incoherent_pos
 @patch("etl.transform.transform_vessel_position.pd.read_sql")
 def test_detect_vessel_incoherent_positions(mock_read_sql, mock_session, new_positions, prev_positions, expected_remaining_mmsi):
     df = pd.DataFrame(new_positions)
-    context = VesselContext(df=df)
+    context = PipelineContext(df=df)
 
     mock_read_sql.return_value = pd.DataFrame(prev_positions, columns=["mmsi", "prev_date", "prev_lat", "prev_lon"])
     mock_session.return_value.__enter__.return_value.bind = "fake_bind"
@@ -60,7 +60,7 @@ def test_speed_kmh():
     assert pd.isna(spd.iloc[1])
 
 def test_empty_dataset():
-    context = VesselContext(df=pd.DataFrame())
+    context = PipelineContext(df=pd.DataFrame())
     updated_context = detect_vessel_incoherent_positions(context)
     assert updated_context.df.empty
 
@@ -76,7 +76,7 @@ def test_multiple_mmsi(mock_read_sql, mock_session):
         {"mmsi": "333333333", "base_date_time": "2025-01-01T12:00:00", "lat": 48.8566, "lon": 2.3522},
     ]
     df = pd.DataFrame(new_positions)
-    context = VesselContext(df=df)
+    context = PipelineContext(df=df)
 
     prev_positions = [
         {"mmsi": "111111111", "prev_date": "2025-01-01T11:00:00", "prev_lat": 48.8566, "prev_lon": 2.3522},

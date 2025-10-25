@@ -1,4 +1,3 @@
-# _ETLLogger.py
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
@@ -26,13 +25,13 @@ class _ETLLogger:
     }
 
     def __init__(self, name="ETL", log_dir="logs"):
+        self.log_dir = log_dir
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
 
         if not self.logger.hasHandlers():
             os.makedirs(log_dir, exist_ok=True)
-
-            log_file = os.path.join(log_dir, f"etl_{datetime.now():%Y-%m-%d}.log")
+            self.current_log_file = os.path.join(log_dir, f"etl_{datetime.now():%Y-%m-%d}.log")
 
             # Console handler
             console_handler = logging.StreamHandler()
@@ -43,9 +42,9 @@ class _ETLLogger:
             console_handler.setFormatter(console_formatter)
             self.logger.addHandler(console_handler)
 
-            # Logs files without ANSI
+            # File handler
             file_handler = TimedRotatingFileHandler(
-                log_file, when="midnight", interval=1, backupCount=7, encoding="utf-8"
+                self.current_log_file, when="midnight", interval=1, backupCount=7, encoding="utf-8"
             )
             file_formatter = logging.Formatter(
                 "%(asctime)s - %(levelname)s - %(message)s"
@@ -70,3 +69,11 @@ class _ETLLogger:
 
     def timer(self, message):
         self.logger.log(self.TIMER_LEVEL, message)
+
+    def get_log_file(self, date: str = None) -> str:
+        """
+        Return log file path
+        """
+        if date:
+            return os.path.join(self.log_dir, f"etl_{date}.log")
+        return self.current_log_file

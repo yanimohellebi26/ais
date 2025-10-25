@@ -85,7 +85,7 @@ services:
     build:
       context: ./etl
       dockerfile: Dockerfile
-    container_name: ais-etl
+    container_name: ais-etl-api
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -93,15 +93,54 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - AIS_BASE_URL=${AIS_BASE_URL}
-      - LOG_DIR=${LOG_DIR}
-      - AIS_DOWNLOAD_FOLDER=${AIS_DOWNLOAD_FOLDER}
-      - GENERATED_FOLDER=${GENERATED_FOLDER}
+      - API_KEYS_FILE=${API_KEYS_FILE}
+      - SUPER_API_KEY=${SUPER_API_KEY}
+      - PIPELINES_FILE_YAML=${PIPELINES_FILE_YAML}
+      - ENV_MODE=docker
     volumes:
-      - ./data/logs:/data/logs
-      - ./data/downloads:/data/downloads
-      - ./data/generated:/data/generated
+      - ./etl/data:/app/data
     depends_on:
       - db
+      - redis
+      - etl-worker
+    ports:
+      - "8000:8000"
+    networks:
+      - ais-net
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    container_name: ais-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ais-net
+    restart: "no"
+
+
+  etl-worker:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    container_name: ais-etl-worker
+    command: celery -A api.celery_app.celery_app worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://ais-redis:6379/0
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - AIS_BASE_URL=${AIS_BASE_URL}
+      - PIPELINES_FILE_YAML=${PIPELINES_FILE_YAML}
+      - ENV_MODE=docker
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - ./etl:/app
+      - ./etl/data:/app/data
     networks:
       - ais-net
     restart: "no"

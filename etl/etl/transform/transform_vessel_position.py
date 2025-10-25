@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.db import get_session
 from etl.utils.logger import Logger
 from sqlalchemy import text
@@ -36,7 +36,7 @@ def speed_kmh(distance_km: pd.Series, time_hours: pd.Series) -> pd.Series:
     return speed
 
 # function that detects inconsistent vessel positions
-def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> VesselContext:
+def detect_vessel_incoherent_positions(context : PipelineContext, **kwargs) -> PipelineContext:
     df = context.df
 
     if df.empty:
@@ -126,7 +126,7 @@ def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> Ves
     return context
 
 
-def filter_small_movements(context: VesselContext, min_dist: float = 0.1) -> VesselContext:
+def filter_small_movements(context: PipelineContext, min_dist: float = 0.1) -> PipelineContext:
     df = context.df
     if df.empty:
         return context
