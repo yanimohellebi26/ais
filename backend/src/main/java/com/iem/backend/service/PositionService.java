@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.iem.backend.dto.PositionVesselDTO;
@@ -11,7 +12,9 @@ import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
+import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.PositionVesselRepository;
+import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
 
 @Service
@@ -19,13 +22,19 @@ public class PositionService {
 
     private final PositionVesselRepository positionRepo;
     private final VesselRepository vesselRepo;
+    private final UserRepository userRepo;
 
-    public PositionService(PositionVesselRepository positionRepo, VesselRepository vesselRepo) {
+    public PositionService(PositionVesselRepository positionRepo, VesselRepository vesselRepo, UserRepository userRepo) {
         this.positionRepo = positionRepo;
         this.vesselRepo = vesselRepo;
+        this.userRepo = userRepo;
+
     }
 
-    public List<PositionVesselDTO> getLatestPositions(User user, List<String> mmsiFilter) {
+    public List<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter) {
+
+        User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
+            .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
 
         List<Integer> authorizedVesselIds;
         
