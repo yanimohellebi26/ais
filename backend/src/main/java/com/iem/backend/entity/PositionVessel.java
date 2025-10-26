@@ -1,6 +1,6 @@
 package com.iem.backend.entity;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 import org.locationtech.jts.geom.Point;
 
@@ -26,11 +26,11 @@ public class PositionVessel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "vessel_id")
+    @Column(name = "vessel_id", nullable = false)
     private Integer vesselId;
 
-    @Column(name = "base_date_time")
-    private LocalDateTime baseDateTime;
+    @Column(name = "base_date_time", nullable = false)
+    private Timestamp baseDateTime;
     
     @Column(name = "sog")
     private Double sog;
@@ -44,7 +44,7 @@ public class PositionVessel {
     @Column(name = "status_id")
     private Integer statusId;
 
-    @Column(columnDefinition = "geography(Point, 4326)")
+    @Column(name = "geom", nullable = false, columnDefinition = "geography(Point, 4326)")
     private Point geom;
 
     @ManyToOne(fetch = FetchType.LAZY)
