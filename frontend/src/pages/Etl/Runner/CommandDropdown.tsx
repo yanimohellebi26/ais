@@ -1,8 +1,8 @@
 import { FileTerminal, Play } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useEtlApi } from "../../../hooks/useEtlApi";
 import { toast } from "react-toastify";
-
+import { useEtlWebSocket } from "../../../hooks/useEtlWebsocket";
 
 interface CommandParam {
     name: string;
@@ -24,50 +24,78 @@ interface CommandDropdownProps {
     index: number;
 }
 
-
 const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => {
     const api = useEtlApi();
-
-    const [paramValues, setParamValues] = useState<Record<string, any>>(
-        () => command.params.reduce((acc, param) => {
+    const [taskId, setTaskId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [alertMessages, setAlertMessages] = useState<string[]>([]);
+    const [paramValues, setParamValues] = useState<Record<string, any>>(() =>
+        command.params.reduce((acc, param) => {
             acc[param.name] = param.default === "Sentinel.UNSET" ? "" : param.default;
             return acc;
         }, {} as Record<string, any>)
     );
 
     const handleChange = (name: string, value: any) => {
-        setParamValues(prev => ({ ...prev, [name]: value }));
+        setParamValues((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleExecute = async () => {
+    const handleExecute = async (e:React.MouseEvent) => {
         try {
             const body: Record<string, any> = {};
-            command.params.forEach(param => {
+            command.params.forEach((param) => {
                 let value = paramValues[param.name];
-                if (param.type === "integer") {
-                    value = parseInt(value, 10);
-                } else if (param.type === "float") {
-                    value = parseFloat(value);
-                }
+                if (param.type === "integer") value = parseInt(value, 10);
+                else if (param.type === "float") value = parseFloat(value);
                 body[param.name] = value;
             });
 
             const result = await api(`/commands/${command.name}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
             });
-            console.log(result);
-            toast.success("Command added to queue!");
+
+            if (result?.task_id) {
+                toast.success("Command added to queue!");
+                setTaskId(result.task_id);
+                setIsLoading(true);
+                setAlertMessages(["Task started..."]);
+            } else {
+                toast.warning("Command executed but no task_id returned.");
+            }
         } catch (err: any) {
-            console.log(err);
-            toast.error(`Failed to execute command : ${err.message}`);
+            console.error(err);
+            toast.error(`Failed to execute command: ${err.message}`);
         }
     };
 
+    const { data } = useEtlWebSocket(taskId ? `/tasks/${taskId}` : null);
+
+    useEffect(() => {
+        if (data && data.status) {
+
+            setAlertMessages(prev => {
+                const lastMsg = `status : ${data.status}`;
+                if (prev[prev.length - 1] === lastMsg) return prev;
+                return [...prev, lastMsg];
+            });
+
+            if (data.status === "closed") {
+                setIsLoading(false);
+                setTaskId(null);
+                setAlertMessages(prev => [...prev, "Task finished!"]);
+            }
+        }
+    }, [data]);
+
 
     return (
-        <div key={index} tabIndex={0} className="collapse collapse-arrow bg-base-100 border-base-300 border">
+        <div
+            key={index}
+            tabIndex={0}
+            className="collapse collapse-arrow bg-base-100 border-base-300 border"
+        >
             <div className="collapse-title font-semi-bold">
                 <div className="flex gap-2">
                     <FileTerminal />
@@ -76,31 +104,51 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
                 </div>
             </div>
 
-            <div className="collapse-content text-sm flex items-end gap-2">
-                {command.params.length > 0 ? (
-                    command.params.map((param, i) => (
-                        <div key={i} className="form-control">
-                            <label className="label">
+            <div className="collapse-content text-sm flex flex-col gap-2">
+                <div className="flex items-end gap-4">
+                    {command.params.length > 0 ? (
+                        command.params.map((param, i) => (
+                            <div key={i} className="form-control">
+                                <label className="label">
                                 <span className="label-text font-medium">
                                     {param.name}
                                     {param.required && <span className="text-error ml-1">*</span>}
                                 </span>
-                                <span className="label-text-alt text-xs text-base-content/70">{param.help}</span>
-                            </label>
-                            <input
-                                type={param.type === "integer" ? "number" : "text"}
-                                value={paramValues[param.name]}
-                                onChange={e => handleChange(param.name, e.target.value)}
-                                className="input input-bordered w-full"
-                            />
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-base-content/60">No parameters for this command.</p>
+                                    <span className="label-text-alt text-xs text-base-content/70">
+                                    {param.help}
+                                </span>
+                                </label>
+                                <input
+                                    type={param.type === "integer" ? "number" : "text"}
+                                    value={paramValues[param.name]}
+                                    onChange={(e) => handleChange(param.name, e.target.value)}
+                                    className="input input-bordered w-full"
+                                />
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-base-content/60">No parameters for this command.</p>
+                    )}
+
+                    <button
+                        className="btn btn-primary mt-2 flex items-center gap-2"
+                        onClick={handleExecute}
+                        disabled={isLoading}
+                    >
+                        <Play /> Execute
+                        {isLoading && <span className="loading loading-spinner loading-sm" />}
+                    </button>
+                </div>
+
+                {/* Alert messages */}
+                {alertMessages.length > 0 && (
+                    <div className="alert mt-2 flex flex-col items-start gap-1">
+                        {alertMessages.map((msg, i) => (
+                            <span key={i}>{msg}</span>
+                        ))}
+                    </div>
                 )}
-                <button className="btn btn-primary mt-2" onClick={handleExecute}>
-                    <Play /> Execute
-                </button>
+
             </div>
         </div>
     );

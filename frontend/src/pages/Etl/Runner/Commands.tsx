@@ -42,7 +42,6 @@ const Commands: React.FC = () => {
                     help: details.help,
                     params: details.params || []
                 }));
-                console.log(formattedCommands);
 
                 setCommands(formattedCommands);
             } catch (err: any) {
