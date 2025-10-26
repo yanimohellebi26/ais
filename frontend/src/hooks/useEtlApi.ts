@@ -1,4 +1,5 @@
-import {useEtlAuth} from "../context/EtlAuthContext";
+import { useEtlAuth } from "../context/EtlAuthContext";
+import { etlApiEmitter } from "./useEtlApiEmitter";
 
 const ETL_API_BASE_URL = import.meta.env.VITE_ETL_API_URL?.replace(/\/$/, "");
 if (!ETL_API_BASE_URL) throw new Error("Missing VITE_ETL_API_URL env variable");
@@ -18,7 +19,7 @@ export function useEtlApi() {
         const response = await fetch(url, {
             ...options,
             headers,
-            body: options.body ? JSON.stringify(options.body) : undefined,
+            body: options.body ?? undefined,
         });
 
         const contentType = response.headers.get("Content-Type");
@@ -34,6 +35,11 @@ export function useEtlApi() {
                 path: endpoint,
                 timestamp: new Date().toISOString(),
             };
+        }
+
+        // If mutating request, emit
+        if (["POST", "PUT", "DELETE"].includes(options.method?.toUpperCase() || "")) {
+            etlApiEmitter.emit();
         }
 
         return data as T;
