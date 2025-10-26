@@ -4,15 +4,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.iem.backend.entity.PositionVessel;
@@ -28,14 +32,6 @@ import org.springframework.http.MediaType;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.show-sql=false"
-})
 public class PositionsControllerTest {
 
     @Autowired
@@ -52,6 +48,9 @@ public class PositionsControllerTest {
 
     @Autowired
     private PositionVesselRepository positionRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Role ownerRole;
     private Role maritimeRole;
@@ -79,46 +78,57 @@ public class PositionsControllerTest {
 
         ownerUser = new User();
         ownerUser.setUsername("ownerUser");
+        ownerUser.setEmail("owner@example.com");
+        ownerUser.setPasswordHash(passwordEncoder.encode("Password@123"));
         ownerUser.setRole(ownerRole);
+        ownerUser.setFileUploads(new ArrayList<>());
         userRepository.save(ownerUser);
 
         maritimeUser = new User();
         maritimeUser.setUsername("maritimeUser");
+        maritimeUser.setEmail("maritime@example.com");
+        maritimeUser.setPasswordHash(passwordEncoder.encode("Password@456"));
         maritimeUser.setRole(maritimeRole);
+        maritimeUser.setFileUploads(new ArrayList<>());
         userRepository.save(maritimeUser);
 
         vessel1 = new Vessel();
         vessel1.setMmsi("111111111");
+        vessel1.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        vessel1.setBaseDateTime(new Timestamp(System.currentTimeMillis()));
         vessel1.getUsers().add(ownerUser);
         vesselRepository.save(vessel1);
 
         vessel2 = new Vessel();
         vessel2.setMmsi("222222222");
+        vessel2.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        vessel2.setBaseDateTime(new Timestamp(System.currentTimeMillis()));
         vesselRepository.save(vessel2);
 
         PositionVessel pos1 = new PositionVessel();
         pos1.setVesselId(vessel1.getId());
-        pos1.setBaseDateTime(java.time.LocalDateTime.now());
+        pos1.setBaseDateTime(new Timestamp(System.currentTimeMillis()));
         pos1.setSog(10.0);
         pos1.setCog(180.0);
         pos1.setHeading((short) 180);
-        pos1.setGeom(geometryFactory.createPoint(new org.locationtech.jts.geom.Coordinate(5, 45)));
+        pos1.setGeom(geometryFactory.createPoint(new Coordinate(5, 45)));
         positionRepository.save(pos1);
 
         PositionVessel pos2 = new PositionVessel();
         pos2.setVesselId(vessel2.getId());
-        pos2.setBaseDateTime(java.time.LocalDateTime.now());
+        pos2.setBaseDateTime(new Timestamp(System.currentTimeMillis()));
         pos2.setSog(12.0);
         pos2.setCog(90.0);
         pos2.setHeading((short) 90);
-        pos2.setGeom(geometryFactory.createPoint(new org.locationtech.jts.geom.Coordinate(6, 46)));
+        pos2.setGeom(geometryFactory.createPoint(new Coordinate(6, 46)));
         positionRepository.save(pos2);
     }
 
     @Test
-    @WithMockUser(username = "ownerUser", roles = {"OWNER"})
+    @WithMockUser(username = "owner@example.com", roles = {"OWNER"})
     @DisplayName("Owner should see only his vessel")
     void ownerShouldSeeOwnVesselsOnly() throws Exception {
+        System.out.println(positionRepository.findAll());
         mockMvc.perform(get("/api/v1/positions/latest")
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
