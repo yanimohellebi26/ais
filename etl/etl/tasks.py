@@ -2,13 +2,13 @@
 from datetime import datetime
 
 from api.celery_app import celery_app
-from etl.cli import cli
 from etl.utils import task_store
 import click
 
 
 @celery_app.task(bind=True, name="run_cli_command")
 def run_cli_command(self, command_name, kwargs, user=None):
+    from etl.cli import cli
     task_id = self.request.id
     now = datetime.utcnow().isoformat()
 
@@ -41,9 +41,9 @@ def run_cli_command(self, command_name, kwargs, user=None):
 
         normalized_kwargs = normalize_click_kwargs(command, kwargs)
         if hasattr(command, "callback"):
-            result = command.callback(**normalized_kwargs)
+            result = command.callback(**normalized_kwargs, task_id=task_id)
         else:
-            result = command(**normalized_kwargs)
+            result = command(**normalized_kwargs,task_id=task_id)
 
         if isinstance(result, dict) and result.get("status") == "error":
             meta = task_store.get_task_meta(task_id)

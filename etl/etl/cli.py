@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from etl.extract.AISDownloader import AISDownloader
 from etl.load.generate_vessel_type import load_vessel_type
+from etl.utils import task_store
 from etl.utils.loader import load_pipelines
 from etl.utils.logger import Logger
 from etl.utils.timer import timer
@@ -21,7 +22,7 @@ def cli():
 
 @cli.command()
 @click.option("--time-sleep", "-t", help="Time to sleep in seconds", default=10, type=int)
-def hello(time_sleep):
+def hello(time_sleep,task_id=None):
     Logger.info(f"Hello World")
     time.sleep(time_sleep)
     return {"status":"success"}
@@ -30,7 +31,7 @@ def hello(time_sleep):
 @cli.command()
 @click.option("--date", "-d", help="Date to format YYYY-MM-DD")
 @click.option("--latest", is_flag=True, help="Download latest file available")
-def download(date, latest):
+def download(date, latest,task_id=None):
     """Download file for a given date"""
     Logger.info(f"Run task download")
     try:
@@ -54,7 +55,7 @@ def download(date, latest):
 @cli.command()
 @click.option("--file", "-f", help="File path to csv", required=True)
 @click.option("--output-file", "-o", help="Output file path for SQL", required=True)
-def generate_vessel_type(file, output_file):
+def generate_vessel_type(file, output_file,task_id=None):
     """Generate vessel type migration sql"""
     Logger.info(f"Run task generate_vessel_type")
     data = pd.read_csv(file,sep = ';')
@@ -71,9 +72,9 @@ def generate_vessel_type(file, output_file):
 @click.option("--continue-on-error", "-coe", is_flag=True, help="Continue pipeline to next call function")
 @click.option("--use-timer", "-t", is_flag=True, help="Measure execution time for each task")
 @click.option("--extra-kwargs", required=False, help="Dynamic kwargs for pipeline functions")
-def run_pipeline(pipeline, file, fail_fast, continue_on_error, use_timer,extra_kwargs):
+def run_pipeline(pipeline, file, fail_fast, continue_on_error, use_timer,extra_kwargs, task_id=None):
     result = {"status": "success", "details": []}
-
+    print(task_id)
     # Convert kwargs for pipeline
     if extra_kwargs:
         if isinstance(extra_kwargs, str): # for CLI calls
@@ -117,8 +118,24 @@ def run_pipeline(pipeline, file, fail_fast, continue_on_error, use_timer,extra_k
                 context = timed_func(context, **kwargs)
             else:
                 context = func(context, **kwargs)
+
+            if task_id is not None:
+                task_store.set_task_meta(task_id, {
+                    **task_store.get_task_meta(task_id),
+                    "last_step": func.__name__,
+                    "step_status": "success",
+                })
+
             result["details"].append({"task": func.__name__, "status": "success"})
         except Exception as e:
+            if task_id is not None:
+                task_store.set_task_meta(task_id, {
+                    **task_store.get_task_meta(task_id),
+                    "last_step": func.__name__,
+                    "step_status": "error",
+                    "step_error": str(e)
+                })
+
             Logger.error(f"Error in '{func.__name__}' : {e}")
             result["details"].append({"task": func.__name__, "status": "error", "error": str(e)})
             if fail_fast:
