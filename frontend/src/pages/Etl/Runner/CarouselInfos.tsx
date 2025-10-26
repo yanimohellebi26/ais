@@ -27,7 +27,7 @@ const CarouselInfos: React.FC = () => {
 
     const fetchTasks = async () => {
         try {
-            const data = await api("/tasks/tasks", {
+            const data = await api("/tasks", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
             });
@@ -79,31 +79,25 @@ const CarouselInfos: React.FC = () => {
     const successToday = tasksToday.filter(task => task.status === "success").length;
     const failureTotal = tasks.filter(task => task.status === "error").length;
     const failureToday = tasksToday.filter(task => task.status === "error").length;
-    const queuedTotal = tasks.filter(task => task.status === "queued").length;
     const runningTotal = tasks.filter(task => task.status === "running").length;
 
 
     return (
         <>
             <div className="carousel rounded-box space-x-8">
-                <div className="carousel-item rounded-box shadow-sm bg-base-100 p-6 w-50 flex items-center ">
+                <div className="carousel-item rounded-box shadow-sm bg-base-100 p-2 flex justify-center items-center ">
                     <RefreshCcw
-                        className={`mr-2 cursor-pointer hover:scale-105 transition-transform duration-500 ${
+                        className={`cursor-pointer hover:scale-110 transition-transform duration-500 ${
                             rotate ? "rotate-[360deg]" : "rotate-0"
                         }`}
                         onClick={fetchTasks}
                     />
-                    <div className="flex flex-col gap-2 items-center">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-base-content/60">Running</h2>
-                            <div className={`badge badge-soft badge-primary`}>{runningTotal}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-base-content/60">Queued</h2>
-                            <div className={`badge badge-soft badge-primary`}>{queuedTotal}</div>
-                        </div>
+                </div>
+                <div className="carousel-item rounded-box shadow-sm bg-base-100 p-6 w-50 flex justify-center">
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-base-content/60">Running</h2>
+                        <div className={`badge badge-soft badge-primary`}>{runningTotal}</div>
                     </div>
-
                 </div>
                 <StatCard
                     titleTotal="Total tasks"

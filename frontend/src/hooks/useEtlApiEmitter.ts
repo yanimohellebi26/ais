@@ -10,8 +10,10 @@ class EtlApiEmitter {
         };
     }
 
-    emit() {
-        this.listeners.forEach(l => l());
+    emit(delayMs: number = 1000) {
+        setTimeout(() => {
+            this.listeners.forEach(l => l());
+        }, delayMs);
     }
 }
 

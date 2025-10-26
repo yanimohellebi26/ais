@@ -7,14 +7,14 @@ from api.celery_app import celery_app
 
 router = APIRouter()
 
-@router.get("/tasks")
+@router.get("/")
 def list_all_tasks(auth=Depends(verify_api_key)):
     """List all tasks sorted by creation date"""
     tasks = task_store.list_tasks()
     tasks_sorted = sorted(tasks, key=lambda t: t["created_at"], reverse=True)
     return tasks_sorted
 
-@router.get("/tasks/{task_id}")
+@router.get("/{task_id}")
 def get_task(task_id: str, auth=Depends(verify_api_key)):
     """Get task's state"""
     task = task_store.get_task_meta(task_id)
@@ -22,7 +22,7 @@ def get_task(task_id: str, auth=Depends(verify_api_key)):
         return {"error": "Task not found"}
     return task
 
-@router.post("/tasks/{task_id}/revoke")
+@router.post("/{task_id}/revoke")
 def revoke_task(task_id: str, auth=Depends(verify_api_key)):
     """Kill active task"""
     celery_app.control.revoke(task_id, terminate=True)
