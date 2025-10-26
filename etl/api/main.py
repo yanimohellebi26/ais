@@ -1,8 +1,21 @@
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from api.router import commands, pipelines, tasks, logs, api_keys, healtcheck
 
+
 app = FastAPI(title="ETL Orchestrator API")
+
+app.add_middleware(  # type: ignore
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/ping")
+async def ping():
+    return {"message": "pong"}
 
 app.include_router(healtcheck.router,tags=["Healthcheck"])
 app.include_router(commands.router, prefix="/commands", tags=["Commands"])
