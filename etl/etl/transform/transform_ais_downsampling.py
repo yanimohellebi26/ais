@@ -1,10 +1,10 @@
 import pandas as pd
 from datetime import datetime
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.logger import Logger
 
-def downsample_ais(context: VesselContext, group_cols=None, time_col="base_date_time"):
+def downsample_ais(context: PipelineContext, group_cols=None, time_col="base_date_time"):
     """
     Downsample AIS data in a context.df DataFrame:
     - Keep only the first and last timestamp per group (default MMSI, LAT, LON)

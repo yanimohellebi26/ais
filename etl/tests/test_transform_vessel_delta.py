@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.transform.transform_vessel_delta import transform_vessel_delta
 
 
@@ -75,7 +75,7 @@ def test_transform_vessel_delta(new_data, old_data, expected_count):
     new_df = pd.DataFrame([{**BASE_FIELDS, **new_data}])
     old_df = pd.DataFrame([{**BASE_FIELDS, **old_data}])
 
-    context = VesselContext(df=new_df,df_db=old_df)
+    context = PipelineContext(df=new_df, df_db=old_df)
 
     updated_context = transform_vessel_delta(context)
 
@@ -100,7 +100,7 @@ def test_multi_vessel_mix():
     new_df = pd.DataFrame([{**BASE_FIELDS, **d} for d in new_data_list])
     old_df = pd.DataFrame([{**BASE_FIELDS, **d} for d in old_data_list])
 
-    context = VesselContext(df=new_df, df_db=old_df)
+    context = PipelineContext(df=new_df, df_db=old_df)
     updated_context = transform_vessel_delta(context)
 
 

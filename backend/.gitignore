@@ -34,3 +34,5 @@ build/
 
 ### CUSTOM ###
 uploads/*
+
+*.env

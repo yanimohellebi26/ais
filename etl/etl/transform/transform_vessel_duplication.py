@@ -1,9 +1,9 @@
 import pandas as pd
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.logger import Logger
 
-def clean_vessel_duplication(context : VesselContext ,**kwargs) -> VesselContext:
+def clean_vessel_duplication(context : PipelineContext, **kwargs) -> PipelineContext:
     df = context.df
     date_col = 'base_date_time'
     id_col = 'mmsi'

@@ -9,11 +9,12 @@ load_dotenv()
 
 
 DB_DRIVER = os.getenv("POSTGRES_DRIVER", "psycopg")  # Default psycopg
+ENV = os.getenv("ENV_MODE","local")
+HOST = "localhost" if ENV == "local" else os.getenv("DB_HOST", "ais-db")
 DATABASE_URL = (
     f"postgresql+{DB_DRIVER}://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
-    f"@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
+    f"@{HOST}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
 )
-print(DATABASE_URL)
 
 # Engine global SQLAlchemy
 engine = create_engine(DATABASE_URL, echo=False, future=True)
