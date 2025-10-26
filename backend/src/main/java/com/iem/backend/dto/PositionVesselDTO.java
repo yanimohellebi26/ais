@@ -1,6 +1,6 @@
 package com.iem.backend.dto;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -13,7 +13,7 @@ public record PositionVesselDTO(
 
     @JsonView(Views.Public.class)
     @JsonProperty("baseDateTime")
-    LocalDateTime baseDateTime,
+    Timestamp baseDateTime,
 
     @JsonView(Views.Public.class)
     @JsonProperty("sog")
