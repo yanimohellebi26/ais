@@ -13,13 +13,13 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     @Query(
         """
-        SELECT position FROM PositionVessel pv
+        SELECT pv FROM PositionVessel pv
         WHERE pv.baseDateTime = (
             SELECT MAX(p2.baseDateTime)
             FROM PositionVessel p2
             WHERE p2.vesselId = pv.vesselId
         )
-        AND (:vesselIds IS NULL OR pv.vesselId IN :vessels)
+        AND (:vesselIds IS NULL OR pv.vesselId IN :vesselIds)
         """
     )
     List<PositionVessel> findLatestPositions(@Param("vesselIds") List<Integer> vesselIds);
