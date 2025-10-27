@@ -28,7 +28,7 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
     const api = useEtlApi();
     const [taskId, setTaskId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [alertMessages, setAlertMessages] = useState<string[]>([]);
+    const [logs, setLogs] = useState<string[]>([]);
     const [paramValues, setParamValues] = useState<Record<string, any>>(() =>
         command.params.reduce((acc, param) => {
             acc[param.name] = param.default === "Sentinel.UNSET" ? "" : param.default;
@@ -40,7 +40,7 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
         setParamValues((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleExecute = async (e:React.MouseEvent) => {
+    const handleExecute = async () => {
         try {
             const body: Record<string, any> = {};
             command.params.forEach((param) => {
@@ -57,10 +57,10 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
             });
 
             if (result?.task_id) {
-                toast.success("Command added to queue!");
+                toast.success("Command queued!");
                 setTaskId(result.task_id);
+                setLogs([`[${new Date().toLocaleTimeString()}] Task started...`]);
                 setIsLoading(true);
-                setAlertMessages(["Task started..."]);
             } else {
                 toast.warning("Command executed but no task_id returned.");
             }
@@ -70,22 +70,36 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
         }
     };
 
+    // Websocket
     const { data } = useEtlWebSocket(taskId ? `/tasks/${taskId}` : null);
 
     useEffect(() => {
-        if (data && data.status) {
+        if (!data) return;
 
-            setAlertMessages(prev => {
-                const lastMsg = `status : ${data.status}`;
-                if (prev[prev.length - 1] === lastMsg) return prev;
-                return [...prev, lastMsg];
+        let msg = "";
+        if (data.type === "log") {
+            const { level, message } = data.data;
+            msg = `[${new Date().toLocaleTimeString()}] (log) ${message}`;
+        } else if (data.type === "meta") {
+            msg = `[${new Date().toLocaleTimeString()}] (meta) status : ${data.data.status}`;
+        } else if (data.type === "status") {
+            msg = `[${new Date().toLocaleTimeString()}] (status) ${data.data}`;
+        }
+
+        setLogs((prev) => {
+            if (prev.includes(msg)) return prev;
+            return [...prev, msg];
+        });
+
+        if (data.type === "status" && ["success", "error", "revoked"].includes(data.data)) {
+            setIsLoading(false);
+            setTaskId(null);
+
+            setLogs((prev) => {
+                const finalMsg = `[${new Date().toLocaleTimeString()}] Task ${data.data}`;
+                if (prev.includes(finalMsg)) return prev;
+                return [...prev, finalMsg];
             });
-
-            if (data.status === "closed") {
-                setIsLoading(false);
-                setTaskId(null);
-                setAlertMessages(prev => [...prev, "Task finished!"]);
-            }
         }
     }, [data]);
 
@@ -97,7 +111,7 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
             className="collapse collapse-arrow bg-base-100 border-base-300 border"
         >
             <div className="collapse-title font-semi-bold">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                     <FileTerminal />
                     <span className="font-semibold capitalize">{command.name}</span>
                     <span className="text-base-content/70">{command.help}</span>
@@ -105,18 +119,18 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
             </div>
 
             <div className="collapse-content text-sm flex flex-col gap-2">
-                <div className="flex items-end gap-4">
+                <div className="flex items-end gap-4 flex-wrap">
                     {command.params.length > 0 ? (
                         command.params.map((param, i) => (
                             <div key={i} className="form-control">
                                 <label className="label">
-                                <span className="label-text font-medium">
-                                    {param.name}
-                                    {param.required && <span className="text-error ml-1">*</span>}
-                                </span>
+                                    <span className="label-text font-medium">
+                                        {param.name}
+                                        {param.required && <span className="text-error ml-1">*</span>}
+                                    </span>
                                     <span className="label-text-alt text-xs text-base-content/70">
-                                    {param.help}
-                                </span>
+                                        {param.help}
+                                    </span>
                                 </label>
                                 <input
                                     type={param.type === "integer" ? "number" : "text"}
@@ -140,15 +154,16 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
                     </button>
                 </div>
 
-                {/* Alert messages */}
-                {alertMessages.length > 0 && (
-                    <div className="alert mt-2 flex flex-col items-start gap-1">
-                        {alertMessages.map((msg, i) => (
-                            <span key={i}>{msg}</span>
+                {/* Real-time message*/}
+                {logs.length > 0 && (
+                    <div className="bg-base-200 rounded-lg p-2 mt-3 text-xs font-mono max-h-48 overflow-y-auto">
+                        {logs.map((msg, i) => (
+                            <div key={i} className="whitespace-pre-wrap">
+                                {msg}
+                            </div>
                         ))}
                     </div>
                 )}
-
             </div>
         </div>
     );

@@ -7,13 +7,11 @@ import {LoadingProvider} from "./context/LoadingContext";
 import {EtlAuthProvider} from "./context/EtlAuthContext";
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-      <AuthProvider>
-          <EtlAuthProvider>
-              <LoadingProvider>
-                <App />
-              </LoadingProvider>
-          </EtlAuthProvider>
-      </AuthProvider>
-  </StrictMode>
+    <AuthProvider>
+      <EtlAuthProvider>
+          <LoadingProvider>
+            <App />
+          </LoadingProvider>
+      </EtlAuthProvider>
+    </AuthProvider>
 )
