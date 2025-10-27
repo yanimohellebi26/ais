@@ -10,8 +10,9 @@ celery_app = Celery(
     backend=REDIS_URL
 )
 
-celery_app.autodiscover_tasks(["etl"])
+celery_app.autodiscover_tasks(["worker"])
 
 redis_client = redis.Redis.from_url(REDIS_URL, db=1, decode_responses=True)
 
-import etl.tasks
+import worker.task_command
+import worker.task_pipeline

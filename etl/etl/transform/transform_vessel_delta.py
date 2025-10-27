@@ -1,12 +1,9 @@
-
 import pandas as pd
-
 from sqlalchemy import text
 
 from etl.models.context import PipelineContext
-from etl.utils.timer import timer
-from etl.utils.db import get_session
-from etl.utils.logger import Logger
+from utils.db import get_session
+from utils.logger import Logger
 
 
 def get_vessels_db(context : PipelineContext, **kwargs) -> PipelineContext:

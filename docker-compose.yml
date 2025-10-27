@@ -85,34 +85,6 @@ services:
       timeout: 5s
       retries: 3
 
-  etl:
-    build:
-      context: ./etl
-      dockerfile: Dockerfile
-    container_name: ais-etl-api
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - AIS_BASE_URL=${AIS_BASE_URL}
-      - API_KEYS_FILE=${API_KEYS_FILE}
-      - SUPER_API_KEY=${SUPER_API_KEY}
-      - PIPELINES_FILE_YAML=${PIPELINES_FILE_YAML}
-      - ENV_MODE=docker
-    volumes:
-      - ./etl/data:/app/data
-    depends_on:
-      - db
-      - redis
-      - etl-worker
-    ports:
-      - "8000:8000"
-    networks:
-      - ais-net
-    restart: "no"
-
   redis:
     image: redis:7-alpine
     container_name: ais-redis
@@ -120,34 +92,85 @@ services:
       - "6379:6379"
     networks:
       - ais-net
-    restart: "no"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
 
+  etl-api:
+    build:
+      context: ./etl
+      dockerfile: docker/Dockerfile-api
+    container_name: ais-etl-api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      # Database
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # API
+      - AIS_BASE_URL=${AIS_BASE_URL}
+      - API_KEYS_FILE=/app/api_keys.yaml
+      - SUPER_API_KEY=${SUPER_API_KEY}
+      # Pipelines
+      - PIPELINES_FILE_YAML=/app/pipelines.yaml
+      - ENV_MODE=docker
+    volumes:
+      - ./etl/data:/app/data
+      - ./etl/api_keys.yaml:/app/api_keys.yaml:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
   etl-worker:
     build:
       context: ./etl
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile-worker
     container_name: ais-etl-worker
-    command: celery -A api.celery_app.celery_app worker --loglevel=info
+    command: celery -A worker.celery_app worker --loglevel=info --concurrency=2
     environment:
-      - REDIS_URL=redis://ais-redis:6379/0
+      # Database
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # API
       - AIS_BASE_URL=${AIS_BASE_URL}
-      - PIPELINES_FILE_YAML=${PIPELINES_FILE_YAML}
+      # Pipelines
+      - PIPELINES_FILE_YAML=/app/pipelines.yaml
       - ENV_MODE=docker
-    depends_on:
-      - redis
-      - db
     volumes:
-      - ./etl:/app
       - ./etl/data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - ais-net
-    restart: "no"
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:latest

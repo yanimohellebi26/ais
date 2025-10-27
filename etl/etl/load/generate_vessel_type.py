@@ -1,8 +1,7 @@
 import os
-
 import pandas as pd
 
-from etl.utils.logger import Logger
+from utils.logger import Logger
 
 
 def load_vessel_type(data: pd.DataFrame, output_path : str = "insert_vessels_type.sql"):

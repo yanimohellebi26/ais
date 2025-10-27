@@ -1,12 +1,10 @@
 from typing import List, Optional, Dict, Tuple
-
-import pandas as pd
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from etl.models.context import PipelineContext
-from etl.utils.db import get_session, engine
-from etl.utils.logger import Logger
+from utils.db import get_session, engine
+from utils.logger import Logger
 
 
 def _split_table(fullname: str) -> Tuple[Optional[str], str]:

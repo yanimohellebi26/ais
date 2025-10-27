@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import PlainTextResponse
 from datetime import datetime
-from etl.utils.logger import Logger
+from utils.logger import Logger
 from api.security_api import verify_api_key
 
 router = APIRouter()

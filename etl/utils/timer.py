@@ -1,6 +1,6 @@
 import time
 from functools import wraps
-from etl.utils.logger import Logger
+from utils.logger import Logger
 
 def timer(func):
     """

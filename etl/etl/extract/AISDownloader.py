@@ -1,12 +1,11 @@
 import os
-
-import pandas as pd
 import requests
 import re
 from bs4 import BeautifulSoup
 from datetime import date, datetime
-from etl.utils.logger import Logger
-from etl.utils.FileDownloader import FileDownloader
+
+from utils.logger import Logger
+from etl.extract.FileDownloader import FileDownloader
 
 
 class AISDownloader(FileDownloader):
@@ -108,7 +107,7 @@ class AISDownloader(FileDownloader):
             r.raise_for_status()
         except Exception as e:
             Logger.error(f"Can't access {url} : {e}")
-            return []
+            raise ValueError(f"Can't access {url} : {e}")
 
         soup = BeautifulSoup(r.text, "html.parser")
         files = [a.get("href") for a in soup.find_all("a")
@@ -179,7 +178,7 @@ class AISDownloader(FileDownloader):
         available_files = self._list_files_from_index(year)
         if file_name not in available_files:
             Logger.error(f"File {file_name} not found on AIS data provider server")
-            return None
+            raise ValueError(f"File {file_name} not found on AIS data provider server")
 
         # Download file
         file_path = os.path.join(self.download_folder, file_name)
@@ -218,7 +217,7 @@ class AISDownloader(FileDownloader):
 
         except Exception as e:
             Logger.error(f"Failed to download {file_name}: {e}")
-            return None
+            raise Exception(f"Failed to download {file_name}: {e}")
 
     def get_size(self, year: int, month: int = None, day: int = None) -> float:
         """Return size of a file (Gb) or total size of year (Gb)"""

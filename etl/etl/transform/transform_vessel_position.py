@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
+
 from etl.models.context import PipelineContext
-from etl.utils.db import get_session
-from etl.utils.logger import Logger
+from utils.db import get_session
+from utils.logger import Logger
 from sqlalchemy import text
 
 # function that calculates the distance between two geographical points on the Earth's surface

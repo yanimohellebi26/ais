@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.websockets import WebSocket
 
 from api.router import commands, pipelines, tasks, logs, api_keys, healtcheck, websockets
 
