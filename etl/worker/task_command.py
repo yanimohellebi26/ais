@@ -1,13 +1,14 @@
 from datetime import datetime
 import click
-from cli.cli import cli
-from cli.commands.TaskPublisher import TaskPublisher
 from worker.celery_app import celery_app
 
 
 @celery_app.task(bind=True, name="run_cli_command")
 def run_cli_command(self, command_name, kwargs, user=None):
+    from cli.cli import cli
     from worker.store import TaskStore
+    from cli.commands.TaskPublisher import TaskPublisher
+
     task_id = self.request.id
     publisher = TaskPublisher(task_id)
     now = datetime.utcnow().isoformat()
