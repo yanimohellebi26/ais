@@ -2,9 +2,11 @@ import React from "react";
 
 const FormWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="flex justify-center bg-gray-100 w-full">
-      <div className="w-full max-w-lg max-w-lg bg-white p-8 rounded-xl shadow-lg">
-        {children}
+    <div className="flex justify-center w-full">
+      <div className="card w-full max-w-lg bg-base-100 p-2 rounded-xl shadow-xl">
+        <div className="card-body text-base-content">
+          {children}
+        </div>
       </div>
     </div>
   );

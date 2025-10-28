@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 from etl.utils.db import get_session
 from etl.utils.logger import Logger
 from sqlalchemy import text
@@ -36,12 +36,14 @@ def speed_kmh(distance_km: pd.Series, time_hours: pd.Series) -> pd.Series:
     return speed
 
 # function that detects inconsistent vessel positions
-def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> VesselContext:
+def detect_vessel_incoherent_positions(context : PipelineContext, **kwargs) -> PipelineContext:
     df = context.df
 
     if df.empty:
         Logger.warning("No positions detected in the dataset.")
         return context
+
+    initial_len = len(df)
 
     id_col, date_col, lat_col, lon_col = "mmsi", "base_date_time", "lat", "lon"
     max_speed_kmh = 130.0
@@ -84,6 +86,10 @@ def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> Ves
             "max_date": max_date
         })
 
+    if prev_positions.empty:
+        Logger.info(f"T-Detection complete : Removed 0/{initial_len} lines (100%) lines selected.")
+        return context
+
     # merge with new positions
     df = df.merge(prev_positions, on="mmsi", how="left")
 
@@ -104,7 +110,6 @@ def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> Ves
     df.loc[no_prev_pos, "incoherent"] = False
 
     # removal of invalid lines
-    initial_len = len(df)
     df.drop(df[df["incoherent"]].index, inplace=True)
     nb_removed = initial_len - len(df)
 
@@ -119,3 +124,44 @@ def detect_vessel_incoherent_positions(context : VesselContext ,**kwargs) -> Ves
 
     context.df = df
     return context
+
+
+def filter_small_movements(context: PipelineContext, min_dist: float = 0.1) -> PipelineContext:
+    df = context.df
+    if df.empty:
+        return context
+
+    id_col, date_col, lat_col, lon_col = "mmsi", "base_date_time", "lat", "lon"
+
+    required = [id_col, date_col, lat_col, lon_col]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing cols: {', '.join(missing)}")
+
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+    df[lat_col] = pd.to_numeric(df[lat_col], errors="coerce")
+    df[lon_col] = pd.to_numeric(df[lon_col], errors="coerce")
+
+    df.sort_values(by=[id_col, date_col], inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
+    df["prev_lat"] = df.groupby(id_col)[lat_col].shift(1)
+    df["prev_lon"] = df.groupby(id_col)[lon_col].shift(1)
+
+    df["distance_km"] = haversine_km(df["prev_lat"], df["prev_lon"], df[lat_col], df[lon_col])
+
+    mask_keep = df["distance_km"].isna() | (df["distance_km"] >= min_dist)
+
+    # Filter in place
+    df = df.loc[mask_keep].copy()
+
+    df.drop(columns=["prev_lat", "prev_lon", "distance_km"], inplace=True, errors="ignore")
+
+    Logger.info(
+        f"T-Movement filtering: kept {len(df)}/{len(context.df)} rows "
+        f"({100 * len(df) / len(context.df):.2f}%)"
+    )
+
+    context.df = df
+    return context
+

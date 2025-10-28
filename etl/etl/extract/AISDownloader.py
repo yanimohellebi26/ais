@@ -1,4 +1,6 @@
 import os
+
+import pandas as pd
 import requests
 import re
 from bs4 import BeautifulSoup
@@ -12,12 +14,74 @@ class AISDownloader(FileDownloader):
     Specialized downloader for AIS files
     """
 
+    COLUMN_MAPPING = {
+        "MMSI": "mmsi",
+        "mmsi": "mmsi",
+
+        "BaseDateTime": "base_date_time",
+
+        "base_date_time": "base_date_time",
+        "LAT": "lat",
+        "latitude": "lat",
+        "LATITUDE": "lat",
+
+        "LON": "lon",
+        "longitude": "lon",
+        "LONGITUDE": "lon",
+
+        "SOG": "sog",
+        "sog": "sog",
+
+        "COG": "cog",
+        "cog": "cog",
+
+        "Heading": "heading",
+        "heading": "heading",
+
+        "VesselName": "vessel_name",
+        "vessel_name": "vessel_name",
+
+        "IMO": "imo",
+        "imo": "imo",
+
+        "CallSign": "call_sign",
+        "call_sign": "call_sign",
+
+        "VesselType": "vessel_type_id",
+        "vessel_type": "vessel_type_id",
+        "vessel_type_id": "vessel_type_id",
+
+        "Status": "status",
+        "status": "status",
+
+        "Length": "length",
+        "length": "length",
+        "Width": "width",
+        "width": "width",
+        "Draft": "draft",
+        "draft": "draft",
+
+        "Cargo": "cargo_type_id",
+        "cargo": "cargo_type_id",
+        "cargo_type_id": "cargo_type_id",
+
+        "TransceiverClass": "transceiver_class",
+        "transceiver": "transceiver_class",
+        "transceiver_class": "transceiver_class",
+    }
+
+    STANDARD_COLUMNS = [
+        "mmsi", "base_date_time", "lon", "lat", "sog", "cog",
+        "heading", "vessel_name", "imo", "call_sign", "vessel_type_id",
+        "status", "length", "width", "draft", "cargo_type_id", "transceiver_class"
+    ]
+
     def __init__(self, download_folder: str = None):
 
         base_url = os.getenv("AIS_BASE_URL")
 
         if download_folder is None:
-            download_folder = os.getenv("AIS_DOWNLOAD_FOLDER")
+            download_folder = "data/downloads"
 
         super().__init__(base_url, download_folder)
 
@@ -51,34 +115,39 @@ class AISDownloader(FileDownloader):
                  if a.get("href") and (a.get("href").endswith(".zip") or a.get("href").endswith(".csv.zst"))]
         return files
 
-    @staticmethod
-    def _normalize_csv(csv_path: str) -> str:
+    def _normalize_csv(self, csv_path: str) -> str:
         """
-        Normalize CSV file:
-        - Rename columns to a standard format
-        - Rename file: capitalize + '-' -> '_'
+        Normalize CSV header in place:
+        - Rename columns according to COLUMN_MAPPING
+        - Keep original order
+        - Check for missing or unknown columns
         """
-        # Colonnes standard
-        standard_columns = [
-            "mmsi", "base_date_time", "lat", "lon", "sog", "cog",
-            "heading", "vessel_name", "imo", "call_sign", "vessel_type_id",
-            "status", "length", "width", "draft", "cargo_type_id", "transceiver_class"
-        ]
+        with open(csv_path, 'r+', encoding='utf-8') as f:
+            header = f.readline().strip()
+            original_columns = header.split(',')
 
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+            mapped_columns = []
+            for col in original_columns:
+                if col in self.COLUMN_MAPPING:
+                    mapped_columns.append(self.COLUMN_MAPPING[col])
+                else:
+                    Logger.error(f"Can't handle column {col} in file {csv_path}")
+                    raise ValueError(f"Unknown column '{col}' found in file {csv_path}")
 
-        with open(csv_path, 'w', encoding='utf-8') as f:
-            f.write(",".join(standard_columns) + "\n")
-            f.writelines(lines[1:])
+            missing_columns = [col for col in self.STANDARD_COLUMNS if col not in mapped_columns]
+            if missing_columns:
+                Logger.error(f"Missing columns in file {csv_path}: {missing_columns}")
+                raise ValueError(f"Missing required columns {missing_columns} in file {csv_path}")
 
-        # Renommer le fichier
+            f.seek(0)
+            f.write(','.join(mapped_columns) + '\n')
+            f.flush()
+
         dirname = os.path.dirname(csv_path)
         basename = os.path.basename(csv_path)
         new_basename = basename.replace('-', '_').upper()
         new_path = os.path.join(dirname, new_basename)
-        if new_path != csv_path:
-            os.rename(csv_path, new_path)
+        os.rename(csv_path, new_path)
 
         return new_path
 
@@ -95,7 +164,10 @@ class AISDownloader(FileDownloader):
             return None
 
         file_name = self._construct_file_name(year, target_date)
-        csv_name = file_name.replace(".zip", ".csv").replace(".csv.zst", ".csv")
+        csv_name = (file_name
+                    .replace(".zip", ".csv")
+                    .replace(".csv.zst", ".csv")
+                    .replace("-","_"))
         csv_path = os.path.join(self.download_folder, csv_name)
 
         # If already downloaded (decompressed), skip
@@ -106,7 +178,7 @@ class AISDownloader(FileDownloader):
         # Check if file exists on server
         available_files = self._list_files_from_index(year)
         if file_name not in available_files:
-            Logger.error(f"File {file_name} not found on server")
+            Logger.error(f"File {file_name} not found on AIS data provider server")
             return None
 
         # Download file
@@ -120,7 +192,7 @@ class AISDownloader(FileDownloader):
             resp.raise_for_status()
             with open(file_path, "wb") as f:
                 f.write(resp.content)
-            Logger.success(f"Downloaded {file_name}")
+            Logger.info(f"Downloaded {file_name}")
 
             # --- Décompression selon le type de fichier ---
             if file_name.endswith(".zip"):
@@ -189,7 +261,7 @@ class AISDownloader(FileDownloader):
         return [f for f in files if month_str in f]
 
     def get_latest_file_available(self):
-        """Download last AIS file availabel"""
+        """Download last AIS file available"""
 
         current_year = date.today().year
         file_list = self.get_file_list(current_year)
@@ -214,7 +286,6 @@ class AISDownloader(FileDownloader):
 
         latest_date, latest_file = max(dates, key=lambda x: x[0])
 
-        # Télécharger le fichier correspondant
         return self.get_file(latest_date.year, latest_date.month, latest_date.day)
 
 

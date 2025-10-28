@@ -1,4 +1,4 @@
-import {LayoutDashboard, Ship, ShieldUser, List, ShipWheel, Users} from "lucide-react";
+import {LayoutDashboard, Ship, List, ShipWheel,UserRound,Users,ShieldUser} from "lucide-react";
 import React from "react";
 
 export type Role = "ROLE_ADMIN" | "ROLE_CAPTAIN" | "ROLE_FINANCIAL_ANALYST" | "ROLE_MARITIME_EXPERT" | "ROLE_OWNER";

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -66,13 +68,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AuthorizationDeniedException ex, HttpServletRequest request) {
         log.warn("Access denied: {}", ex.getMessage());
+
+        String message = Optional.ofNullable(ex.getMessage())
+                .filter(m -> !m.isBlank())
+                .orElse("Access denied: insufficient permissions.");
+
+
         ApiError error = new ApiError(
                 HttpStatus.FORBIDDEN,
-                "Access denied: insufficient permissions.",
+                message,
                 request.getRequestURI()
         );
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
+
 
     // Unauthorized: user not logged in
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)

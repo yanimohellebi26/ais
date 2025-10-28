@@ -11,6 +11,7 @@ import { jwtDecode } from "jwt-decode";
 type User = {
     token: string | null;
     role: string | null;
+    id?:number | null ;
 };
 
 type AuthContextType = {
@@ -43,6 +44,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return decoded.role || null;
         } catch (err) {
             console.error("Error while decode jwt", err);
+            localStorage.removeItem("token");
+            return null;
+        }
+    };
+
+    /** Decode jwt token and return user id */
+    const extractIdFromToken = (token: string): number | null => {
+        try {
+            const decoded: any = jwtDecode(token);
+            const now = Date.now() / 1000;
+
+            // check jwp exp
+            if (decoded.exp && decoded.exp < now) {
+                console.warn("Token expired");
+                localStorage.removeItem("token");
+                return null;
+            }
+
+            return decoded.id || decoded.sub || null;
+        } catch (err) {
+            console.error("Error while decoding jwt for id", err);
             localStorage.removeItem("token");
             return null;
         }
@@ -81,9 +103,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = (token: string) => {
         const role = extractRoleFromToken(token);
         if (!role) return;
+        const id=extractIdFromToken(token);
+        
 
         localStorage.setItem("token", token);
-        setUser({ token, role });
+        setUser({ token, role, id });
         scheduleLogout(token);
     };
 
@@ -104,7 +128,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (token) {
             const role = extractRoleFromToken(token);
             if (role) {
-                setUser({ token, role });
+                const id = extractIdFromToken(token);
+                setUser({ token, role ,id });
                 scheduleLogout(token);
             } else {
                 logout();

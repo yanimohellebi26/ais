@@ -2,6 +2,9 @@ package com.iem.backend.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.UpdateUserRequest;
+import com.iem.backend.dto.UpdatePasswordRequest;
+import com.iem.backend.service.UserService;
+import com.iem.backend.utils.ApiLogger;
 import com.iem.backend.dto.UserDTO;
 import com.iem.backend.dto.Views;
 import com.iem.backend.service.UserService;
@@ -10,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import java.security.Principal;
 
 import java.util.List;
 
@@ -47,6 +51,47 @@ public class UserController {
         UserDTO updated = userService.updateUser(dto);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
+
+    //UC-07 GET user by id (self ou admin)
+    @Operation(
+        summary = "get user by id",
+        description = "user can acces now own account or admin can acces any account"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: user cannot access this account"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+        }
+    )
+    @GetMapping("/{id}")
+    @JsonView(Views.Public.class)
+    public ResponseEntity<UserDTO> getUserById(@PathVariable int id,Principal principal){
+        UserDTO user = userService.getUserById(id,principal);
+        return ResponseEntity.ok(user);
+    }
+
+    //UC-07 PUT password 
+    @Operation(
+        summary = "Update own password",
+        description = "User can update their password only"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "200", description = "Password updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed"),
+            @ApiResponse(responseCode = "403", description = "Access denied: user cannot update this password"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PutMapping("/{id}/password")
+    public ResponseEntity<String> updatePassword(@PathVariable int id,
+                                               @Valid @RequestBody UpdatePasswordRequest dto,
+                                               Principal principal) {
+        userService.updatePassword(id, dto, principal);
+        return ResponseEntity.ok("password update success"); 
+    }
+
+    
 
     @Operation(
         summary = "Delete an user",
