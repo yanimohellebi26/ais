@@ -14,10 +14,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VesselService {
@@ -74,4 +78,9 @@ public class VesselService {
         return vesselsPage.map(VesselResponseDto::fromEntity);
     }
 
+    public VesselResponseDto findById(Integer id){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+        return VesselResponseDto.fromEntity(vessel);
+    }
 }

@@ -18,5 +18,5 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
     @Query("SELECT v FROM Vessel v WHERE v.mmsi = :mmsi OR UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :mmsi, '%'))")
     Page<Vessel> searchByMmsiOrVesselName(@Param("mmsi") String mmsi, Pageable pageable);
-
+    
 }
