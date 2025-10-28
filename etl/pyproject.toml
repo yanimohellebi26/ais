@@ -4,9 +4,6 @@ version = "0.1.0"
 description = "ETL pipeline Python"
 authors = ["Ton Nom <email@example.com>"]
 readme = "README.md"
-packages = [
-    { include = "etl" }
-]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -23,7 +20,7 @@ python-dotenv = ">=1.1.1,<2.0.0"
 psycopg = { version = ">=3.2.0,<4.0.0", extras = ["binary"] }
 zstandard = "^0.25.0"
 fastapi = "^0.119.1"
-uvicorn = "^0.38.0"
+uvicorn = {extras = ["standard"], version = "^0.38.0"}
 contextvars = "^2.4"
 gunicorn = "^23.0.0"
 celery = "^5.5.3"
@@ -36,7 +33,7 @@ pg8000 = ">=1.31.5,<2.0.0"
 pytest = "^8.0.0"
 
 [tool.poetry.scripts]
-etl-cli = "etl.cli:cli"
+etl-cli = "cli.cli:cli"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -1,7 +1,8 @@
 import os
 import yaml
 from dotenv import load_dotenv
-from etl.utils.registry import FUNC_REGISTRY
+
+from etl.registry import FUNC_REGISTRY
 
 load_dotenv()
 

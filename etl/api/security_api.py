@@ -23,6 +23,14 @@ def verify_api_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API key")
     return {"user": keys[x_api_key], "superuser": False}
 
+def verify_api_key_token(token : str = None):
+    if token == SUPER_API_KEY:
+        return {"user": "superuser", "superuser": True}
+    keys = load_keys()
+    if token not in keys:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return {"user": keys[token], "superuser": False}
+
 def create_api_key(name: str):
     import secrets
     keys = load_keys()

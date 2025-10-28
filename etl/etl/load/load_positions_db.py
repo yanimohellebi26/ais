@@ -2,8 +2,8 @@ import io
 import pandas as pd
 
 from etl.models.context import PipelineContext
-from etl.utils.db import engine
-from etl.utils.logger import Logger
+from utils.db import engine
+from utils.logger import Logger
 
 
 

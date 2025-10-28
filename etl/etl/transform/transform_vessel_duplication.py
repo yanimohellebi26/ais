@@ -1,7 +1,7 @@
 import pandas as pd
 
 from etl.models.context import PipelineContext
-from etl.utils.logger import Logger
+from utils.logger import Logger
 
 def clean_vessel_duplication(context : PipelineContext, **kwargs) -> PipelineContext:
     df = context.df
