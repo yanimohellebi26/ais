@@ -20,7 +20,10 @@ COPY etl/ ./etl/
 COPY utils/ ./utils/
 COPY worker/ ./worker/
 COPY pipelines.yaml ./
-COPY api_keys.json ./
+
+
+# Create api_keys.json if it doesn't exist
+RUN [-f api_keys.json ] || echo "{}" > api_keys.json
 
 EXPOSE 8000
 
