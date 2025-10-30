@@ -4,6 +4,7 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 import DashboardHome from "./DashboardHome";
 import DashboardShips from "../Ships/DashboardShips";
 import DashboardAdminPage from "../Admin/DashboardAdminPage";
+import DashboardEtl from "../Etl/DashboardEtl";
 
 const Dashboard: React.FC = () => {
     return (
@@ -12,6 +13,7 @@ const Dashboard: React.FC = () => {
                 <Route index element={<DashboardHome />} />
                 <Route path="ships/*" element={<DashboardShips />} />
                 <Route path="admin/*" element={<DashboardAdminPage />}/>
+                <Route path="etl/*" element={<DashboardEtl />}></Route>
             </Route>
         </Routes>
     );

@@ -1,6 +1,6 @@
 import requests
 import os
-from etl.utils.logger import Logger
+from utils.logger import Logger
 class FileDownloader:
     """
     Downloader file from website

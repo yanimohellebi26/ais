@@ -1,8 +1,7 @@
 import pandas as pd
-from datetime import datetime
 
 from etl.models.context import PipelineContext
-from etl.utils.logger import Logger
+from utils.logger import Logger
 
 def downsample_ais(context: PipelineContext, group_cols=None, time_col="base_date_time"):
     """

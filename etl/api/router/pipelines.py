@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
 from api.security_api import verify_api_key
-from etl.utils.loader import load_pipelines
-from etl.tasks import run_cli_command
+from etl.loader import load_pipelines
+from worker.task_command import run_cli_command
 
 
 router = APIRouter()
