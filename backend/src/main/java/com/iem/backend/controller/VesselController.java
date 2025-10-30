@@ -6,6 +6,9 @@ import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.service.VesselService;
+
+import io.micrometer.common.lang.Nullable;
+
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
 
@@ -58,5 +61,13 @@ public class VesselController {
     public ResponseEntity<VesselResponseDto> getVesselById(@PathVariable Integer id){
         return ResponseEntity.ok(vesselService.findById(id));
     } 
+
+    @PostMapping()
+    public ResponseEntity<VesselResponseDto> createVessel( @RequestBody VesselResponseDto dto){
+        VesselResponseDto vesselCreated = vesselService.createVessel(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(vesselCreated);
+    }
+
+
 }
 
