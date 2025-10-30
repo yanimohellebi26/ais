@@ -1,9 +1,7 @@
 package com.iem.backend.service;
-
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
-import com.iem.backend.entity.VesselType;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.exception.VesselAlreadyOwnedException;
 import com.iem.backend.exception.VesselNotFoundException;
@@ -14,15 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class VesselService {
@@ -127,6 +118,34 @@ public class VesselService {
         Vessel saved = vesselRepository.save(vessel);
         
         return VesselResponseDto.fromEntity(saved);
+    }
+
+    public VesselResponseDto updateVessel(Integer id,VesselResponseDto dto){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+
+        if (dto.mmsi() != null && !dto.mmsi().isBlank()) vessel.setMmsi(dto.mmsi());
+        if (dto.imo() != null && !dto.imo().isBlank()) vessel.setImo(dto.imo());
+        if (dto.vesselName() != null && !dto.vesselName().isBlank()) vessel.setVesselName(dto.vesselName());
+        if (dto.callSign() != null && !dto.callSign().isBlank()) vessel.setCallSign(dto.callSign());
+        if (dto.length() != null) vessel.setLength(dto.length());
+        if (dto.width() != null) vessel.setWidth(dto.width());
+        if (dto.draft() != null) vessel.setDraft(dto.draft());
+        if (dto.transceiverClass() != null) vessel.setTransceiverClass(dto.transceiverClass());
+        if (dto.locked() != null) vessel.setLocked(dto.locked());
+        if (dto.baseDateTime() != null) vessel.setBaseDateTime(dto.baseDateTime());
+        vessel.setLastUpdate(new Timestamp(System.currentTimeMillis()));
+        
+        Vessel updated = vesselRepository.save(vessel);   
+        
+        return VesselResponseDto.fromEntity(updated);
+    }
+
+    public void deleteVessel(Integer id){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+
+        vesselRepository.delete(vessel);
     }
 }
 

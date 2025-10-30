@@ -1,30 +1,13 @@
 package com.iem.backend.controller;
-
 import com.iem.backend.dto.UserVesselRequestDto;
 import com.iem.backend.dto.VesselResponseDto;
-import com.iem.backend.entity.User;
-import com.iem.backend.entity.Vessel;
-import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.service.VesselService;
-
-import io.micrometer.common.lang.Nullable;
-
-import com.iem.backend.repository.UserRepository;
-import com.iem.backend.repository.VesselRepository;
-
 import jakarta.validation.Valid;
-
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties.Authentication;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.lang.annotation.Repeatable;
-import java.security.Principal;
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/vessels")
@@ -58,16 +41,29 @@ public class VesselController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','CAPTAIN')")
     public ResponseEntity<VesselResponseDto> getVesselById(@PathVariable Integer id){
         return ResponseEntity.ok(vesselService.findById(id));
     } 
 
     @PostMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
     public ResponseEntity<VesselResponseDto> createVessel( @RequestBody VesselResponseDto dto){
         VesselResponseDto vesselCreated = vesselService.createVessel(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(vesselCreated);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','CAPTAIN','OWNER')")
+    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody VesselResponseDto dto){
+        return ResponseEntity.ok(vesselService.updateVessel(id,dto));
+    }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseEntity<Void> deleteVessel (@PathVariable Integer id){
+        vesselService.deleteVessel(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 
