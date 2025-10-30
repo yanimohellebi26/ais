@@ -57,7 +57,6 @@ public class VesselController {
     @GetMapping("/{id}")
     public ResponseEntity<VesselResponseDto> getVesselById(@PathVariable Integer id){
         return ResponseEntity.ok(vesselService.findById(id));
-    }
-
+    } 
 }
 
