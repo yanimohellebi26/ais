@@ -1,8 +1,9 @@
 import { useAuth } from "../context/AuthContext";
 import type { ApiError } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
-if (!API_BASE_URL) throw new Error("Missing VITE_API_URL env variable");
+const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+if (!baseUrl) throw new Error("Missing VITE_API_URL env variable");
+export const API_BASE_URL = baseUrl;
 
 type ApiOptions = Omit<RequestInit, "body"> & { body?: any };
 

@@ -1,5 +1,6 @@
 package com.iem.backend.controller;
 
+import com.iem.backend.dto.FileUploadDetailsDto;
 import com.iem.backend.dto.FileUploadResponse;
 import com.iem.backend.service.FileUploadService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -7,15 +8,18 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.security.Principal;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -41,5 +45,29 @@ public class FileUploadController {
     public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file, Principal principal) {
         FileUploadResponse response = fileUploadService.store(file, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping(path = "/uploads/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<FileUploadDetailsDto> getFileDetails(@PathVariable Integer id) {
+        FileUploadDetailsDto response = fileUploadService.getFileDetails(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(path = "/uploads/{id}/download")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Integer id) {
+        var fileUpload = fileUploadService.getFileEntity(id);
+        Resource resource = fileUploadService.loadAsResource(fileUpload);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(fileUpload.getOriginalFilename(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentLength(fileUpload.getFileSize())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(resource);
     }
 }
