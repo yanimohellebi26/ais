@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.router import commands, pipelines, tasks, logs, api_keys, healtcheck, websockets
+from api.router import commands, pipelines, tasks, logs, api_keys, healtcheck, websockets, files
 
 app = FastAPI(title="ETL Orchestrator API")
 
@@ -24,3 +24,4 @@ app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(logs.router, prefix="/logs", tags=["Logs"])
 app.include_router(api_keys.router, prefix="/apiKeys", tags=["API Keys"])
 app.include_router(websockets.router, prefix="/ws", tags=["Websockets"])
+app.include_router(files.router, prefix="/files", tags=["Files"])

@@ -11,7 +11,6 @@ def hello_cmd(time_sleep,publisher=None):
     if publisher is None:
         publisher = TaskPublisher(dummy=True)
 
-    publisher.log("Run Hello World")
+    publisher.log("Run Hello World","running")
     time.sleep(time_sleep)
-    publisher.log("Done sleeping", level="success")
-    return {"message": f"Hello World after {time_sleep} seconds"}
+    publisher.log("Done sleeping", "success")

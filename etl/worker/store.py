@@ -2,6 +2,7 @@
 import json
 from datetime import datetime
 from worker.celery_app import redis_client
+from worker.messages import build_message
 
 
 class TaskStore:
@@ -38,14 +39,11 @@ class TaskStore:
         redis_client.delete(f"task:{task_id}:logs")
 
     # -------------------- LOGS -------------------- #
+
     @staticmethod
-    def append_log(task_id: str, message: str, level="info"):
-        """Add structure log message for a task"""
-        entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "level": level,
-            "message": message,
-        }
+    def append_log(task_id: str, type_: str, status: str, payload=None):
+        """Add structured message to REDIS"""
+        entry = build_message(type_=type_, status=status, payload=payload)
         redis_client.rpush(f"task:{task_id}:logs", json.dumps(entry))
 
     @staticmethod

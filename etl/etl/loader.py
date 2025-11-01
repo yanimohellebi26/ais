@@ -11,15 +11,10 @@ def load_pipelines(extra_kwargs: dict = None):
     """
     Load pipeline defs from YAML and apply dynamic kwargs
 
-    Args:
-        extra_kwargs (dict): {function_name: {key: value}} to override kwargs from YAML.
-
     Returns:
-        dict: {pipeline_name: [(func, kwargs), ...]}
+        dict: {pipeline_name: {"desc": str, "steps": [(func, kwargs), ...]}}
     """
     yaml_path = os.getenv("PIPELINES_FILE_YAML", "pipelines.yaml")
-    # yaml_path = os.path.join(os.path.dirname(__file__), "..", yaml_filename)
-    # yaml_path = os.path.abspath(yaml_path)
 
     if not os.path.exists(yaml_path):
         raise FileNotFoundError(f"YAML config file not found : {yaml_path}")
@@ -28,9 +23,12 @@ def load_pipelines(extra_kwargs: dict = None):
         pipelines_config = yaml.safe_load(f)
 
     pipelines = {}
-    for pipeline_name, steps in pipelines_config.items():
+    for pipeline_name, pipeline_def in pipelines_config.items():
+        desc = pipeline_def.get("desc", "")
+        steps_config = pipeline_def.get("steps", [])
+
         pipeline_steps = []
-        for step in steps:
+        for step in steps_config:
             func_name = step["func"]
             func = FUNC_REGISTRY.get(func_name)
             if not func:
@@ -42,6 +40,9 @@ def load_pipelines(extra_kwargs: dict = None):
 
             pipeline_steps.append((func, merged_kwargs))
 
-        pipelines[pipeline_name] = pipeline_steps
+        pipelines[pipeline_name] = {
+            "desc": desc,
+            "steps": pipeline_steps
+        }
 
     return pipelines

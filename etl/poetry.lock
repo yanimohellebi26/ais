@@ -2236,7 +2236,6 @@ files = [
 ]
 
 [package.dependencies]
-psycopg-binary = {version = "3.2.12", optional = true, markers = "implementation_name != \"pypy\" and extra == \"binary\""}
 typing-extensions = {version = ">=4.6", markers = "python_version < \"3.13\""}
 tzdata = {version = "*", markers = "sys_platform == \"win32\""}
 
@@ -2255,7 +2254,6 @@ description = "PostgreSQL database adapter for Python -- C optimisation distribu
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "implementation_name != \"pypy\""
 files = [
     {file = "psycopg_binary-3.2.12-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:13cd057f406d2c8063ae8b489395b089a7f23c39aff223b5ea39f0c4dd640550"},
     {file = "psycopg_binary-3.2.12-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:ef92d5ba6213de060d1390b1f71f5c3b2fbb00b4d55edee39f3b07234538b64a"},
@@ -4000,4 +3998,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "80b7652a176bd1679393f25d79e99382793fb851651edcac2cb1a0f4359ed881"
+content-hash = "de41b69e4bec35b9b50cd50d9bdbffdc02ea6983d55cb183268a2addbbd44bc9"

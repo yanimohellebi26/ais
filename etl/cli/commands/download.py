@@ -22,15 +22,14 @@ def download_cmd(date, latest, publisher=None):
         downloader = AISDownloader()
         csv_path = downloader.get_latest_file_available() if latest else downloader.get_file(*map(int, date.split("-")))
         if not csv_path:
-            publisher.log(f"No file download", level="error")
+            publisher.log(f"No file download", "error")
             raise ValueError("No file downloaded")
 
-        publisher.log(f"Download ${csv_path}", level="success")
+        publisher.log(f"Download ${csv_path}", "success")
 
         Logger.success(f"File ready: {csv_path}")
-        return {"file": csv_path}
 
     except Exception as e:
-        publisher.log(f"Download failed", level="error")
+        publisher.log(f"Download failed","error")
         Logger.error(f"Download failed: {e}")
         raise Exception(f"Download failed: {e}")

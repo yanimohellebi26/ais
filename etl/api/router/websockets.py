@@ -21,21 +21,15 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, auth=Depends(ve
                 await websocket.close(code=4004)
                 break
 
-            # Send status if change
-            if meta != last_meta:
-                await websocket.send_json({"type": "meta", "data": meta})
-                last_meta = meta
-
             # New logs
             if len(logs) > last_log_count:
                 new_logs = logs[last_log_count:]
-                for log in new_logs:
-                    await websocket.send_json({"type": "log", "data": log})
+                await websocket.send_json({"type": "logs", "data": new_logs})
                 last_log_count = len(logs)
 
             # Task end close socket
-            if meta["status"] in ("success", "error"):
-                await websocket.send_json({"type": "status", "data": meta["status"]})
+            if meta["status"] in ("success", "error", "revoked"):
+                await websocket.send_json({"type": "end", "data": meta["status"]})
                 await asyncio.sleep(0.5)
                 await websocket.close(code=1000)
                 break

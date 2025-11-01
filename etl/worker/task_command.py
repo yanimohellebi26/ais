@@ -23,10 +23,9 @@ def run_cli_command(self, command_name, kwargs, user=None):
         "created_at": now,
         "started_at": None,
         "ended_at": None,
-        "result": None,
-        "error": None,
     })
-    TaskStore.append_log(task_id, f"Task '{command_name}' queued")
+
+    TaskStore.append_log(task_id, "command", "queued", {"command": command_name})
 
     try:
         # --- Start --- #
@@ -34,7 +33,7 @@ def run_cli_command(self, command_name, kwargs, user=None):
         meta["status"] = "running"
         meta["started_at"] = datetime.utcnow().isoformat()
         TaskStore.set_meta(task_id, meta)
-        TaskStore.append_log(task_id, f"Task '{command_name}' running.")
+        TaskStore.append_log(task_id, "command", "running", {"command": command_name})
 
         # --- CLI execute --- #
         ctx = click.Context(cli)
@@ -45,25 +44,23 @@ def run_cli_command(self, command_name, kwargs, user=None):
         normalized_kwargs = normalize_click_kwargs(command, kwargs)
 
         if hasattr(command, "callback"):
-            result = command.callback(**normalized_kwargs,publisher=publisher)
+            command.callback(**normalized_kwargs,publisher=publisher)
         else:
-            result = command(**normalized_kwargs,publisher=publisher)
+            command(**normalized_kwargs,publisher=publisher)
 
         # --- Success --- #
         meta = TaskStore.get_meta(task_id)
         meta["status"] = "success"
         meta["ended_at"] = datetime.utcnow().isoformat()
-        meta["result"] = str(result)
         TaskStore.set_meta(task_id, meta)
-        TaskStore.append_log(task_id, f"Task end with success.")
+        TaskStore.append_log(task_id, "command", "success", {"command": command_name})
 
     except Exception as e:
-        meta = TaskStore.get_meta(task_id) or {}
+        meta = TaskStore.get_meta(task_id)
         meta["status"] = "error"
         meta["ended_at"] = datetime.utcnow().isoformat()
-        meta["error"] = f"{type(e).__name__}: {e}"
         TaskStore.set_meta(task_id, meta)
-        TaskStore.append_log(task_id, f"Error : {e}", level="error")
+        TaskStore.append_log(task_id, "command", "error", {"command": command_name, "error": str(e)})
 
 
 def normalize_click_kwargs(command, kwargs):

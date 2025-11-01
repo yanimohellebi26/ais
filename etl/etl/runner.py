@@ -4,7 +4,7 @@ from utils.logger import Logger
 from utils.timer import timer
 from etl.loader import load_pipelines
 
-def run(pipeline, file, fail_fast=True, continue_on_error=False, use_timer=True):
+def run(pipeline, file, continue_on_error=False, use_timer=True):
     """
     Run pipeline
     Args:
@@ -28,7 +28,7 @@ def run(pipeline, file, fail_fast=True, continue_on_error=False, use_timer=True)
     Logger.info(f"Start pipeline '{pipeline}'")
     workflow_start = time.time()
 
-    for func, kwargs in tasks:
+    for func, kwargs in tasks['steps']:
         try:
             if use_timer:
                 timed_func = timer(func)
@@ -38,10 +38,7 @@ def run(pipeline, file, fail_fast=True, continue_on_error=False, use_timer=True)
 
         except Exception as e:
             Logger.error(f"Error in '{func.__name__}' : {e}")
-            if fail_fast:
-                Logger.error(f"Pipeline '{pipeline}' fail fast stop")
-                break
-            elif continue_on_error:
+            if continue_on_error:
                 continue
             else:
                 Logger.error(f"Pipeline '{pipeline}' fail fast stop")

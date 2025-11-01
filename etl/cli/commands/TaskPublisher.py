@@ -5,8 +5,8 @@ class TaskPublisher:
         self.dummy = dummy or task_id is None
         self.task_id = task_id
 
-    def log(self, message: str, level="info"):
+    def log(self, message: str|object, status):
         if self.dummy:
-            print(f"[{level}] {message}")
+            print(f"[{status}] {message}")
             return
-        TaskStore.append_log(self.task_id, message, level=level)
+        TaskStore.append_log(self.task_id, 'publish',status, message)

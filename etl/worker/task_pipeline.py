@@ -32,30 +32,25 @@ def run_task_pipeline(
         "status": "queued",
         "created_at": now,
         "started_at": None,
-        "ended_at": None,
-        "result": None,
-        "error": None,
-        "last_step": None,
-        "step_status": None,
+        "ended_at": None
     })
 
-    TaskStore.append_log(task_id, f"Pipeline '{pipeline}' queued.")
+    # --- PIPELINE QUEUED --- #
+    TaskStore.append_log(task_id, "pipeline", "queued", {"pipeline": pipeline})
 
-    # --- Update status -> running --- #
+    # --- Start pipeline --- #
     meta = TaskStore.get_meta(task_id)
     meta["status"] = "running"
     meta["started_at"] = datetime.utcnow().isoformat()
     TaskStore.set_meta(task_id, meta)
-    TaskStore.append_log(task_id, f"Pipeline '{pipeline}' démarré.")
 
     # --- Load pipelines --- #
     all_pipelines = load_pipelines(extra_kwargs)
     tasks = all_pipelines.get(pipeline)
     if not tasks:
-        error_msg = f"Pipeline '{pipeline}' introuvable."
-        TaskStore.append_log(task_id, error_msg, level="error")
+        error_msg = f"Pipeline '{pipeline}' not found."
+        TaskStore.append_log(task_id, "pipeline", "error", {"pipeline": pipeline, "error": error_msg})
         meta["status"] = "error"
-        meta["error"] = error_msg
         meta["ended_at"] = datetime.utcnow().isoformat()
         TaskStore.set_meta(task_id, meta)
         return
@@ -64,56 +59,48 @@ def run_task_pipeline(
     context = PipelineContext(file=file)
 
     workflow_start = time.time()
-    result = {"details": []}
 
-    TaskStore.append_log(task_id, f"Pipeline '{pipeline}' has {len(tasks)} steps")
+    TaskStore.append_log(task_id, "pipeline", "running", {"pipeline": pipeline,"steps_count": len(tasks["steps"])})
 
-    # --- Pipeline steps --- #
-    for func, kwargs in tasks:
+    count = 0
+    for func, kwargs in tasks["steps"]:
+        count += 1
         step_name = func.__name__
-        TaskStore.append_log(task_id, f"Step '{step_name}' running")
-        meta["last_step"] = step_name
-        TaskStore.set_meta(task_id, meta)
+
+        # --- STEP RUNNING --- #
+        TaskStore.append_log(task_id, "step", "running", {"index": count, "step": step_name})
 
         try:
-            # Execute + timer
             if use_timer:
                 timed_func = timer(func)
                 context = timed_func(context, **kwargs)
             else:
                 context = func(context, **kwargs)
 
-            TaskStore.append_log(task_id, f"Step '{step_name}' success")
-            meta["step_status"] = "success"
-            TaskStore.set_meta(task_id, meta)
-            result["details"].append({"task": step_name, "status": "success"})
+            # --- STEP SUCCESS --- #
+            TaskStore.append_log(task_id, "step", "success", {"index": count, "step": step_name})
 
         except Exception as e:
-            error_msg = f"Erreur dans '{step_name}': {e}"
-            TaskStore.append_log(task_id, error_msg, level="error")
-            meta["step_status"] = "error"
-            meta["step_error"] = str(e)
-            TaskStore.set_meta(task_id, meta)
-            result["details"].append({"task": step_name, "status": "error", "error": str(e)})
+            error_msg = str(e)
+            TaskStore.append_log(task_id, "step", "error", {"index": count, "step": step_name, "error": error_msg})
 
             if continue_on_error:
-                TaskStore.append_log(task_id, f"Error ignored, continue pipeline")
+                TaskStore.append_log(task_id, "pipeline", "warning", {"pipeline": pipeline, "message": "Error ignored, continuing pipeline"})
                 continue
             else:
-                TaskStore.append_log(task_id, f"Pipeline stop (fail fast)", level="error")
-                break
+                TaskStore.append_log(task_id, "pipeline", "error", {"pipeline": pipeline, "message": "Pipeline stopped (fail fast)"})
+                meta["status"] = "error"
+                TaskStore.set_meta(task_id, meta)
+                return
+
 
     duration = time.time() - workflow_start
-    TaskStore.append_log(task_id, f"Pipeline '{pipeline}' stop in {duration:.2f}s")
+    TaskStore.append_log(task_id, "pipeline", "success", {
+        "pipeline": pipeline,
+        "duration": f"{duration:.2f}s",
+        "message": "Pipeline executed successfully"})
 
-    # --- End --- #
-    meta = TaskStore.get_meta(task_id)
+    # --- Finalize --- #
     meta["ended_at"] = datetime.utcnow().isoformat()
-    if any(d["status"] == "error" for d in result["details"]):
-        meta["status"] = "error"
-        TaskStore.append_log(task_id, f"Pipeline '{pipeline}' end with errors", level="error")
-    else:
-        meta["status"] = "success"
-        TaskStore.append_log(task_id, f"Pipeline '{pipeline}' execute with success")
-    meta["result"] = result
+    meta["status"] = "success"
     TaskStore.set_meta(task_id, meta)
