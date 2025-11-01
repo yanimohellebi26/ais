@@ -10,17 +10,14 @@ import com.iem.backend.entity.PositionVessel;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
     
-
-    @Query(
-        """
-        SELECT pv FROM PositionVessel pv
-        WHERE pv.baseDateTime = (
+    @Query("""
+        SELECT p FROM PositionVessel p
+        WHERE (:vesselIds IS NULL OR p.vessel.id IN :vesselIds)
+        AND p.baseDateTime = (
             SELECT MAX(p2.baseDateTime)
             FROM PositionVessel p2
-            WHERE p2.vesselId = pv.vesselId
+            WHERE p2.vessel.id = p.vessel.id
         )
-        AND (:vesselIds IS NULL OR pv.vesselId IN :vesselIds)
-        """
-    )
+    """)
     List<PositionVessel> findLatestPositions(@Param("vesselIds") List<Integer> vesselIds);
 }

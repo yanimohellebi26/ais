@@ -1,7 +1,6 @@
 package com.iem.backend.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -57,17 +56,16 @@ public class PositionService {
             filteredVesselIds = vesselRepo.findAll().stream()
                 .filter(v -> mmsiFilter.contains(v.getMmsi()))
                 .map(Vessel::getId)
-                .collect(Collectors.toList());
+                .toList();
+
+            if (authorizedVesselIds != null) {
+                authorizedVesselIds.retainAll(filteredVesselIds);
+            } else {
+                authorizedVesselIds = filteredVesselIds;
+            }
         }
 
-        if (authorizedVesselIds != null && filteredVesselIds != null) {
-            authorizedVesselIds.retainAll(filteredVesselIds);
-            filteredVesselIds = authorizedVesselIds;
-        } else if (authorizedVesselIds != null) {
-            filteredVesselIds = authorizedVesselIds;
-        }
-
-        List<PositionVessel> positions = positionRepo.findLatestPositions(filteredVesselIds);
+        List<PositionVessel> positions = positionRepo.findLatestPositions(authorizedVesselIds);
 
         return positions.stream()
             .map(pv -> new PositionVesselDTO(
@@ -80,6 +78,6 @@ public class PositionService {
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
                 ))
-            .collect(Collectors.toList());
+            .toList();
     }
 }
