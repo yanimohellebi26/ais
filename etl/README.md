@@ -111,7 +111,7 @@ Elle expose des endpoints pour :
 - consulter les logs,
 - et gérer les clés d’API pour l’authentification.
 
-Lancer le serveur en local
+Lancer le serveur en local (Attention les dockers **etl-worker** et **redis** doivent être lancé)
 ```bash 
   poetry run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
