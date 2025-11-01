@@ -1,7 +1,9 @@
 package com.iem.backend.service;
+import com.iem.backend.dto.RequestVesselDto;
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
+import com.iem.backend.exception.UserAccessDeniedException;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.exception.VesselAlreadyOwnedException;
 import com.iem.backend.exception.VesselNotFoundException;
@@ -13,7 +15,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.security.Principal;
 import java.sql.Timestamp;
+import java.util.List;
 
 @Service
 public class VesselService {
@@ -76,31 +81,7 @@ public class VesselService {
         return VesselResponseDto.fromEntity(vessel);
     }
 
-    public VesselResponseDto createVessel(VesselResponseDto dto){
-        if (dto == null) {
-            throw new IllegalArgumentException("Vessel data cannot be null");
-        }
-
-        if (dto.mmsi() == null || dto.mmsi().isBlank()) {
-            throw new IllegalArgumentException("MMSI is required");
-        }
-
-        if (dto.imo() == null || dto.imo().isBlank()) {
-            throw new IllegalArgumentException("IMO is required");
-        }
-
-        if (dto.vesselName() == null || dto.vesselName().isBlank()) {
-            throw new IllegalArgumentException("Vessel name is required");
-        }
-
-        if (dto.callSign() == null || dto.callSign().isBlank()) {
-            throw new IllegalArgumentException("Call sign is required");
-        }
-
-        if (dto.transceiverClass() == null) {
-            throw new IllegalArgumentException("Transceiver class is required");
-        }
-
+    public RequestVesselDto createVessel(RequestVesselDto dto){
         Vessel vessel = new Vessel();
         vessel.setMmsi(dto.mmsi());
         vessel.setImo(dto.imo());
@@ -117,12 +98,22 @@ public class VesselService {
 
         Vessel saved = vesselRepository.save(vessel);
         
-        return VesselResponseDto.fromEntity(saved);
+        return RequestVesselDto.fromEntity(saved);
     }
 
-    public VesselResponseDto updateVessel(Integer id,VesselResponseDto dto){
+    public VesselResponseDto updateVessel(Integer id,VesselResponseDto dto,Principal principal){
         Vessel vessel = vesselRepository.findById(id).
             orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+
+        User currentUser = userRepository.findByEmailIgnoreCase(principal.getName()).
+            orElseThrow(()-> new UserNotFoundException());
+
+        if(!currentUser.getRole().getName().equals("ADMIN")){
+            boolean ownVessel = vesselRepository.existsByIdAndUserId(id,currentUser.getId());
+            if (!ownVessel){
+                throw new UserAccessDeniedException("You are not allowed to update this Vessel");
+            }
+        }
 
         if (dto.mmsi() != null && !dto.mmsi().isBlank()) vessel.setMmsi(dto.mmsi());
         if (dto.imo() != null && !dto.imo().isBlank()) vessel.setImo(dto.imo());
@@ -147,5 +138,11 @@ public class VesselService {
 
         vesselRepository.delete(vessel);
     }
+
+    public List<VesselResponseDto> getVesselsByUserID(int userId){
+        return vesselRepository.findByUserId(userId).stream().map(VesselResponseDto::fromEntity).toList();
+    }
+
+    
 }
 

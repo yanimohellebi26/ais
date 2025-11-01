@@ -1,8 +1,13 @@
 package com.iem.backend.controller;
+import com.iem.backend.dto.RequestVesselDto;
 import com.iem.backend.dto.UserVesselRequestDto;
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.service.VesselService;
 import jakarta.validation.Valid;
+
+import java.security.Principal;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,29 +46,35 @@ public class VesselController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','CAPTAIN')")
     public ResponseEntity<VesselResponseDto> getVesselById(@PathVariable Integer id){
         return ResponseEntity.ok(vesselService.findById(id));
     } 
 
-    @PostMapping()
-    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
-    public ResponseEntity<VesselResponseDto> createVessel( @RequestBody VesselResponseDto dto){
-        VesselResponseDto vesselCreated = vesselService.createVessel(dto);
+    @PostMapping() 
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<RequestVesselDto> createVessel(@Valid @RequestBody RequestVesselDto dto){
+        RequestVesselDto vesselCreated = vesselService.createVessel(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(vesselCreated);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','CAPTAIN','OWNER')")
-    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody VesselResponseDto dto){
-        return ResponseEntity.ok(vesselService.updateVessel(id,dto));
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody VesselResponseDto dto,Principal principal){
+        return ResponseEntity.ok(vesselService.updateVessel(id,dto,principal));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<Void> deleteVessel (@PathVariable Integer id){
         vesselService.deleteVessel(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/userId/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER','CAPTAIN')")
+    public ResponseEntity<List<VesselResponseDto>> getVesselsByUserID(@PathVariable int userId){
+        return ResponseEntity.ok(vesselService.getVesselsByUserID(userId));
+    }
+    
 }
 
