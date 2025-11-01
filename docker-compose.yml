@@ -1,8 +1,7 @@
-version: "3.9"
-
 services:
   db:
     image: postgis/postgis:16-3.5
+    platform: linux/amd64
     container_name: ais-db
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
