@@ -1,6 +1,7 @@
 package com.iem.backend.config;
 
 import com.iem.backend.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,9 +77,13 @@ public class AuthConfig {
      * @throws Exception if an error occurs during setup
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserService userService) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            UserService userService,
+            @Autowired(required = false) ApiKeyAuthFilter apiKeyAuthFilter
+    ) throws Exception {
+
+        http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -90,6 +95,10 @@ public class AuthConfig {
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);
+
+        if (apiKeyAuthFilter != null) {
+            http.addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        }
 
         http.addFilterBefore(authenticationJwtTokenFilter(jwtUtil, userService),
                 UsernamePasswordAuthenticationFilter.class);

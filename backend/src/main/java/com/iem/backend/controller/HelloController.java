@@ -1,6 +1,5 @@
 package com.iem.backend.controller;
 
-import com.iem.backend.utils.ApiLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
