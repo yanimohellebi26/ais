@@ -1,5 +1,6 @@
 package com.iem.backend.controller;
 import com.iem.backend.dto.RequestVesselDto;
+import com.iem.backend.dto.ResponseVesselDto;
 import com.iem.backend.dto.UserVesselRequestDto;
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.service.VesselService;
@@ -52,19 +53,19 @@ public class VesselController {
 
     @PostMapping() 
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RequestVesselDto> createVessel(@Valid @RequestBody RequestVesselDto dto){
-        RequestVesselDto vesselCreated = vesselService.createVessel(dto);
+    public ResponseEntity<ResponseVesselDto> createVessel(@Valid @RequestBody RequestVesselDto dto){
+        ResponseVesselDto vesselCreated = vesselService.createVessel(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(vesselCreated);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
-    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody VesselResponseDto dto,Principal principal){
+    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody RequestVesselDto dto,Principal principal){
         return ResponseEntity.ok(vesselService.updateVessel(id,dto,principal));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVessel (@PathVariable Integer id){
         vesselService.deleteVessel(id);
         return ResponseEntity.noContent().build();
@@ -72,8 +73,9 @@ public class VesselController {
 
     @GetMapping("/userId/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER','CAPTAIN')")
-    public ResponseEntity<List<VesselResponseDto>> getVesselsByUserID(@PathVariable int userId){
-        return ResponseEntity.ok(vesselService.getVesselsByUserID(userId));
+    public ResponseEntity<List<VesselResponseDto>> getVesselsByUserID(@PathVariable Integer id, Principal principal){
+        List<VesselResponseDto> vessels = vesselService.getVesselsByUserID(id,principal);
+        return ResponseEntity.ok(vessels);
     }
     
 }
