@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {ArrowLeftRight, ArrowRightLeft} from "lucide-react";
 
-interface StatCardProps {
+interface Props {
     titleTotal: string;
     titleToday: string;
     totalValue: number | string;
@@ -9,7 +9,7 @@ interface StatCardProps {
     color?: "primary" | "success" | "error" | "warning";
 }
 
-const StatCard: React.FC<StatCardProps> = ({ titleTotal, titleToday, totalValue, todayValue, color = "primary" }) => {
+const StatCard: React.FC<Props> = ({ titleTotal, titleToday, totalValue, todayValue, color = "primary" }) => {
     const [showToday, setShowToday] = useState(false);
 
     return (

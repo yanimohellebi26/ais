@@ -1,4 +1,4 @@
-export type Vessel = {
+export interface Vessel {
     id: number;
     mmsi: string;
     imo: string | null;
@@ -14,4 +14,4 @@ export type Vessel = {
     transceiverClass: string | null;
     locked: boolean;
     baseDateTime: string;
-};
+}

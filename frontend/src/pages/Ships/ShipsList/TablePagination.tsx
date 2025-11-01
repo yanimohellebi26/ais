@@ -1,11 +1,11 @@
 import React from "react";
 
-type Props = {
+interface Props {
     pageIndex: number;
     totalItems: number;
     pageSize: number;
     setPageIndex: React.Dispatch<React.SetStateAction<number>>;
-};
+}
 
 const TablePagination: React.FC<Props> = ({ pageIndex, totalItems, pageSize, setPageIndex }) => {
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));

@@ -3,23 +3,7 @@ import {useEtlApi} from '../../../hooks/useEtlApi';
 import {useLoading} from "../../../context/LoadingContext";
 import {toast} from "react-toastify";
 import CommandDropdown from "./CommandDropdown";
-
-
-interface CommandParam {
-    name: string;
-    opts: string[];
-    required: boolean;
-    type: string;
-    default: any;
-    help: string;
-}
-
-interface Command {
-    name: string;
-    help: string;
-    params: CommandParam[];
-}
-
+import {Command} from "./interfaces";
 
 const Commands: React.FC = () => {
     const api = useEtlApi();
@@ -27,15 +11,13 @@ const Commands: React.FC = () => {
     const [commands, setCommands] = useState<Command[]>([]);
 
     useEffect(() => {
-        let isMounted = true;
         const fetchCommands = async () => {
             try {
                 setLoading(true);
-                const data = await api('/commands', {
+                const data = await api('/commands/', {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                if (!isMounted) return;
 
                 const formattedCommands: Command[] = Object.entries(data.commands).map(([name, details]: [string, any]) => ({
                     name,
@@ -45,15 +27,13 @@ const Commands: React.FC = () => {
 
                 setCommands(formattedCommands);
             } catch (err: any) {
-                console.error(err);
                 toast.error('Failed to fetch ETL commands');
             } finally {
-                if (isMounted) setLoading(false);
+                setLoading(false);
             }
         };
 
         fetchCommands();
-        return () => { isMounted = false; };
     }, []);
 
 

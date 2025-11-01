@@ -1,6 +1,6 @@
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import { useEtlAuth } from "../context/EtlAuthContext";
-import { toast } from "react-toastify";
+import {useState} from "react";
 
 const ETL_WS_BASE_URL = import.meta.env.VITE_ETL_WS_URL?.replace(/\/$/, "");
 
@@ -10,7 +10,10 @@ export function useEtlWebSocket(path: string | null) {
     const shouldConnect = Boolean(path && apiKey && ETL_WS_BASE_URL);
     const url = shouldConnect ? `${ETL_WS_BASE_URL}${path}?token=${apiKey}` : null;
 
-    const { sendMessage, lastMessage, readyState } = useWebSocket(url, {
+    const [messages, setMessages] = useState<any[]>([]);
+    const [lastMessage, setLastMessage] = useState<any | null>(null);
+
+    const { sendMessage, readyState } = useWebSocket(url, {
         shouldReconnect: () => false,
         reconnectAttempts: 10,
         reconnectInterval: 3000,
@@ -18,15 +21,22 @@ export function useEtlWebSocket(path: string | null) {
         onClose: () => console.log("WebSocket closed", url),
         onError: (e) => {
             console.error("WS error:", e);
-            toast.error("WebSocket connection failed");
+        },
+        onMessage: (m) => {
+            try {
+                const parsed = JSON.parse(m.data);
+                setMessages(prev => [...prev, parsed]);
+                setLastMessage(parsed);
+            } catch (err) {
+                console.error("Failed to parse WS message", err);
+            }
         },
     });
 
-    const parsedData = lastMessage ? JSON.parse(lastMessage.data) : null;
-
     return {
         sendMessage,
-        data: parsedData,
+        lastMessage,
+        messages,
         isConnected: readyState === ReadyState.OPEN,
     };
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 type ColumnMeta = { id?: string; header?: string | React.ReactNode };
 
-type TableControlsProps = {
+interface Props {
     searchTerm: string;
     setSearchTerm: (v: string) => void;
     allColumns: ColumnMeta[];
@@ -10,7 +10,7 @@ type TableControlsProps = {
     toggleColumn: (colId: string) => void;
 };
 
-const TableControls: React.FC<TableControlsProps> = ({
+const TableControls: React.FC<Props> = ({
                                                          searchTerm,
                                                          setSearchTerm,
                                                          allColumns,

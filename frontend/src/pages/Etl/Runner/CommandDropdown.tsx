@@ -3,32 +3,19 @@ import React, { useState, useEffect } from "react";
 import { useEtlApi } from "../../../hooks/useEtlApi";
 import { toast } from "react-toastify";
 import { useEtlWebSocket } from "../../../hooks/useEtlWebsocket";
+import {Command} from "./interfaces";
 
-interface CommandParam {
-    name: string;
-    opts: string[];
-    required: boolean;
-    type: string;
-    default: any;
-    help: string;
-}
-
-interface Command {
-    name: string;
-    help: string;
-    params: CommandParam[];
-}
-
-interface CommandDropdownProps {
+interface Props {
     command: Command;
     index: number;
 }
 
-const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => {
+const CommandDropdown: React.FC<Props> = ({ command, index }) => {
     const api = useEtlApi();
     const [taskId, setTaskId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
+
     const [paramValues, setParamValues] = useState<Record<string, any>>(() =>
         command.params.reduce((acc, param) => {
             acc[param.name] = param.default === "Sentinel.UNSET" ? "" : param.default;
@@ -42,6 +29,7 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
 
     const handleExecute = async () => {
         try {
+            setIsLoading(true);
             const body: Record<string, any> = {};
             command.params.forEach((param) => {
                 let value = paramValues[param.name];
@@ -60,48 +48,46 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ command, index }) => 
                 toast.success("Command queued!");
                 setTaskId(result.task_id);
                 setLogs([`[${new Date().toLocaleTimeString()}] Task started...`]);
-                setIsLoading(true);
             } else {
                 toast.warning("Command executed but no task_id returned.");
+                setIsLoading(false);
             }
         } catch (err: any) {
             console.error(err);
+            setIsLoading(false);
             toast.error(`Failed to execute command: ${err.message}`);
         }
     };
 
     // Websocket
-    const { data } = useEtlWebSocket(taskId ? `/tasks/${taskId}` : null);
+    const { messages } = useEtlWebSocket(taskId ? `/tasks/${taskId}` : null);
+    const lastIndexRef = React.useRef(0);
 
     useEffect(() => {
-        if (!data) return;
+        if (messages.length === 0) return;
 
-        let msg = "";
-        if (data.type === "log") {
-            const { level, message } = data.data;
-            msg = `[${new Date().toLocaleTimeString()}] (log) ${message}`;
-        } else if (data.type === "meta") {
-            msg = `[${new Date().toLocaleTimeString()}] (meta) status : ${data.data.status}`;
-        } else if (data.type === "status") {
-            msg = `[${new Date().toLocaleTimeString()}] (status) ${data.data}`;
-        }
+        const newMessages = messages.slice(lastIndexRef.current);
 
-        setLogs((prev) => {
-            if (prev.includes(msg)) return prev;
-            return [...prev, msg];
+        newMessages.forEach((msg) => {
+            if (msg.type === "logs") {
+                msg.data.forEach((log: any) => {
+                    const status = log.status;
+                    const payload = typeof log.payload === "string" ? log.payload : JSON.stringify(log.payload);
+                    const formattedMsg = `[${new Date().toLocaleTimeString()}] ${status}: ${payload}`;
+                    setLogs((prev) => [...prev, formattedMsg]);
+                });
+            }
+
+            else if (msg.type === "end") {
+                const formattedMsg = `[${new Date().toLocaleTimeString()}] Task ${msg.data}`;
+                setLogs((prev) => [...prev, formattedMsg]);
+                setIsLoading(false);
+                setTaskId(null);
+            }
         });
 
-        if (data.type === "status" && ["success", "error", "revoked"].includes(data.data)) {
-            setIsLoading(false);
-            setTaskId(null);
-
-            setLogs((prev) => {
-                const finalMsg = `[${new Date().toLocaleTimeString()}] Task ${data.data}`;
-                if (prev.includes(finalMsg)) return prev;
-                return [...prev, finalMsg];
-            });
-        }
-    }, [data]);
+        lastIndexRef.current = messages.length;
+    }, [messages]);
 
 
     return (

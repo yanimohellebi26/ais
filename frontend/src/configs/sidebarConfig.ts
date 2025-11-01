@@ -7,7 +7,7 @@ import {
     ShieldUser,
     Workflow,
     Wrench,
-    Terminal
+    Terminal, Orbit, History
 } from "lucide-react";
 import React from "react";
 
@@ -47,6 +47,8 @@ export const menuItems: MenuItem[] = [
         roles: ["ROLE_ADMIN"],
         children: [
             {label: "Runner", path: "/dashboard/etl/runner", icon: Terminal},
+            {label: "Pipelines", path: "/dashboard/etl/pipelines", icon: Orbit},
+            {label: "History", path: "/dashboard/etl/history", icon: History},
             {label: "Settings", path: "/dashboard/etl/settings", icon: Wrench},
         ]
     }

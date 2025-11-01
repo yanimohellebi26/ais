@@ -2,12 +2,12 @@ import React from "react";
 import { flexRender, Table } from "@tanstack/react-table";
 import { Vessel } from "./types";
 
-type Props = {
+interface Props  {
     table: Table<Vessel>;
     sortColumn: string;
     sortOrder: 'asc' | 'desc';
     toggleSort: (col: string) => void;
-};
+}
 
 const TableDisplay: React.FC<Props> = ({ table, sortColumn, sortOrder, toggleSort }) => {
     return (

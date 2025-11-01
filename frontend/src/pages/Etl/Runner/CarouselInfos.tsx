@@ -4,21 +4,7 @@ import { toast } from "react-toastify";
 import {etlApiEmitter} from "../../../hooks/useEtlApiEmitter";
 import StatCard from "./StatCard";
 import {RefreshCcw} from "lucide-react";
-
-
-interface Task {
-    taskId: string;
-    command: string;
-    kwargs: Record<string, any>;
-    user: string;
-    status: string;
-    createdAt: string;
-    startedAt: string;
-    endedAt: string;
-    result: string;
-    error: string | null;
-}
-
+import {Task} from "./interfaces";
 
 const CarouselInfos: React.FC = () => {
     const api = useEtlApi();
