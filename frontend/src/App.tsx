@@ -13,8 +13,8 @@ const App: React.FC = () => {
   return (
     <Router>
         <ToastContainer
-            position="top-center"
-            autoClose={1000}
+            position="top-right"
+            autoClose={3000}
             hideProgressBar={false}
             newestOnTop={false}
             closeOnClick
@@ -22,7 +22,7 @@ const App: React.FC = () => {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="light"
+            theme="colored"
         />
       <Routes>
         <Route path="/" element={<Home />} />
