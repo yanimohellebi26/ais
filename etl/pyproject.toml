@@ -4,20 +4,28 @@ version = "0.1.0"
 description = "ETL pipeline Python"
 authors = ["Ton Nom <email@example.com>"]
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
-dependencies = [
-    "pandas>=2.3.2,<3.0.0",
-    "requests>=2.32.5,<3.0.0",
-    "notebook>=7.4.5,<8.0.0",
-    "pyzstd>=0.17.0,<0.18.0",
-    "beautifulsoup4>=4.13.5,<5.0.0",
-    "dotenv>=0.9.9,<0.10.0",
-    "colorlog>=6.9.0,<7.0.0",
-    "click>=8.3.0,<9.0.0",
-    "sqlalchemy>=2.0.43,<3.0.0",
-    "python-dotenv>=1.1.1,<2.0.0",
-    "psycopg[binary]>=3.2.0,<4.0.0",
-]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+pandas = ">=2.3.2,<3.0.0"
+requests = ">=2.32.5,<3.0.0"
+notebook = ">=7.4.5,<8.0.0"
+pyzstd = ">=0.17.0,<0.18.0"
+beautifulsoup4 = ">=4.13.5,<5.0.0"
+dotenv = ">=0.9.9,<0.10.0"
+colorlog = ">=6.9.0,<7.0.0"
+click = ">=8.3.0,<9.0.0"
+sqlalchemy = ">=2.0.43,<3.0.0"
+python-dotenv = ">=1.1.1,<2.0.0"
+psycopg = "^3.2.12"
+psycopg-binary = "^3.2.12"
+zstandard = "^0.25.0"
+fastapi = "^0.119.1"
+uvicorn = {extras = ["standard"], version = "^0.38.0"}
+contextvars = "^2.4"
+gunicorn = "^23.0.0"
+celery = "^5.5.3"
+redis = "^7.0.0"
 
 [tool.poetry.group.arm64.dependencies]
 pg8000 = ">=1.31.5,<2.0.0"

@@ -2,7 +2,7 @@ import os
 import requests
 import re
 from bs4 import BeautifulSoup
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from utils.logger import Logger
 from etl.extract.FileDownloader import FileDownloader
@@ -75,12 +75,14 @@ class AISDownloader(FileDownloader):
         "status", "length", "width", "draft", "cargo_type_id", "transceiver_class"
     ]
 
-    def __init__(self, download_folder: str = None):
+    def __init__(self, publisher=None, download_folder: str = None):
 
         base_url = os.getenv("AIS_BASE_URL")
 
         if download_folder is None:
             download_folder = "data/downloads"
+
+        self.publisher = publisher
 
         super().__init__(base_url, download_folder)
 
@@ -287,5 +289,40 @@ class AISDownloader(FileDownloader):
 
         return self.get_file(latest_date.year, latest_date.month, latest_date.day)
 
+    def download_range(self, start_date: str, end_date: str):
+        """
+        Download AIS files between start_date and end_date include.
+        """
 
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        end = datetime.strptime(end_date, "%Y-%m-%d")
 
+        if start_date > end_date:
+            Logger.error("Start date must be before end date")
+            raise ValueError("start_date must be before or equal to end_date")
+
+        current_date = start
+        total_days = (end - start).days + 1
+        downloaded = 0
+        skipped = 0
+        errors = 0
+
+        Logger.info(f" Download files from {start_date} to {end_date} ")
+
+        for i in range(total_days):
+            year, month, day = current_date.year, current_date.month, current_date.day
+            try:
+                result = self.get_file(year, month, day)
+                if result is not None:
+                    downloaded += 1
+                    self.publisher.log(f" Download file {year}-{month}-{day} ", "success")
+
+            except Exception as e:
+                Logger.warning(f"Error downloading {current_date}: {e}")
+                errors += 1
+
+            current_date += timedelta(days=1)
+
+        Logger.success(f"Files download : {downloaded}, errors: {errors}")
+
+        return downloaded
