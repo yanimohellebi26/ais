@@ -21,7 +21,7 @@ def download_cmd(date, latest, range_dates, publisher=None):
 
     if sum(modes) != 1:
         Logger.error("Specify exactly one mode: --date | --latest | --range <start end>.")
-        return
+        raise Exception("Specify exactly one mode: --date | --latest | --range <start end>")
 
     Logger.info("Run Download")
 
@@ -37,7 +37,7 @@ def download_cmd(date, latest, range_dates, publisher=None):
         elif latest:
             downloader.get_latest_file_available()
         else :
-            Logger.error("No options provided.")
+            raise Exception("No options provided")
 
         publisher.log(f"Download", "success")
         Logger.success(f"File(s) ready")

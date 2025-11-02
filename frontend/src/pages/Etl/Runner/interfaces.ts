@@ -5,6 +5,9 @@ export interface CommandParam {
     type: string;
     default: any;
     help: string;
+    is_flag: boolean;
+    nargs: number;
+
 }
 
 export interface Command {
