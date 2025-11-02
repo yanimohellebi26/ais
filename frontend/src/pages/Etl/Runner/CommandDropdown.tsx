@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useEtlApi } from "../../../hooks/useEtlApi";
 import { toast } from "react-toastify";
 import { useEtlWebSocket } from "../../../hooks/useEtlWebsocket";
-import {Command} from "./interfaces";
+import { Command } from "./interfaces";
 
 interface Props {
     command: Command;
@@ -18,7 +18,9 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
 
     const [paramValues, setParamValues] = useState<Record<string, any>>(() =>
         command.params.reduce((acc, param) => {
-            acc[param.name] = param.default === "Sentinel.UNSET" ? "" : param.default;
+            if (param.is_flag) acc[param.name] = false;
+            else if (param.nargs && param.nargs > 1) acc[param.name] = Array(param.nargs).fill("");
+            else acc[param.name] = param.default === "Sentinel.UNSET" ? "" : param.default;
             return acc;
         }, {} as Record<string, any>)
     );
@@ -27,14 +29,33 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
         setParamValues((prev) => ({ ...prev, [name]: value }));
     };
 
+    const handleMultiChange = (name: string, index: number, value: string) => {
+        setParamValues((prev) => {
+            const newArr = [...prev[name]];
+            newArr[index] = value;
+            return { ...prev, [name]: newArr };
+        });
+    };
+
     const handleExecute = async () => {
         try {
             setIsLoading(true);
             const body: Record<string, any> = {};
+
             command.params.forEach((param) => {
                 let value = paramValues[param.name];
-                if (param.type === "integer") value = parseInt(value, 10);
+
+                if (param.is_flag) {
+                    if (value) body[param.name] = true;
+                    return;
+                }
+
+                if (param.nargs && param.nargs > 1) {
+                    // filtrer les valeurs vides
+                    value = value.filter((v: string) => v.trim() !== "");
+                } else if (param.type === "integer") value = parseInt(value, 10);
                 else if (param.type === "float") value = parseFloat(value);
+
                 body[param.name] = value;
             });
 
@@ -59,7 +80,7 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
         }
     };
 
-    // Websocket
+    // Websocket logs
     const { messages } = useEtlWebSocket(taskId ? `/tasks/${taskId}` : null);
     const lastIndexRef = React.useRef(0);
 
@@ -67,7 +88,6 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
         if (messages.length === 0) return;
 
         const newMessages = messages.slice(lastIndexRef.current);
-
         newMessages.forEach((msg) => {
             if (msg.type === "logs") {
                 msg.data.forEach((log: any) => {
@@ -76,26 +96,18 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
                     const formattedMsg = `[${new Date().toLocaleTimeString()}] ${status}: ${payload}`;
                     setLogs((prev) => [...prev, formattedMsg]);
                 });
-            }
-
-            else if (msg.type === "end") {
+            } else if (msg.type === "end") {
                 const formattedMsg = `[${new Date().toLocaleTimeString()}] Task ${msg.data}`;
                 setLogs((prev) => [...prev, formattedMsg]);
                 setIsLoading(false);
                 setTaskId(null);
             }
         });
-
         lastIndexRef.current = messages.length;
     }, [messages]);
 
-
     return (
-        <div
-            key={index}
-            tabIndex={0}
-            className="collapse collapse-arrow bg-base-100 border-base-300 border"
-        >
+        <div key={index} tabIndex={0} className="collapse collapse-arrow bg-base-100 border-base-300 border">
             <div className="collapse-title font-semi-bold">
                 <div className="flex gap-2 items-center">
                     <FileTerminal />
@@ -105,25 +117,49 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
             </div>
 
             <div className="collapse-content text-sm flex flex-col gap-2">
-                <div className="flex items-end gap-4 flex-wrap">
-                    {command.params.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                {command.params.length > 0 ? (
                         command.params.map((param, i) => (
                             <div key={i} className="form-control">
                                 <label className="label">
-                                    <span className="label-text font-medium">
-                                        {param.name}
-                                        {param.required && <span className="text-error ml-1">*</span>}
-                                    </span>
-                                    <span className="label-text-alt text-xs text-base-content/70">
-                                        {param.help}
-                                    </span>
+                  <span className="label-text font-medium">
+                    {param.name}
+                      {param.required && <span className="text-error ml-1">*</span>}
+                  </span>
+                                    <span className="label-text-alt text-xs text-base-content/70">{param.help}</span>
                                 </label>
-                                <input
-                                    type={param.type === "integer" ? "number" : "text"}
-                                    value={paramValues[param.name]}
-                                    onChange={(e) => handleChange(param.name, e.target.value)}
-                                    className="input input-bordered w-full"
-                                />
+
+                                {/* Flag (checkbox) */}
+                                {param.is_flag ? (
+                                        <input
+                                            type="checkbox"
+                                            checked={paramValues[param.name]}
+                                            onChange={(e) => handleChange(param.name, e.target.checked)}
+                                            className="toggle toggle-primary"
+                                        />
+                                    ) : /* Multi-args option */
+                                    param.nargs && param.nargs > 1 ? (
+                                        <div className="flex gap-1">
+                                            {Array.from({ length: param.nargs }).map((_, j) => (
+                                                <input
+                                                    key={j}
+                                                    type={param.type === "integer" ? "number" : "text"}
+                                                    value={paramValues[param.name][j]}
+                                                    onChange={(e) => handleMultiChange(param.name, j, e.target.value)}
+                                                    className="input input-bordered w-28"
+                                                    placeholder={`Arg ${j + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        /* Simple option */
+                                        <input
+                                            type={param.type === "integer" ? "number" : "text"}
+                                            value={paramValues[param.name]}
+                                            onChange={(e) => handleChange(param.name, e.target.value)}
+                                            className="input input-bordered w-full"
+                                        />
+                                    )}
                             </div>
                         ))
                     ) : (
@@ -131,7 +167,7 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
                     )}
 
                     <button
-                        className="btn btn-primary mt-2 flex items-center gap-2"
+                        className="btn btn-primary mt-2 flex w-40 items-center gap-2"
                         onClick={handleExecute}
                         disabled={isLoading}
                     >
@@ -140,7 +176,7 @@ const CommandDropdown: React.FC<Props> = ({ command, index }) => {
                     </button>
                 </div>
 
-                {/* Real-time message*/}
+                {/* Logs */}
                 {logs.length > 0 && (
                     <div className="bg-base-200 rounded-lg p-2 mt-3 text-xs font-mono max-h-48 overflow-y-auto">
                         {logs.map((msg, i) => (

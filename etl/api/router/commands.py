@@ -18,7 +18,7 @@ async def list_commands(auth=Depends(verify_api_key)):
     commands_info = {}
 
     for name, command in cli.commands.items():
-        # ignorer la commande spéciale
+        # ignored pipeline runner
         if name == "run-pipeline":
             continue
 
@@ -27,9 +27,8 @@ async def list_commands(auth=Depends(verify_api_key)):
             "params": []
         }
 
-        # Parcourir les options/arguments
+        # Options / Args
         for param in command.params:
-            # sécuriser les champs JSON-compatibles
             param_type = getattr(param.type, "name", str(param.type))
             default_value = (
                 str(param.default)
@@ -44,6 +43,8 @@ async def list_commands(auth=Depends(verify_api_key)):
                 "type": param_type,
                 "default": default_value,
                 "help": getattr(param, "help", None),
+                "nargs": getattr(param, "nargs", 1),
+                "is_flag": getattr(param, "is_flag", False),
             }
 
             cmd_info["params"].append(param_info)

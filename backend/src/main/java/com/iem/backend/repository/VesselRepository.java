@@ -19,6 +19,12 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
     @Query("SELECT v FROM Vessel v WHERE v.mmsi = :mmsi OR UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :mmsi, '%'))")
     Page<Vessel> searchByMmsiOrVesselName(@Param("mmsi") String mmsi, Pageable pageable);
+    
+    @Query("SELECT v FROM Vessel v JOIN v.users u WHERE u.id = :userId")
+    List<Vessel> findByUserId(@Param("userId") Integer userId);
+
+    @Query("SELECT CASE WHEN COUNT(v) > 0 THEN TRUE ELSE FALSE END FROM Vessel v JOIN v.users u WHERE v.id = :vesselId AND u.id = :userId")
+    boolean existsByIdAndUserId(@Param("vesselId") Integer vesselId, @Param("userId") Integer userId);
 
     @Query("SELECT v.id FROM Vessel v JOIN v.users u WHERE u.id = :userId")
     List<Integer> findVesselIdsByUserId(@Param("userId") Integer userId);
