@@ -1,8 +1,10 @@
 package com.iem.backend.service;
-
+import com.iem.backend.dto.RequestVesselDto;
+import com.iem.backend.dto.ResponseVesselDto;
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
+import com.iem.backend.exception.UserAccessDeniedException;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.exception.VesselAlreadyOwnedException;
 import com.iem.backend.exception.VesselNotFoundException;
@@ -13,10 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.security.Principal;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Service
@@ -74,4 +76,82 @@ public class VesselService {
         return vesselsPage.map(VesselResponseDto::fromEntity);
     }
 
+    public VesselResponseDto findById(Integer id){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+        return VesselResponseDto.fromEntity(vessel);
+    }
+
+    public ResponseVesselDto createVessel(RequestVesselDto dto){
+        Vessel vessel = new Vessel();
+        vessel.setMmsi(dto.mmsi());
+        vessel.setImo(dto.imo());
+        vessel.setVesselName(dto.vesselName());
+        vessel.setCallSign(dto.callSign());
+        vessel.setLength(dto.length());
+        vessel.setWidth(dto.width());
+        vessel.setDraft(dto.draft());
+        vessel.setTransceiverClass(dto.transceiverClass());
+        vessel.setLocked(dto.locked() != null ? dto.locked() : false);
+        vessel.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        vessel.setLastUpdate(new Timestamp(System.currentTimeMillis()));
+        vessel.setBaseDateTime(dto.baseDateTime() != null ? dto.baseDateTime() : new Timestamp(System.currentTimeMillis()));
+
+        Vessel saved = vesselRepository.save(vessel);
+        
+        return ResponseVesselDto.fromEntity(saved);
+    }
+
+    public VesselResponseDto updateVessel(Integer id,RequestVesselDto dto,Principal principal){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+
+        User currentUser = userRepository.findByEmailIgnoreCase(principal.getName()).
+            orElseThrow(()-> new UserNotFoundException());
+
+        if(!"ADMIN".equalsIgnoreCase(currentUser.getRole().getName())){
+            boolean ownVessel = vesselRepository.existsByIdAndUserId(id,currentUser.getId());
+            if (!ownVessel){
+                throw new UserAccessDeniedException("You are not allowed to update this Vessel");
+            }
+        }
+
+        if (dto.mmsi() != null && !dto.mmsi().isBlank()) vessel.setMmsi(dto.mmsi());
+        if (dto.imo() != null && !dto.imo().isBlank()) vessel.setImo(dto.imo());
+        if (dto.vesselName() != null && !dto.vesselName().isBlank()) vessel.setVesselName(dto.vesselName());
+        if (dto.callSign() != null && !dto.callSign().isBlank()) vessel.setCallSign(dto.callSign());
+        if (dto.length() != null) vessel.setLength(dto.length());
+        if (dto.width() != null) vessel.setWidth(dto.width());
+        if (dto.draft() != null) vessel.setDraft(dto.draft());
+        if (dto.transceiverClass() != null) vessel.setTransceiverClass(dto.transceiverClass());
+        if (dto.locked() != null) vessel.setLocked(dto.locked());
+        if (dto.baseDateTime() != null) vessel.setBaseDateTime(dto.baseDateTime());
+        vessel.setLastUpdate(new Timestamp(System.currentTimeMillis()));
+        
+        Vessel updated = vesselRepository.save(vessel);   
+        
+        return VesselResponseDto.fromEntity(updated);
+    }
+
+    public void deleteVessel(Integer id){
+        Vessel vessel = vesselRepository.findById(id).
+            orElseThrow(()-> new VesselNotFoundException("Vessel not found with this id"));
+
+        vesselRepository.delete(vessel);
+    }
+
+    public List<VesselResponseDto> getVesselsByUserID(Integer userId,Principal principal){
+        User currentUser = userRepository.findByEmailIgnoreCase(principal.getName()).
+            orElseThrow(()-> new UserNotFoundException());
+
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole().getName())){
+            if(currentUser.getId() != userId){
+                throw new UserAccessDeniedException();
+            }    
+        }
+        return vesselRepository.findByUserId(userId).stream().map(VesselResponseDto::fromEntity).toList();
+    }
+
+    
 }
+
