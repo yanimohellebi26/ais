@@ -19,9 +19,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "position_vessel")
-public class PositionVessel {
-
+@Table(name = "latest_positions")
+public class LatestPosition {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,8 +46,9 @@ public class PositionVessel {
 
     @Column(name = "geom", nullable = false, columnDefinition = "geography(Point, 4326)")
     private Point geom;
-
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vessel_id", insertable = false, updatable = false)
     private Vessel vessel;
+
 }

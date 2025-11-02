@@ -2,6 +2,9 @@ package com.iem.backend.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,10 +38,13 @@ public class PositionsController {
     })
     @JsonView(Views.Public.class)
     @GetMapping("/latest")
-    public ResponseEntity<List<PositionVesselDTO>> getLatestPosition(
+    public ResponseEntity<Page<PositionVesselDTO>> getLatestPosition(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
         @RequestParam(name = "mmsi", required = false) List<String> mmsi,
         @AuthenticationPrincipal UserDetails userDetails) {
-            List<PositionVesselDTO> positions = positionService.getLatestPositions(userDetails, mmsi);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<PositionVesselDTO> positions = positionService.getLatestPositions(userDetails, mmsi, pageable);
             return ResponseEntity.ok(positions);
     }
 }

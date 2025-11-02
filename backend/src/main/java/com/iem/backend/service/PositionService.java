@@ -2,12 +2,14 @@ package com.iem.backend.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.iem.backend.dto.PositionVesselDTO;
-import com.iem.backend.entity.PositionVessel;
+import com.iem.backend.entity.LatestPosition;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
@@ -30,7 +32,7 @@ public class PositionService {
 
     }
 
-    public List<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter) {
+    public Page<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
 
         User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
@@ -53,10 +55,7 @@ public class PositionService {
 
         List<Integer> filteredVesselIds = null;
         if (mmsiFilter != null && !mmsiFilter.isEmpty()) {
-            filteredVesselIds = vesselRepo.findAll().stream()
-                .filter(v -> mmsiFilter.contains(v.getMmsi()))
-                .map(Vessel::getId)
-                .toList();
+            filteredVesselIds = vesselRepo.findIdsByMmsi(mmsiFilter);
 
             if (authorizedVesselIds != null) {
                 authorizedVesselIds.retainAll(filteredVesselIds);
@@ -65,9 +64,15 @@ public class PositionService {
             }
         }
 
-        List<PositionVessel> positions = positionRepo.findLatestPositions(authorizedVesselIds);
+        Page<LatestPosition> positions;
 
-        return positions.stream()
+        if (authorizedVesselIds == null || authorizedVesselIds.isEmpty()) {
+            positions = positionRepo.findAll(pageable);
+        } else { 
+            positions = positionRepo.findByVesselIds(authorizedVesselIds, pageable);
+        }
+
+        return positions
             .map(pv -> new PositionVesselDTO(
                 pv.getVessel().getMmsi(),
                 pv.getBaseDateTime(),
@@ -77,7 +82,6 @@ public class PositionService {
                 pv.getStatusId(),
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
-                ))
-            .toList();
+                ));
     }
 }

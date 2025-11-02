@@ -28,4 +28,7 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
     @Query("SELECT v.id FROM Vessel v JOIN v.users u WHERE u.id = :userId")
     List<Integer> findVesselIdsByUserId(@Param("userId") Integer userId);
+
+    @Query("SELECT v.id FROM Vessel v WHERE v.mmsi IN :mmsiList")
+    List<Integer> findIdsByMmsi(@Param("mmsiList") List<String> mmsiList);
 }
