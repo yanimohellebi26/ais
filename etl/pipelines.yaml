@@ -1,0 +1,58 @@
+load-vessels:
+  desc: "Load new vessels statics data in database"
+  steps:
+    - func: extract_data_from_file
+      kwargs:
+        selected_map: [ "mmsi", "base_date_time", "vessel_name", "imo", "call_sign",
+          "vessel_type_id", "length", "width", "draft", "cargo_type_id","transceiver_class"]
+    - func: normalize_ais
+      kwargs: {}
+    - func: remove_rows_with_empty
+      kwargs:
+        required: ["mmsi","base_date_time"]
+    - func: clean_vessel_duplication
+      kwargs: {}
+    - func: get_vessels_db
+      kwargs: {}
+    - func: transform_vessel_delta
+      kwargs: {}
+    - func: load_vessel_to_db
+      kwargs:
+        table: "vessel"
+        upsert_keys: ["mmsi"]
+
+load-positions:
+  desc: "Load positions in database"
+  steps:
+    - func: extract_data_from_file
+      kwargs:
+        selected_map: ["mmsi","base_date_time","lon","lat","sog","cog","heading","status"]
+    - func: normalize_ais
+      kwargs: {}
+    - func: downsample_ais
+      kwargs: {}
+    - func: filter_small_movements
+      kwargs:
+        min_dist: 1
+    - func: detect_vessel_incoherent_positions
+      kwargs: {}
+    - func: load_position_db
+      kwargs:
+        handle_missing: "skip"
+        batch_size: 100000
+
+test:
+  desc: "Test pipeline"
+  steps:
+    - func: test
+      kwargs: {}
+    - func: test
+      kwargs: {}
+    - func: test
+      kwargs: {}
+    - func: test
+      kwargs: {}
+    - func: test
+      kwargs: {}
+    - func: test
+      kwargs: {}

@@ -1,12 +1,10 @@
 from typing import List, Optional, Dict, Tuple
-
-import pandas as pd
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from etl.models.context import VesselContext
-from etl.utils.db import get_session, engine
-from etl.utils.logger import Logger
+from etl.models.context import PipelineContext
+from utils.db import get_session, engine
+from utils.logger import Logger
 
 
 def _split_table(fullname: str) -> Tuple[Optional[str], str]:
@@ -15,53 +13,18 @@ def _split_table(fullname: str) -> Tuple[Optional[str], str]:
         return schema, table
     return None, fullname
 
-
-def normalize_types(df: pd.DataFrame) -> pd.DataFrame:
-    """ Temp normalize function -
-
-    Will be removed in the future, pending other transformation scripts
-
-    """
-    df = df.copy()
-
-    for col in ("mmsi", "imo", "vessel_name", "call_sign", "transceiver_class"):
-        if col in df.columns:
-            df[col] = df[col].astype(str).replace({"nan": None, "<NA>": None, "None": None})
-
-    if "mmsi" in df.columns:
-        df = df[df["mmsi"].apply(lambda x: x is not None and len(x) <= 9)]
-
-    for col in ("vessel_type_id", "cargo_type_id"):
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
-
-    for col in ("length", "width", "draft"):
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
-
-    if "base_date_time" in df.columns:
-        df["base_date_time"] = pd.to_datetime(df["base_date_time"], errors="coerce")
-
-    if "locked" in df.columns:
-        df["locked"] = df["locked"].apply(lambda x: bool(int(x)) if pd.notna(x) else False)
-
-    df = df.where(df.notna(), None)
-    return df
-
-
 def load_vessel_to_db(
-    context: VesselContext,
+    context: PipelineContext,
     table: str,
     upsert_keys: Optional[List[str]] = None,
     column_mapping: Optional[Dict[str, str]] = None,
-    chunk_size: int = 10_000):
+    chunk_size: int = 1000):
     """
     Insert (or upsert) a pandas DataFrame into a Postgres table using SQLAlchemy.
     Raises:
         ValueError: if inputs are invalid.
     """
     data = context.df
-    data = normalize_types(data)
 
     if data.empty:
         Logger.info("L-Vessels No data to insert.")

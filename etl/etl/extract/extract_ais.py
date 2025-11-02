@@ -1,12 +1,11 @@
 import os
 from pathlib import Path
-
 import pandas as pd
 
-from etl.models.context import VesselContext
+from etl.models.context import PipelineContext
 
 
-def extract_data_from_file(context: VesselContext, selected_map: list[str]) -> VesselContext:
+def extract_data_from_file(context: PipelineContext, selected_map: list[str]) -> PipelineContext:
     file = context.file
     if not file:
         raise ValueError("No file provided in context")
@@ -14,9 +13,7 @@ def extract_data_from_file(context: VesselContext, selected_map: list[str]) -> V
     file_path = Path(file)
 
     if not file_path.is_file():
-        download_folder = os.environ.get("AIS_DOWNLOAD_FOLDER")
-        if not download_folder:
-            raise ValueError("AIS_DOWNLOAD_FOLDER environment variable is not set")
+        download_folder = "data/downloads"
         file_path = Path(download_folder) / file_path.name
         if not file_path.is_file():
             raise ValueError(f"File not found: {file_path}")

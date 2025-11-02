@@ -1,0 +1,88 @@
+import inspect
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
+
+from api.security_api import verify_api_key
+from etl.loader import load_pipelines
+from worker.task_pipeline import run_task_pipeline
+
+
+router = APIRouter()
+
+
+class PipelineRequest(BaseModel):
+    """
+    Request to execute pipeline
+    - file : path to source file CSV.
+    - continue_on_error : Ignore errors and continue.
+    - use_timer : Active timer.
+    - extra_kwargs : Pass dynamics kwargs.
+    """
+    file: Optional[str] = None
+    continue_on_error: bool = False
+    use_timer: bool = True
+    extra_kwargs: Optional[Dict[str, Dict[str, Any]]] = Field(
+        default=None,
+        description="Dynamics kwargs to override pipelines parameters."
+    )
+
+@router.post("/{pipeline_name}")
+async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
+    task = run_task_pipeline.delay(
+        pipeline_name,
+        payload.file,
+        payload.extra_kwargs or {},
+        payload.continue_on_error,
+        payload.use_timer,
+        auth['user']
+    )
+    return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
+
+
+@router.get("/")
+@router.get("/")
+async def list_pipelines(auth=Depends(verify_api_key)):
+    """
+    List all pipelines defined in YAML
+    with desc and attributes of used functions
+    """
+    pipelines = load_pipelines()
+    result = []
+
+    for pipeline_name, pipeline_def in pipelines.items():
+        desc = pipeline_def.get("desc", "")
+        steps_list = pipeline_def.get("steps", [])
+
+        step_infos = []
+
+        for func, kwargs in steps_list:
+            sig = inspect.signature(func)
+            params = []
+            for name, param in sig.parameters.items():
+                params.append({
+                    "name": name,
+                    "type": str(param.annotation) if param.annotation != inspect._empty else "Any",
+                    "default": None if param.default == inspect._empty else param.default,
+                })
+
+            step_infos.append({
+                "function_name": func.__name__,
+                "description": inspect.getdoc(func) or "No description provided.",
+                "parameters": params,
+                "yaml_kwargs": kwargs,
+            })
+
+        result.append({
+            "pipeline_name": pipeline_name,
+            "description": desc,
+            "steps": step_infos,
+        })
+
+    return {
+        "count": len(result),
+        "pipelines": result,
+    }
+
+

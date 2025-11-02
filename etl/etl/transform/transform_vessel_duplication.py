@@ -1,12 +1,13 @@
 import pandas as pd
 
-from etl.models.context import VesselContext
-from etl.utils.logger import Logger
+from etl.models.context import PipelineContext
+from utils.logger import Logger
 
-def clean_vessel_duplication(context : VesselContext ,**kwargs) -> VesselContext:
+def clean_vessel_duplication(context : PipelineContext, **kwargs) -> PipelineContext:
     df = context.df
     date_col = 'base_date_time'
     id_col = 'mmsi'
+    before = len(df)
     df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
 
     # Sorting by descending date
@@ -24,11 +25,9 @@ def clean_vessel_duplication(context : VesselContext ,**kwargs) -> VesselContext
     df_cleaned = df.groupby(id_col, as_index=False).apply(merge_rows)
 
     # logging of deleted duplicates
-    initial_count = len(df)
     cleaned_count = len(df_cleaned)
-    duplicates_info = initial_count - cleaned_count
 
-    Logger.info(f"Cleaning complete. Total lines retained: {cleaned_count}. Duplicates info removed: {duplicates_info}")
+    Logger.info(f"T-Dupe : {cleaned_count}/{before} ({round(cleaned_count / before * 100, 2)}%) lines selected")
 
     context.df = df_cleaned
     return context

@@ -1,7 +1,8 @@
-[project]
+[tool.poetry]
 name = "etl"
 version = "0.1.0"
 description = "ETL pipeline Python"
+authors = ["Ton Nom <email@example.com>"]
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -16,7 +17,6 @@ dependencies = [
     "sqlalchemy>=2.0.43,<3.0.0",
     "python-dotenv>=1.1.1,<2.0.0",
     "psycopg[binary]>=3.2.0,<4.0.0",
-    "zstandard (>=0.25.0,<0.26.0)",
 ]
 
 [tool.poetry.group.arm64.dependencies]
@@ -25,9 +25,9 @@ pg8000 = ">=1.31.5,<2.0.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 
+[tool.poetry.scripts]
+etl-cli = "cli.cli:cli"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-etl-cli = "etl.cli:cli"

@@ -1,31 +1,22 @@
 # Frontend React + Vite
 
-Salut à tous,
+Interface SeaSight AIS construite avec React, Vite et React Router.
 
-Voici le frontend de notre projet, développé avec React et Vite. Ce setup nous permet de bénéficier d'un rechargement à chaud (HMR) pour un développement rapide, ainsi que d'une configuration ESLint de base pour garder un code propre.
+## Configuration des variables d'environnement
 
-## C'est quoi ce projet ?
+1. Copiez le fichier `.env.exemple` situé à la racine du projet AIS et le copier dans le même répertoire en **.env**
 
-Ce dossier contient toute la partie interface utilisateur de notre application. On utilise React pour construire les composants et Vite pour le bundling et le serveur de développement.
-
-## Comment lancer le projet ?
-
-Pour démarrer le frontend en local :
-
-1. Placez-vous dans ce dossier (`frontend`).
-2. Installez les dépendances :
    ```bash
-   npm install
+   cp ../.env.exemple ../.env
    ```
-3. Lancez le serveur de développement :
-   ```bash
-   npm run dev
-   ```
-4. Ouvrez votre navigateur à l'adresse indiquée dans le terminal (en général http://localhost:5173).
 
-## Plugins utilisés
+## Lancer en développement local
 
-On utilise principalement deux plugins React pour Vite :
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) (Babel)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) (SWC)
+- Lancer le serveur web de développement via docker
+```bash
+   docker compose up frontend --build -d 
+```
 
+Le serveur Vite démarre en général sûr <http://localhost:5173>.
+
+À partir de là, le site est accéssible, et se reconstruit automatiquement au moindre changement dans vos fichiers
