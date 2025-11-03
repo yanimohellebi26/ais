@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { ApiError } from "../types";
 
@@ -10,7 +11,7 @@ type ApiOptions = Omit<RequestInit, "body"> & { body?: any };
 export function useApi() {
     const { user } = useAuth();
 
-    const apiFetch = async <T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
+    const apiFetch = useCallback(async <T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
         const url = `${API_BASE_URL}${endpoint}`;
         const headers = new Headers(options.headers);
         if (user?.token) headers.set("Authorization", `Bearer ${user.token}`);
@@ -34,7 +35,7 @@ export function useApi() {
         }
 
         return data as T;
-    };
+    }, [user?.token]);
 
     return apiFetch;
 }

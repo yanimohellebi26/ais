@@ -10,7 +10,7 @@ import { useAuth } from "../../../context/AuthContext";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { ColumnDef } from "@tanstack/react-table";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Eye, Loader2 } from "lucide-react";
 
 const MySwal = withReactContent(Swal);
 
@@ -46,6 +46,7 @@ const AdminRequestProperty: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [actionId, setActionId] = useState<number | null>(null);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
+    const [previewingId, setPreviewingId] = useState<number | null>(null);
 
     const fetchRequests = useCallback(async () => {
         setIsLoading(true);
@@ -104,6 +105,42 @@ const AdminRequestProperty: React.FC = () => {
             toast.error("Unable to download file");
         } finally {
             setDownloadingId(null);
+        }
+    }, [user]);
+
+    const handlePreview = useCallback(async (row: RequestPropertyRow) => {
+        if (!API_BASE_URL) {
+            toast.error("Missing API configuration");
+            return;
+        }
+
+        setPreviewingId(row.id);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/uploads/${row.fileId}/download`, {
+                headers: user?.token ? { Authorization: `Bearer ${user.token}` } : undefined,
+            });
+
+            if (!response.ok) {
+                throw new Error("Preview failed");
+            }
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const viewer = window.open(blobUrl, "_blank", "noopener,noreferrer");
+            if (!viewer) {
+                URL.revokeObjectURL(blobUrl);
+                throw new Error("Unable to open preview window");
+            }
+
+            // Revoke URL once the new window loads or unloads the blob to prevent memory leaks.
+            const revoke = () => URL.revokeObjectURL(blobUrl);
+            viewer.addEventListener("load", revoke, { once: true });
+            viewer.addEventListener("beforeunload", revoke, { once: true });
+            setTimeout(revoke, 60_000);
+        } catch (error) {
+            toast.error("Impossible d'ouvrir le fichier");
+        } finally {
+            setPreviewingId(null);
         }
     }, [user]);
 
@@ -195,17 +232,30 @@ const AdminRequestProperty: React.FC = () => {
             id: "file",
             header: "Fichier",
             cell: ({ row }) => (
-                <button
-                    className="btn btn-link btn-sm px-0"
-                    onClick={() => handleDownload(row.original)}
-                    disabled={downloadingId === row.original.id}
-                >
-                    {downloadingId === row.original.id ? (
-                        <span className="flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Téléchargement...</span>
-                    ) : (
-                        <span className="flex items-center gap-1"><Download className="h-4 w-4" /> {row.original.fileName}</span>
-                    )}
-                </button>
+                <div className="flex flex-col gap-1">
+                    <button
+                        className="btn btn-link btn-sm px-0 justify-start"
+                        onClick={() => handleDownload(row.original)}
+                        disabled={downloadingId === row.original.id}
+                    >
+                        {downloadingId === row.original.id ? (
+                            <span className="flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Téléchargement...</span>
+                        ) : (
+                            <span className="flex items-center gap-1"><Download className="h-4 w-4" /> Télécharger</span>
+                        )}
+                    </button>
+                    <button
+                        className="btn btn-link btn-sm px-0 justify-start"
+                        onClick={() => handlePreview(row.original)}
+                        disabled={previewingId === row.original.id}
+                    >
+                        {previewingId === row.original.id ? (
+                            <span className="flex items-center gap-1"><Loader2 className="h-4 w-4 animate-spin" /> Ouverture...</span>
+                        ) : (
+                            <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> Voir le PDF</span>
+                        )}
+                    </button>
+                </div>
             ),
         },
         {
@@ -230,7 +280,7 @@ const AdminRequestProperty: React.FC = () => {
                 </div>
             ),
         },
-    ], [actionId, downloadingId, handleAccept, handleDownload, handleRefuse]);
+    ], [actionId, downloadingId, handleAccept, handleDownload, handlePreview, handleRefuse, previewingId]);
 
     return (
         <div className="space-y-6">
