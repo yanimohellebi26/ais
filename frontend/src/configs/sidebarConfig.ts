@@ -7,7 +7,8 @@ import {
     ShieldUser,
     Workflow,
     Wrench,
-    Terminal, Orbit, History
+    Terminal, Orbit, History,
+    Map
 } from "lucide-react";
 import React from "react";
 
@@ -24,6 +25,7 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "Map", icon: Map, path: "/dashboard/map"},
     { label: "Admin",
         icon: ShieldUser,
         path: "/dashboard/admin",
