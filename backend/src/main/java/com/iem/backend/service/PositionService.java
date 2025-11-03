@@ -53,7 +53,10 @@ public class PositionService {
         }
 
         List<Integer> filteredVesselIds = null;
-        if (mmsiFilter != null && !mmsiFilter.isEmpty()) {
+
+        boolean filterCondition = mmsiFilter != null && !mmsiFilter.isEmpty();
+
+        if (filterCondition) {
             filteredVesselIds = vesselRepo.findIdsByMmsi(mmsiFilter);
 
             if (authorizedVesselIds != null) {
@@ -68,7 +71,7 @@ public class PositionService {
         if (authorizedVesselIds == null || authorizedVesselIds.isEmpty()) {
             positions = positionRepo.findAll(pageable);
         } else { 
-            positions = positionRepo.findByVesselIds(authorizedVesselIds, pageable);
+            positions = positionRepo.findByVesselIds(authorizedVesselIds, filterCondition ? null : pageable);
         }
 
         return positions.getContent().stream()
