@@ -38,13 +38,13 @@ public class PositionsController {
     })
     @JsonView(Views.Public.class)
     @GetMapping("/latest")
-    public ResponseEntity<Page<PositionVesselDTO>> getLatestPosition(
+    public ResponseEntity<List<PositionVesselDTO>> getLatestPosition(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
         @RequestParam(name = "mmsi", required = false) List<String> mmsi,
         @AuthenticationPrincipal UserDetails userDetails) {
             Pageable pageable = PageRequest.of(page, size);
-            Page<PositionVesselDTO> positions = positionService.getLatestPositions(userDetails, mmsi, pageable);
+            List<PositionVesselDTO> positions = positionService.getLatestPositions(userDetails, mmsi, pageable);
             return ResponseEntity.ok(positions);
     }
 }

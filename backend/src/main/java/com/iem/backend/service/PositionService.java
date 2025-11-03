@@ -32,7 +32,7 @@ public class PositionService {
 
     }
 
-    public Page<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
+    public List<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
 
         User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
@@ -72,7 +72,7 @@ public class PositionService {
             positions = positionRepo.findByVesselIds(authorizedVesselIds, pageable);
         }
 
-        return positions
+        return positions.getContent().stream()
             .map(pv -> new PositionVesselDTO(
                 pv.getVessel().getMmsi(),
                 pv.getBaseDateTime(),
@@ -82,6 +82,7 @@ public class PositionService {
                 pv.getStatusId(),
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
-                ));
+                ))
+            .toList();
     }
 }
