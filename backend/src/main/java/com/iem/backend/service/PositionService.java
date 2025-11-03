@@ -12,7 +12,6 @@ import com.iem.backend.dto.PositionVesselDTO;
 import com.iem.backend.entity.LatestPosition;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
-import com.iem.backend.entity.Vessel;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.PositionVesselRepository;
 import com.iem.backend.repository.UserRepository;
