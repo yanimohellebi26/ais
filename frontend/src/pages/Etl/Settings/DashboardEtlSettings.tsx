@@ -33,10 +33,12 @@ const DashboardEtlSettings: React.FC = () => {
                 <AlertApiKey />
             </div>
 
-            <ApiKeyForm/>
-            {isSuperUser && (
-                <CreateApiKeys/>
-            )}
+            <div className="flex flex-col gap-4">
+                <ApiKeyForm/>
+                {isSuperUser && (
+                    <CreateApiKeys/>
+                )}
+            </div>
         </>
     );
 };
