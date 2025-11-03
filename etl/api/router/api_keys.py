@@ -27,3 +27,7 @@ async def api_get(auth=Depends(verify_api_key)):
     if not auth.get("superuser"):
         raise HTTPException(status_code=403, detail="Forbidden")
     return {"api_keys": get_api_keys()}
+
+@router.get("/isSuperUser")
+async def api_is_superuser(auth=Depends(verify_api_key)):
+    return auth.get("superuser")     

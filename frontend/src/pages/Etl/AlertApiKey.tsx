@@ -9,7 +9,7 @@ const AlertApiKey: React.FC = () => {
 
     return (
         <div className="flex items-end">
-            {apiKey === "" ? (
+            {(apiKey === "" || apiKey === null) ? (
                 <div
                     className="badge badge-error badge-soft cursor-pointer hover:border-error"
                     onClick={ ()=> navigate("/dashboard/etl/settings")} >
