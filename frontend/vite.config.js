@@ -7,9 +7,6 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
-    optimizeDeps: {
-        include: ['maplibre-gl']
-    },
     server: {
         host: true,
         port: 5173,

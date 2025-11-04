@@ -1,11 +1,11 @@
 import React from "react";
 import {Route, Routes} from "react-router-dom";
-import Map from "./Map";
+import MapComponent from "./MapComponent";
 
 const DashboardMap: React.FC = () => {
     return (
         <Routes>
-            <Route index element={<Map />} />
+            <Route index element={<MapComponent />} />
         </Routes>
     );
 };
