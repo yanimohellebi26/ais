@@ -1,7 +1,5 @@
 package com.iem.backend.controller;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.iem.backend.dto.Views;
 import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.PositionVesselService;
@@ -16,6 +14,7 @@ import com.iem.backend.entity.PositionVessel;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,7 +40,7 @@ public class PositionVesselController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','MARITIME_EXPERT','FINANCIAL_ANALYST')")
-    public Map<String, Object> getPositions(
+    public ResponseEntity<Map<String, Object>> getPositions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEnd,
             @RequestParam double minLat,
@@ -52,14 +51,20 @@ public class PositionVesselController {
         List<PositionVessel> positions = service.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon);
         List<PositionVesselGeoJson> features = mapper.toGeoJson(positions);
 
-        return Map.of(
+        if (features.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+
+        Map<String, Object> geoJson = Map.of(
                 "type", "FeatureCollection",
                 "features", features
-        );
+            );
+
+        return ResponseEntity.ok(geoJson);
     }
 
     @GetMapping("/{vesselId}")
-    public Map<String,Object> getPositionsByVesselIdAndOptionalDate(
+    public ResponseEntity<Map<String,Object>> getPositionsByVesselIdAndOptionalDate(
             @PathVariable Integer vesselId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEnd,
@@ -67,10 +72,17 @@ public class PositionVesselController {
     ) {
         List<PositionVessel> positions = service.getPositionsByIdAndOptionalDate(vesselId,Optional.ofNullable(dateStart),Optional.ofNullable(dateEnd),currentUser.getUser());
         List<PositionVesselGeoJson> features = mapper.toGeoJson(positions);
-        return Map.of(
+
+        if (features.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+
+        Map<String, Object> geoJson = Map.of(
                 "type", "FeatureCollection",
                 "features", features
-        );
+            );
+
+        return ResponseEntity.ok(geoJson);
     }
 
     @Operation(summary = "Get latest positions from users' vessels")
@@ -78,13 +90,23 @@ public class PositionVesselController {
         @ApiResponse(responseCode = "200", description = "Vessels Positions Retrieved Successfuly")
     })
     @GetMapping("/latest")
-    public ResponseEntity<List<PositionVesselGeoJson>> getLatestPosition(
+    public ResponseEntity<Map<String, Object>> getLatestPosition(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
         @RequestParam(name = "mmsi", required = false) List<String> mmsi,
         @AuthenticationPrincipal UserDetails userDetails) {
             Pageable pageable = PageRequest.of(page, size);
             List<PositionVesselGeoJson> positions = service.getLatestPositions(userDetails, mmsi, pageable);
-            return ResponseEntity.ok(positions);
+            
+            if (positions.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+
+            Map<String, Object> geoJson = Map.of(
+                "type", "FeatureCollection",
+                "features", positions
+            );
+
+            return ResponseEntity.ok(geoJson);
     }
 }
