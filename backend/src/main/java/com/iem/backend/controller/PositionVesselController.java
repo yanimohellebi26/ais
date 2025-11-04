@@ -73,11 +73,10 @@ public class PositionVesselController {
         );
     }
 
-        @Operation(summary = "Get latest positions from users' vessels")
+    @Operation(summary = "Get latest positions from users' vessels")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Vessels Positions Retrieved Successfuly")
     })
-    @JsonView(Views.Public.class)
     @GetMapping("/latest")
     public ResponseEntity<List<PositionVesselGeoJson>> getLatestPosition(
         @RequestParam(defaultValue = "0") int page,
