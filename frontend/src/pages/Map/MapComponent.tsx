@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import TitleH1 from "../../components/BaseComponents/TitleH1";
-import Button from "../../components/BaseComponents/Button";
+import ToggleButton from "../../components/BaseComponents/ToggleButton";
 import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
+import { Map as MapIcon, Globe} from 'lucide-react'
 import { Map } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -21,12 +22,12 @@ const MapComponent: React.FC = () => {
         <div>
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
-            <Button className="btn btn-sm" onClick={switchMapStyle}>Switch Map Style</Button>
+            <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
             <div className="map-container">
                 <Map
                     initialViewState={{
-                    longitude: -100,
-                    latitude: 40,
+                    longitude: 3.49409153,
+                    latitude: 47.94155256,
                     zoom: 3.5
                     }}
                     style={{width: '100%', height: '100%'}}
