@@ -1,9 +1,19 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.PositionVesselDTO;
 import com.iem.backend.entity.PositionVessel;
+import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.ApiExceptions.*;
+import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.PositionVesselRepository;
+import com.iem.backend.repository.UserRepository;
+import com.iem.backend.repository.VesselRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -15,11 +25,16 @@ import java.util.Optional;
 public class PositionVesselService {
 
     private final PositionVesselRepository repository;
+    private final VesselRepository vesselRepo;
+    private final UserRepository userRepo;
+
     private final VesselService vesselService;
 
-    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService) {
+    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService, VesselRepository vesselRepo, UserRepository userRepo) {
         this.repository = repository;
         this.vesselService = vesselService;
+        this.vesselRepo = vesselRepo;
+        this.userRepo = userRepo;
     }
 
     public List<PositionVessel> getPositionsByDateAndBounds(
@@ -88,5 +103,60 @@ public class PositionVesselService {
         }
     }
 
+    public List<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
 
+        User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
+            .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
+
+        List<Integer> authorizedVesselIds;
+        
+        Role userRole = user.getRole();
+
+        switch (userRole.getName()) {
+            case "OWNER", "CAPTAIN" -> {
+                authorizedVesselIds = vesselRepo.findVesselIdsByUserId(user.getId());
+            }
+
+            case "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> {
+                authorizedVesselIds = null;
+            }
+        
+            default -> throw new AccessDeniedException("Unauthorized Role");
+        }
+
+        List<Integer> filteredVesselIds = null;
+
+        boolean filterCondition = mmsiFilter != null && !mmsiFilter.isEmpty();
+
+        if (filterCondition) {
+            filteredVesselIds = vesselRepo.findIdsByMmsi(mmsiFilter);
+
+            if (authorizedVesselIds != null) {
+                authorizedVesselIds.retainAll(filteredVesselIds);
+            } else {
+                authorizedVesselIds = filteredVesselIds;
+            }
+        }
+
+        Page<PositionVessel> positions;
+
+        if (authorizedVesselIds == null || authorizedVesselIds.isEmpty()) {
+            positions = repository.findAll(pageable);
+        } else { 
+            positions = repository.findByVesselIds(authorizedVesselIds, filterCondition ? null : pageable);
+        }
+
+        return positions.getContent().stream()
+            .map(pv -> new PositionVesselDTO(
+                pv.getVessel().getMmsi(),
+                pv.getBaseDateTime(),
+                pv.getSog(),
+                pv.getCog(),
+                pv.getHeading(),
+                pv.getStatus(),
+                pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
+                pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
+                ))
+            .toList();
+    }
 }

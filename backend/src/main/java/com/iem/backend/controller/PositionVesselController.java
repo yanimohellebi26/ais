@@ -1,13 +1,26 @@
 package com.iem.backend.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.iem.backend.dto.PositionVesselDTO;
+import com.iem.backend.dto.Views;
 import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.PositionVesselService;
 import com.iem.backend.service.mapper.PositionVesselMapper;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import com.iem.backend.entity.PositionVessel;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -59,5 +72,21 @@ public class PositionVesselController {
                 "type", "FeatureCollection",
                 "features", features
         );
+    }
+
+        @Operation(summary = "Get latest positions from users' vessels")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Vessels Positions Retrieved Successfuly")
+    })
+    @JsonView(Views.Public.class)
+    @GetMapping("/latest")
+    public ResponseEntity<List<PositionVesselDTO>> getLatestPosition(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(name = "mmsi", required = false) List<String> mmsi,
+        @AuthenticationPrincipal UserDetails userDetails) {
+            Pageable pageable = PageRequest.of(page, size);
+            List<PositionVesselDTO> positions = service.getLatestPositions(userDetails, mmsi, pageable);
+            return ResponseEntity.ok(positions);
     }
 }
