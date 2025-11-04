@@ -1,7 +1,6 @@
 package com.iem.backend.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.iem.backend.dto.PositionVesselDTO;
 import com.iem.backend.dto.Views;
 import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
 import com.iem.backend.entity.CustomUserDetails;
@@ -80,13 +79,13 @@ public class PositionVesselController {
     })
     @JsonView(Views.Public.class)
     @GetMapping("/latest")
-    public ResponseEntity<List<PositionVesselDTO>> getLatestPosition(
+    public ResponseEntity<List<PositionVesselGeoJson>> getLatestPosition(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
         @RequestParam(name = "mmsi", required = false) List<String> mmsi,
         @AuthenticationPrincipal UserDetails userDetails) {
             Pageable pageable = PageRequest.of(page, size);
-            List<PositionVesselDTO> positions = service.getLatestPositions(userDetails, mmsi, pageable);
+            List<PositionVesselGeoJson> positions = service.getLatestPositions(userDetails, mmsi, pageable);
             return ResponseEntity.ok(positions);
     }
 }

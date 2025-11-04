@@ -1,6 +1,6 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.PositionVesselDTO;
+import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
 import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
@@ -9,6 +9,7 @@ import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.PositionVesselRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
+import com.iem.backend.service.mapper.PositionVesselMapper;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,12 +30,14 @@ public class PositionVesselService {
     private final UserRepository userRepo;
 
     private final VesselService vesselService;
+    private final PositionVesselMapper positionVesselMapper;
 
-    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService, VesselRepository vesselRepo, UserRepository userRepo) {
+    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService, VesselRepository vesselRepo, UserRepository userRepo, PositionVesselMapper positionVesselMapper) {
         this.repository = repository;
         this.vesselService = vesselService;
         this.vesselRepo = vesselRepo;
         this.userRepo = userRepo;
+        this.positionVesselMapper = positionVesselMapper;
     }
 
     public List<PositionVessel> getPositionsByDateAndBounds(
@@ -103,7 +106,7 @@ public class PositionVesselService {
         }
     }
 
-    public List<PositionVesselDTO> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
+    public List<PositionVesselGeoJson> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
 
         User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
             .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
@@ -146,17 +149,6 @@ public class PositionVesselService {
             positions = repository.findByVesselIds(authorizedVesselIds, filterCondition ? null : pageable);
         }
 
-        return positions.getContent().stream()
-            .map(pv -> new PositionVesselDTO(
-                pv.getVessel().getMmsi(),
-                pv.getBaseDateTime(),
-                pv.getSog(),
-                pv.getCog(),
-                pv.getHeading(),
-                pv.getStatus(),
-                pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
-                pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
-                ))
-            .toList();
+        return positionVesselMapper.toGeoJson(positions.getContent());
     }
 }

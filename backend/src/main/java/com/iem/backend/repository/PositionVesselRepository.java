@@ -13,7 +13,7 @@ import java.sql.Timestamp;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
     
-    @Query("SELECT lp FROM LatestPosition lp WHERE (COALESCE(:vesselIds, NULL) IS NULL OR lp.vesselId IN :vesselIds)")
+    @Query("SELECT lp FROM PositionVessel lp WHERE (COALESCE(:vesselIds, NULL) IS NULL OR lp.vesselId IN :vesselIds)")
     Page<PositionVessel> findByVesselIds(@Param("vesselIds") List<Integer> vesselIds, Pageable pageable);
 
     @Query(
