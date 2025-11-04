@@ -1,5 +1,6 @@
 package com.iem.backend.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -12,9 +13,8 @@ import com.iem.backend.entity.PositionVessel;
 import java.sql.Timestamp;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
-    
-    @Query("SELECT lp FROM PositionVessel lp WHERE (COALESCE(:vesselIds, NULL) IS NULL OR lp.vesselId IN :vesselIds)")
-    Page<PositionVessel> findByVesselIds(@Param("vesselIds") List<Integer> vesselIds, Pageable pageable);
+
+    Page<PositionVessel> findPositionVesselsByIdIn(Collection<Integer> ids, Pageable pageable);
 
     @Query(
             value = """

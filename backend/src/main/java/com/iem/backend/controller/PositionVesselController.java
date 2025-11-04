@@ -93,7 +93,7 @@ public class PositionVesselController {
     public ResponseEntity<Map<String, Object>> getLatestPosition(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
-        @RequestParam(name = "mmsi", required = false) List<String> mmsi,
+        @RequestParam(name = "mmsis", required = false) List<String> mmsi,
         @AuthenticationPrincipal UserDetails userDetails) {
             Pageable pageable = PageRequest.of(page, size);
             List<PositionVesselGeoJson> positions = service.getLatestPositions(userDetails, mmsi, pageable);

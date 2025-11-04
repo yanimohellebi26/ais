@@ -117,7 +117,7 @@ public class PositionVesselService {
 
         switch (userRole.getName()) {
             case "OWNER", "CAPTAIN" -> {
-                authorizedVesselIds = vesselRepo.findVesselIdsByUserId(user.getId());
+                authorizedVesselIds = vesselRepo.findIdByUsers_Id(user.getId());
             }
 
             case "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> {
@@ -132,7 +132,7 @@ public class PositionVesselService {
         boolean filterCondition = mmsiFilter != null && !mmsiFilter.isEmpty();
 
         if (filterCondition) {
-            filteredVesselIds = vesselRepo.findIdsByMmsi(mmsiFilter);
+            filteredVesselIds = vesselRepo.findIdByMmsiIn(mmsiFilter);
 
             if (authorizedVesselIds != null) {
                 authorizedVesselIds.retainAll(filteredVesselIds);
@@ -143,10 +143,12 @@ public class PositionVesselService {
 
         Page<PositionVessel> positions;
 
-        if (authorizedVesselIds == null || authorizedVesselIds.isEmpty()) {
+        if (authorizedVesselIds == null) {
             positions = repository.findAll(pageable);
-        } else { 
-            positions = repository.findByVesselIds(authorizedVesselIds, filterCondition ? null : pageable);
+        } else if (authorizedVesselIds.isEmpty()){ 
+            positions = Page.empty(pageable);
+        } else {
+            positions = repository.findPositionVesselsByIdIn(authorizedVesselIds, filterCondition ? null : pageable);
         }
 
         return positionVesselMapper.toGeoJson(positions.getContent());
