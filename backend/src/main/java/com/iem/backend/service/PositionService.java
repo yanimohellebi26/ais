@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.iem.backend.dto.PositionVesselDTO;
-import com.iem.backend.entity.LatestPosition;
+import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.UserNotFoundException;
@@ -66,7 +66,7 @@ public class PositionService {
             }
         }
 
-        Page<LatestPosition> positions;
+        Page<PositionVessel> positions;
 
         if (authorizedVesselIds == null || authorizedVesselIds.isEmpty()) {
             positions = positionRepo.findAll(pageable);
@@ -81,7 +81,7 @@ public class PositionService {
                 pv.getSog(),
                 pv.getCog(),
                 pv.getHeading(),
-                pv.getStatusId(),
+                pv.getStatus(),
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().y : null,
                 pv.getGeom() != null ? pv.getGeom().getCoordinate().x : null
                 ))

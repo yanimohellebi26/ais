@@ -4,10 +4,8 @@ import com.iem.backend.dto.ResponseVesselDto;
 import com.iem.backend.dto.VesselResponseDto;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
-import com.iem.backend.exception.UserAccessDeniedException;
-import com.iem.backend.exception.UserNotFoundException;
-import com.iem.backend.exception.VesselAlreadyOwnedException;
-import com.iem.backend.exception.VesselNotFoundException;
+import com.iem.backend.exception.*;
+import com.iem.backend.exception.ApiExceptions.*;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +29,16 @@ public class VesselService {
         this.vesselRepository = vesselRepository;
         this.userRepository = userRepository;
     }
+
+    public void checkUserHasAccessToVessel(User user, Integer vesselId) {
+        if ("ADMIN".equalsIgnoreCase(user.getRole().getName())) return;
+
+        boolean owns = vesselRepository.existsByIdAndUsers_Id(vesselId, user.getId());
+        if (!owns) {
+            throw new ForbiddenException("No access to this vessel");
+        }
+    }
+
 
     @Transactional
     public void relateUserToVessel(Integer userId, String mmsi) {
@@ -110,7 +118,7 @@ public class VesselService {
             orElseThrow(()-> new UserNotFoundException());
 
         if(!"ADMIN".equalsIgnoreCase(currentUser.getRole().getName())){
-            boolean ownVessel = vesselRepository.existsByIdAndUserId(id,currentUser.getId());
+            boolean ownVessel = vesselRepository.existsByIdAndUsers_Id(id,currentUser.getId());
             if (!ownVessel){
                 throw new UserAccessDeniedException("You are not allowed to update this Vessel");
             }
@@ -152,6 +160,5 @@ public class VesselService {
         return vesselRepository.findByUserId(userId).stream().map(VesselResponseDto::fromEntity).toList();
     }
 
-    
 }
 
