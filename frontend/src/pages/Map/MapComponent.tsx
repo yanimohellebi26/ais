@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import TitleH1 from "../../components/BaseComponents/TitleH1";
 import ToggleButton from "../../components/BaseComponents/ToggleButton";
 import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
+import Slider from "../../components/BaseComponents/Slider";
 import { Map as MapIcon, Globe} from 'lucide-react'
 import { Map } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -14,6 +15,7 @@ const mapStyles = [
 
 const MapComponent: React.FC = () => {
     const [styleIndex, setStyleIndex] = useState(0);
+    const [limit, setLimit] = useState(500);
 
     const switchMapStyle = () => {
         setStyleIndex((prev) => (prev + 1) % mapStyles.length);
@@ -23,7 +25,10 @@ const MapComponent: React.FC = () => {
         <div>
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
+
             <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
+            <Slider label="Limit Positions" min={50} max={500} step={50} value={limit} onChange={setLimit} />
+
             <div className="map-container">
                 <Map
                     initialViewState={{
@@ -34,7 +39,7 @@ const MapComponent: React.FC = () => {
                     style={{width: '100%', height: '100%'}}
                     mapStyle={mapStyles[styleIndex]}
                 > 
-                <VesselLayer limit={500}/>
+                <VesselLayer limit={limit}/>
                 </Map>
             </div>
             

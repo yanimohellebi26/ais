@@ -7,7 +7,7 @@ interface VesselLayerProps {
 }
 
 const VesselLayer : React.FC<VesselLayerProps> = ({
-    limit = 500
+    limit = 200
 }) => {
     const apiFetch = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
@@ -27,7 +27,7 @@ const VesselLayer : React.FC<VesselLayerProps> = ({
             const maxLon = bounds.getEast();
 
             const zoom = map.getZoom();
-            const dynamicLimit = zoom < 5 ? 100 : zoom < 8 ? 300 : 500;
+            const dynamicLimit = zoom < 5 ? limit : zoom < 8 ? limit * 3 : limit * 5;
 
             const query = `/api/v1/positions/latest/in-bounds?minLat=${minLat}&maxLat=${maxLat}&minLon=${minLon}&maxLon=${maxLon}&limit=${dynamicLimit}`;
 
