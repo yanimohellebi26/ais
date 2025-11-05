@@ -34,7 +34,7 @@ const MapComponent: React.FC = () => {
                     style={{width: '100%', height: '100%'}}
                     mapStyle={mapStyles[styleIndex]}
                 > 
-                <VesselLayer />
+                <VesselLayer limit={500}/>
                 </Map>
             </div>
             

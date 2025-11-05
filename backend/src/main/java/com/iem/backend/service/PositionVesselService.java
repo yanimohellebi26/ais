@@ -133,4 +133,27 @@ public class PositionVesselService {
 
         return positions.getContent();
     }
+
+    public List<PositionVessel> getLatestPositionsInBounds(
+        CustomUserDetails customUserDetails,
+        double minLat, double maxLat, double minLon, double maxLon,
+        int limit
+    ) {
+        User user = customUserDetails.getUser();
+        Role userRole = user.getRole();
+
+        boolean isFullAccess = switch (userRole.getName()) {
+            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
+            case "OWNER", "CAPTAIN" -> false;
+            default -> throw new AccessDeniedException("Unauthorized Role");
+        };
+
+        if (!isFullAccess) {
+            vesselService.checkUserHasAccessToVessels(user, null);
+        }
+
+        validateBounds(minLat, maxLat, minLon, maxLon);
+
+        return repository.findWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+    }
 }
