@@ -25,7 +25,7 @@ export function useEtlWebSocket(path: string | null) {
         onMessage: (m) => {
             try {
                 const parsed = JSON.parse(m.data);
-                setMessages(prev => [...prev, parsed]);
+                setMessages((prev) => [...prev, parsed]);
                 setLastMessage(parsed);
             } catch (err) {
                 console.error("Failed to parse WS message", err);
@@ -33,10 +33,13 @@ export function useEtlWebSocket(path: string | null) {
         },
     });
 
+    const clearMessages = () => setMessages([]);
+
     return {
         sendMessage,
         lastMessage,
         messages,
+        clearMessages,
         isConnected: readyState === ReadyState.OPEN,
     };
 }
