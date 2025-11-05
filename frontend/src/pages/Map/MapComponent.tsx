@@ -5,6 +5,7 @@ import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
 import { Map as MapIcon, Globe} from 'lucide-react'
 import { Map } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import VesselLayer from "../../components/MapLayers/VesselLayer";
 
 const mapStyles = [
     "https://demotiles.maplibre.org/globe.json",
@@ -32,7 +33,9 @@ const MapComponent: React.FC = () => {
                     }}
                     style={{width: '100%', height: '100%'}}
                     mapStyle={mapStyles[styleIndex]}
-                />
+                > 
+                <VesselLayer />
+                </Map>
             </div>
             
         </div>
