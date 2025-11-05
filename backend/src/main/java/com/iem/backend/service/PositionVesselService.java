@@ -1,20 +1,15 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.PositionVessel;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.ApiExceptions.*;
-import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.PositionVesselRepository;
-import com.iem.backend.repository.UserRepository;
-import com.iem.backend.repository.VesselRepository;
-import com.iem.backend.service.mapper.PositionVesselMapper;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -26,18 +21,12 @@ import java.util.Optional;
 public class PositionVesselService {
 
     private final PositionVesselRepository repository;
-    private final VesselRepository vesselRepo;
-    private final UserRepository userRepo;
 
     private final VesselService vesselService;
-    private final PositionVesselMapper positionVesselMapper;
 
-    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService, VesselRepository vesselRepo, UserRepository userRepo, PositionVesselMapper positionVesselMapper) {
+    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService) {
         this.repository = repository;
         this.vesselService = vesselService;
-        this.vesselRepo = vesselRepo;
-        this.userRepo = userRepo;
-        this.positionVesselMapper = positionVesselMapper;
     }
 
     public List<PositionVessel> getPositionsByDateAndBounds(
@@ -106,51 +95,42 @@ public class PositionVesselService {
         }
     }
 
-    public List<PositionVesselGeoJson> getLatestPositions(UserDetails userDetails, List<String> mmsiFilter, Pageable pageable) {
+    public List<PositionVessel> getLatestPositions(CustomUserDetails customUserDetails, List<String> mmsisFilter, Pageable pageable) {
 
-        User user = userRepo.findByEmailIgnoreCase(userDetails.getUsername())
-            .orElseThrow(() -> new UserNotFoundException(userDetails.getUsername()));
-
-        List<Integer> authorizedVesselIds;
-        
+        User user = customUserDetails.getUser();      
         Role userRole = user.getRole();
 
-        switch (userRole.getName()) {
-            case "OWNER", "CAPTAIN" -> {
-                authorizedVesselIds = vesselRepo.findIdByUsers_Id(user.getId());
-            }
-
-            case "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> {
-                authorizedVesselIds = null;
-            }
-        
+        boolean isFullAccess = switch (userRole.getName()) {
+            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
+            case "OWNER", "CAPTAIN" -> false;
             default -> throw new AccessDeniedException("Unauthorized Role");
-        }
+        };
 
-        List<Integer> filteredVesselIds = null;
-
-        boolean filterCondition = mmsiFilter != null && !mmsiFilter.isEmpty();
-
-        if (filterCondition) {
-            filteredVesselIds = vesselRepo.findIdByMmsiIn(mmsiFilter);
-
-            if (authorizedVesselIds != null) {
-                authorizedVesselIds.retainAll(filteredVesselIds);
-            } else {
-                authorizedVesselIds = filteredVesselIds;
-            }
+        if (!isFullAccess) {
+            vesselService.checkUserHasAccessToVessels(user, mmsisFilter);
         }
 
         Page<PositionVessel> positions;
 
-        if (authorizedVesselIds == null) {
-            positions = repository.findAll(pageable);
-        } else if (authorizedVesselIds.isEmpty()){ 
-            positions = Page.empty(pageable);
+        if (mmsisFilter != null && !mmsisFilter.isEmpty()) {
+            List<Integer> vesselIds = vesselService.getVesselIdsByMmsis(mmsisFilter);
+            positions = repository.findPositionVesselsByIdIn(vesselIds, pageable);
         } else {
-            positions = repository.findPositionVesselsByIdIn(authorizedVesselIds, filterCondition ? null : pageable);
+
+            if (!isFullAccess) {
+                List<Integer> userVesselIds = vesselService.getVesselIdsByUser(user.getId());
+
+                if (userVesselIds == null || userVesselIds.isEmpty()) {
+                    positions = Page.empty(pageable);
+                } else {
+                    positions = repository.findPositionVesselsByIdIn(userVesselIds, pageable);
+                }
+                
+            } else {
+                positions = repository.findAll(pageable);
+            }
         }
 
-        return positionVesselMapper.toGeoJson(positions.getContent());
+        return positions.getContent();
     }
 }

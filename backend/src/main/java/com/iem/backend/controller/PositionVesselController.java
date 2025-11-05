@@ -94,17 +94,18 @@ public class PositionVesselController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
         @RequestParam(name = "mmsis", required = false) List<String> mmsi,
-        @AuthenticationPrincipal UserDetails userDetails) {
+        @AuthenticationPrincipal CustomUserDetails customUserDetails) {
             Pageable pageable = PageRequest.of(page, size);
-            List<PositionVesselGeoJson> positions = service.getLatestPositions(userDetails, mmsi, pageable);
-            
-            if (positions.isEmpty()) {
+            List<PositionVessel> positions = service.getLatestPositions(customUserDetails, mmsi, pageable);
+            List<PositionVesselGeoJson> features = mapper.toGeoJson(positions);
+
+            if (features.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             }
 
             Map<String, Object> geoJson = Map.of(
                 "type", "FeatureCollection",
-                "features", positions
+                "features", features
             );
 
             return ResponseEntity.ok(geoJson);
