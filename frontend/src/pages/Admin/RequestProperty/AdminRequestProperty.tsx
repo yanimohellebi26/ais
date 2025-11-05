@@ -126,17 +126,44 @@ const AdminRequestProperty: React.FC = () => {
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
-            const viewer = window.open(blobUrl, "_blank", "noopener,noreferrer");
+            
+            // Créer une nouvelle fenêtre avec un document HTML qui contient un iframe pour le PDF
+            const viewer = window.open("", "_blank", "noopener,noreferrer");
             if (!viewer) {
                 URL.revokeObjectURL(blobUrl);
                 throw new Error("Unable to open preview window");
             }
 
-            // Revoke URL once the new window loads or unloads the blob to prevent memory leaks.
-            const revoke = () => URL.revokeObjectURL(blobUrl);
-            viewer.addEventListener("load", revoke, { once: true });
-            viewer.addEventListener("beforeunload", revoke, { once: true });
-            setTimeout(revoke, 60_000);
+            // Écrire le HTML dans la nouvelle fenêtre pour afficher le PDF
+            viewer.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${row.fileName}</title>
+                    <style>
+                        body, html {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            overflow: hidden;
+                        }
+                        iframe {
+                            border: none;
+                            width: 100%;
+                            height: 100%;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <iframe src="${blobUrl}" type="application/pdf"></iframe>
+                </body>
+                </html>
+            `);
+            viewer.document.close();
+
+            // Nettoyer l'URL après un délai
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
         } catch (error) {
             toast.error("Impossible d'ouvrir le fichier");
         } finally {
