@@ -25,4 +25,12 @@ public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
     boolean existsByIdAndUsers_Id(Integer vesselId, Integer userId);
 
+    @Query("SELECT v.id FROM Vessel v JOIN v.users u WHERE u.id = :userId")
+    List<Integer> findIdByUsers_Id(Integer userId);
+
+    @Query("SELECT v.mmsi FROM Vessel v JOIN v.users u WHERE u.id = :userId")
+    List<String> findMmsiByUsers_id(Integer userId);
+
+    @Query("SELECT v.id FROM Vessel v WHERE v.mmsi IN :mmsiList")
+    List<Integer> findIdByMmsiIn(List<String> mmsiList);
 }

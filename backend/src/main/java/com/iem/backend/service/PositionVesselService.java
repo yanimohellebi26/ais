@@ -1,9 +1,15 @@
 package com.iem.backend.service;
 
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.PositionVessel;
+import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.ApiExceptions.*;
 import com.iem.backend.repository.PositionVesselRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -15,6 +21,7 @@ import java.util.Optional;
 public class PositionVesselService {
 
     private final PositionVesselRepository repository;
+
     private final VesselService vesselService;
 
     public PositionVesselService(PositionVesselRepository repository,VesselService vesselService) {
@@ -88,5 +95,42 @@ public class PositionVesselService {
         }
     }
 
+    public List<PositionVessel> getLatestPositions(CustomUserDetails customUserDetails, List<String> mmsisFilter, Pageable pageable) {
 
+        User user = customUserDetails.getUser();      
+        Role userRole = user.getRole();
+
+        boolean isFullAccess = switch (userRole.getName()) {
+            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
+            case "OWNER", "CAPTAIN" -> false;
+            default -> throw new AccessDeniedException("Unauthorized Role");
+        };
+
+        if (!isFullAccess) {
+            vesselService.checkUserHasAccessToVessels(user, mmsisFilter);
+        }
+
+        Page<PositionVessel> positions;
+
+        if (mmsisFilter != null && !mmsisFilter.isEmpty()) {
+            List<Integer> vesselIds = vesselService.getVesselIdsByMmsis(mmsisFilter);
+            positions = repository.findPositionVesselsByIdIn(vesselIds, pageable);
+        } else {
+
+            if (!isFullAccess) {
+                List<Integer> userVesselIds = vesselService.getVesselIdsByUser(user.getId());
+
+                if (userVesselIds == null || userVesselIds.isEmpty()) {
+                    positions = Page.empty(pageable);
+                } else {
+                    positions = repository.findPositionVesselsByIdIn(userVesselIds, pageable);
+                }
+                
+            } else {
+                positions = repository.findAll(pageable);
+            }
+        }
+
+        return positions.getContent();
+    }
 }
