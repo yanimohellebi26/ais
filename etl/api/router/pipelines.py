@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any
 
 from api.security_api import verify_api_key
 from etl.loader import load_pipelines
+from worker.helpers import enqueue_task
 from worker.task_pipeline import run_task_pipeline
 
 
@@ -30,14 +31,19 @@ class PipelineRequest(BaseModel):
 
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
-    task = run_task_pipeline.delay(
-        pipeline_name,
-        payload.file,
-        payload.extra_kwargs or {},
-        payload.continue_on_error,
-        payload.use_timer,
-        auth['user']
+    task = enqueue_task(
+        run_task_pipeline,
+        kwargs={
+            "pipeline": pipeline_name,
+            "file": payload.file,
+            "extra_kwargs": payload.extra_kwargs or {},
+            "user": auth["user"],
+            "continue_on_error": payload.continue_on_error,
+            "use_timer": payload.use_timer,
+        },
+        command_name="run-pipeline"
     )
+
     return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
 
 
