@@ -1,14 +1,18 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.FileUploadDetailsDto;
 import com.iem.backend.dto.FileUploadResponse;
 import com.iem.backend.entity.FileUpload;
 import com.iem.backend.entity.User;
+import com.iem.backend.exception.FileNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.repository.FileUploadRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -111,6 +116,52 @@ public class FileUploadService {
         String pathToReturn = buildResponsePath(storedFilename);
 
         return new FileUploadResponse(pathToReturn, originalName, file.getSize());
+    }
+
+    @Transactional(readOnly = true)
+    public FileUpload getFileEntity(Integer id) {
+        return fileUploadRepository.findById(id)
+                .orElseThrow(FileNotFoundException::new);
+    }
+
+    @Transactional(readOnly = true)
+    public FileUploadDetailsDto getFileDetails(Integer id) {
+        FileUpload fileUpload = getFileEntity(id);
+        return FileUploadDetailsDto.fromEntity(fileUpload);
+    }
+
+    @Transactional(readOnly = true)
+    public Resource loadAsResource(FileUpload fileUpload) {
+        try {
+            Path filePath = storageLocation.resolve(fileUpload.getStoredFilename()).normalize();
+            if (!Files.exists(filePath)) {
+                throw new FileNotFoundException();
+            }
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            }
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File is not readable");
+        } catch (MalformedURLException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to read the stored file", e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Resource loadAsResource(Integer id) {
+        FileUpload fileUpload = getFileEntity(id);
+        return loadAsResource(fileUpload);
+    }
+
+    @Transactional
+    public void deleteFile(FileUpload fileUpload) {
+        Path filePath = storageLocation.resolve(fileUpload.getStoredFilename()).normalize();
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            apiLogger.error("Failed to delete stored file " + filePath, e);
+        }
+        fileUploadRepository.delete(fileUpload);
     }
 
     private void enforcePerUserLimit(User user) {

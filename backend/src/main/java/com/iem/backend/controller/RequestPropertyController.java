@@ -1,6 +1,7 @@
 package com.iem.backend.controller;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.iem.backend.dto.RequestPropertyAdminDto;
 import com.iem.backend.dto.RequestPropertyDto;
 import com.iem.backend.dto.UpdateRequestPropertyDto;
 import com.iem.backend.dto.Views;
@@ -59,7 +60,7 @@ public class RequestPropertyController {
     )
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<RequestPropertyDto>> getAllRequestProperty(
+        public ResponseEntity<Page<RequestPropertyAdminDto>> getAllRequestProperty(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "id,asc") String[] sort,
@@ -68,7 +69,7 @@ public class RequestPropertyController {
         String sortField = sort[0];
         String sortDirection = sort.length > 1 ? sort[1] : "asc";
 
-        Page<RequestPropertyDto> requestPropertyPage = requestPropertyService.getAllRequestProperty(page, size, sortField, sortDirection, search);
+                Page<RequestPropertyAdminDto> requestPropertyPage = requestPropertyService.getAllRequestProperty(page, size, sortField, sortDirection, search);
         return ResponseEntity.ok(requestPropertyPage);
     }
 
@@ -87,8 +88,8 @@ public class RequestPropertyController {
     @GetMapping("/{id}")
     @JsonView(Views.Admin.class)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RequestPropertyDto> getRequestPropertyById(@PathVariable Integer id) {
-        RequestPropertyDto requestPropertyResponseDto = requestPropertyService.getRequestPropertyById(id);
+        public ResponseEntity<RequestPropertyAdminDto> getRequestPropertyById(@PathVariable Integer id) {
+                RequestPropertyAdminDto requestPropertyResponseDto = requestPropertyService.getRequestPropertyById(id);
         return ResponseEntity.ok(requestPropertyResponseDto);
     }
 
@@ -107,8 +108,8 @@ public class RequestPropertyController {
     @DeleteMapping("/{id}")
     @JsonView(Views.Admin.class)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RequestPropertyDto> deleteRequestPropertyById(@PathVariable Integer id) {
-        RequestPropertyDto requestPropertyResponseDto = requestPropertyService.deleteRequestPropertyById(id);
+        public ResponseEntity<RequestPropertyAdminDto> deleteRequestPropertyById(@PathVariable Integer id) {
+                RequestPropertyAdminDto requestPropertyResponseDto = requestPropertyService.deleteRequestPropertyById(id);
         return ResponseEntity.ok(requestPropertyResponseDto);
     }
 
@@ -126,8 +127,8 @@ public class RequestPropertyController {
     )
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RequestPropertyDto> updateRequestPropertyById(@Valid @RequestBody UpdateRequestPropertyDto dto) {
-        RequestPropertyDto requestPropertyResponseDto = requestPropertyService.updateRequestProperty(dto);
+        public ResponseEntity<RequestPropertyAdminDto> updateRequestPropertyById(@Valid @RequestBody UpdateRequestPropertyDto dto) {
+                RequestPropertyAdminDto requestPropertyResponseDto = requestPropertyService.updateRequestProperty(dto);
         return ResponseEntity.ok(requestPropertyResponseDto);
     }
 

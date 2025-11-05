@@ -33,3 +33,33 @@ export interface ApiError extends Error {
     path: string;
     timestamp: string;
 }
+
+export interface RequestPropertyAdmin {
+    id: number;
+    userid: number;
+    username: string;
+    user_email: string;
+    user_role: string;
+    mmsi: string;
+    fileid: number;
+    file_name: string;
+    created_at: string;
+}
+
+export interface FileUploadDetails {
+    id: number;
+    user_id: number;
+    original_filename: string;
+    file_size: number;
+    uploaded_at: string;
+}
+
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+    first: boolean;
+    last: boolean;
+}
