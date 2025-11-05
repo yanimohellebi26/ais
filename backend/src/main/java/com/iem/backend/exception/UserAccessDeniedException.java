@@ -9,12 +9,9 @@ public class UserAccessDeniedException extends ApiException {
     }
 
     public UserAccessDeniedException() {
-        super("Acces denied", HttpStatus.UNAUTHORIZED); //pas connecté
+        super("Access denied", HttpStatus.UNAUTHORIZED);
     }
    
-    public UserAccessDeniedException(String message) {
-        super(message, HttpStatus.FORBIDDEN); //connecté mais pas authorisé noob
-    }
-
+    public UserAccessDeniedException(String message) { super(message, HttpStatus.FORBIDDEN);}
 
 }

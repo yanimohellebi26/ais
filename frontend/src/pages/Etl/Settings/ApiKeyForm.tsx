@@ -19,7 +19,7 @@ const ApiKeyForm: React.FC = () => {
             <div className="flex items-center">
                 <Key/>
                 <span className="font-semibold pl-2 mr-2">API Key Configuration</span>
-                {apiKey !== "" ? (
+                {(apiKey !== "" && apiKey !== null) ? (
                     <div className="badge badge-success badge-soft">
                         <CircleCheck className="w-4" />
                         Key found

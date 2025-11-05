@@ -3,27 +3,24 @@ package com.iem.backend.service;
 import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UserDTO;
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.RoleNotFoundException;
 import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.entity.Role;
-import com.iem.backend.exception.UserAccessDeniedException;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.utils.ApiLogger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.apache.tomcat.util.http.parser.Authorization;
 import org.springframework.security.authorization.AuthorizationDeniedException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.security.Principal;
 import java.time.OffsetDateTime;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -143,13 +140,7 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
 
-        var authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().getName());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
-                Collections.singletonList(authority)
-        );
+        return new CustomUserDetails(user);
     }
 
     @Transactional
@@ -202,10 +193,7 @@ public class UserService implements UserDetailsService {
         String newEcodedPassword = passwordEncoder.encode(dto.newPassword());
         user.setPasswordHash(newEcodedPassword);
         user.setLastUpdate(OffsetDateTime.now());
-        userRepository.save(user); //save en db
+        userRepository.save(user);
     }
-
-
-
 
 }

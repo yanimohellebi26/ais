@@ -1,5 +1,8 @@
 import os
 import json
+import secrets
+from datetime import datetime
+
 from fastapi import HTTPException, Header
 
 API_KEYS_FILE = os.getenv("API_KEYS_FILE", "api_keys.json")
@@ -21,21 +24,23 @@ def verify_api_key(x_api_key: str = Header(...)):
     keys = load_keys()
     if x_api_key not in keys:
         raise HTTPException(status_code=401, detail="Invalid API key")
-    return {"user": keys[x_api_key], "superuser": False}
+    return {"user": keys[x_api_key]["name"], "superuser": False}
 
-def verify_api_key_token(token : str = None):
+def verify_api_key_token(token: str = None):
     if token == SUPER_API_KEY:
         return {"user": "superuser", "superuser": True}
     keys = load_keys()
     if token not in keys:
         raise HTTPException(status_code=401, detail="Invalid API key")
-    return {"user": keys[token], "superuser": False}
+    return {"user": keys[token]["name"], "superuser": False}
 
 def create_api_key(name: str):
-    import secrets
     keys = load_keys()
     key = secrets.token_urlsafe(16)
-    keys[key] = name
+    keys[key] = {
+        "name": name,
+        "created_at": datetime.utcnow().isoformat()  # ISO 8601 UTC timestamp
+    }
     save_keys(keys)
     return key
 
