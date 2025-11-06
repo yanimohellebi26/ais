@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Source, Layer, MapRef, useMap } from "@vis.gl/react-maplibre";
+import React, { useEffect, useState } from "react";
+import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import { useApi } from "../../hooks/useApi";
 
 interface VesselLayerProps {
