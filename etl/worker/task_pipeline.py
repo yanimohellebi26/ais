@@ -6,7 +6,7 @@ from utils.timer import timer
 from worker.celery_app import celery_app
 
 
-@celery_app.task(bind=True, name="run_pipeline")
+@celery_app.task(bind=True, name="run_pipeline",soft_time_limit=3600, time_limit=3700)
 def run_task_pipeline(
     self,
     pipeline,

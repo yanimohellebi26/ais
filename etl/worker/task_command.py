@@ -4,7 +4,7 @@ import click
 from worker.celery_app import celery_app
 
 
-@celery_app.task(bind=True, name="run_cli_command")
+@celery_app.task(bind=True, name="run_cli_command",soft_time_limit=3600, time_limit=3700)
 def run_cli_command(self, command_name, kwargs, user=None):
     from cli.cli import cli
     from worker.store import TaskStore
