@@ -114,7 +114,7 @@ public class PositionVesselService {
 
         if (mmsisFilter != null && !mmsisFilter.isEmpty()) {
             List<Integer> vesselIds = vesselService.getVesselIdsByMmsis(mmsisFilter);
-            positions = repository.findPositionVesselsByIdIn(vesselIds, pageable);
+            positions = repository.findLatestPositionVesselsByIdIn(vesselIds, pageable);
         } else {
 
             if (!isFullAccess) {
@@ -123,7 +123,7 @@ public class PositionVesselService {
                 if (userVesselIds == null || userVesselIds.isEmpty()) {
                     positions = Page.empty(pageable);
                 } else {
-                    positions = repository.findPositionVesselsByIdIn(userVesselIds, pageable);
+                    positions = repository.findLatestPositionVesselsByIdIn(userVesselIds, pageable);
                 }
                 
             } else {
@@ -154,6 +154,6 @@ public class PositionVesselService {
 
         validateBounds(minLat, maxLat, minLon, maxLon);
 
-        return repository.findWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+        return repository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
     }
 }

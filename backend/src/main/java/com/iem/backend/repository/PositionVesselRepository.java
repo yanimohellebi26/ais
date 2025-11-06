@@ -17,6 +17,16 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
     Page<PositionVessel> findPositionVesselsByIdIn(Collection<Integer> ids, Pageable pageable);
 
     @Query(
+        value = """
+            SELECT * FROM latest_position
+            WHERE id IN :ids
+            """,
+        countQuery = "SELECT COUNT(*) FROM latest_position WHERE id IN :ids",
+        nativeQuery = true
+        )
+    Page<PositionVessel> findLatestPositionVesselsByIdIn(@Param("ids") Collection<Integer> ids, Pageable pageable);
+
+    @Query(
             value = """
                 SELECT * FROM position_vessel p
                     WHERE p.base_date_time BETWEEN :start AND :end
@@ -36,17 +46,16 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     @Query(
         value = """
-            SELECT * FROM position_vessel pv
+            SELECT * FROM latest_positions pv
             WHERE ST_Within(
                 pv.geom::geometry,
                 ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
             )
-            ORDER BY pv.base_date_time DESC
             LIMIT :limit
-        """, 
+        """,
         nativeQuery = true
     )
-    List<PositionVessel> findWithinBounds(
+    List<PositionVessel> findLatestPositionWithinBounds(
         @Param("minLat") double minLat,
         @Param("maxLat") double maxLat,
         @Param("minLon") double minLon,
