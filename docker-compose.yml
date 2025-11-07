@@ -116,7 +116,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       # API
       - AIS_BASE_URL=${AIS_BASE_URL}
-      - API_KEYS_FILE=/app/api_keys.yaml
       - SUPER_API_KEY=${SUPER_API_KEY}
       # Pipelines
       - PIPELINES_FILE_YAML=/app/pipelines.yaml

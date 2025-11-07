@@ -22,9 +22,6 @@ COPY worker/ ./worker/
 COPY pipelines.yaml ./
 
 
-# Create api_keys.json if it doesn't exist
-RUN [-f api_keys.json ] || echo "{}" > api_keys.json
-
 EXPOSE 8000
 
 # Default command (will be overridden in docker-compose)
