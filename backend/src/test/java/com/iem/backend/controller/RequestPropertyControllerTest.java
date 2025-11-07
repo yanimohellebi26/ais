@@ -1,12 +1,17 @@
 package com.iem.backend.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.iem.backend.dto.RequestPropertyDto;
 import com.iem.backend.entity.FileUpload;
+import com.iem.backend.entity.RequestProperty;
 import com.iem.backend.entity.Vessel;
 import com.iem.backend.repository.FileUploadRepository;
+import com.iem.backend.repository.RequestPropertyRepository;
 import com.iem.backend.repository.VesselRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +36,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,6 +65,9 @@ public class RequestPropertyControllerTest {
     private FileUploadRepository fileUploadRepository;
 
     @Autowired
+    private RequestPropertyRepository requestPropertyRepository;
+
+    @Autowired
     private RoleRepository roleRepository;
 
     @Autowired
@@ -76,7 +87,8 @@ public class RequestPropertyControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        fileUploadRepository.deleteAll();
+    requestPropertyRepository.deleteAll();
+    fileUploadRepository.deleteAll();
         vesselRepository.deleteAll();
         userRepository.deleteAll();
         roleRepository.deleteAll();
@@ -165,6 +177,34 @@ public class RequestPropertyControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    void GetAllRequestPropertyReturnsAdminDto() throws Exception {
+        RequestProperty requestProperty = persistRequestProperty();
+
+        mockMvc.perform(get("/api/v1/request-property"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(requestProperty.getId()))
+                .andExpect(jsonPath("$.content[0].username").value(user.getUsername()))
+                .andExpect(jsonPath("$.content[0].user_email").value(user.getEmail()))
+                .andExpect(jsonPath("$.content[0].mmsi").value(vessel.getMmsi()))
+                .andExpect(jsonPath("$.content[0].file_name").value(file.getOriginalFilename()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    void DeleteRequestPropertyRemovesEntryAndFile() throws Exception {
+        RequestProperty requestProperty = persistRequestProperty();
+
+        mockMvc.perform(delete("/api/v1/request-property/{id}", requestProperty.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(requestProperty.getId()))
+                .andExpect(jsonPath("$.fileid").value(file.getId()));
+
+        assertThat(requestPropertyRepository.existsById(requestProperty.getId())).isFalse();
+        assertThat(fileUploadRepository.existsById(file.getId())).isFalse();
+    }
+
     private void cleanStorageDirectory() throws Exception {
         Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
         if (!Files.exists(root)) {
@@ -183,5 +223,14 @@ public class RequestPropertyControllerTest {
                         }
                     });
         }
+    }
+
+    private RequestProperty persistRequestProperty() {
+        RequestProperty requestProperty = new RequestProperty();
+        requestProperty.setUser(user);
+        requestProperty.setVessel(vessel);
+        requestProperty.setFile(file);
+        requestProperty.setCreatedAt(OffsetDateTime.now());
+        return requestPropertyRepository.save(requestProperty);
     }
 }

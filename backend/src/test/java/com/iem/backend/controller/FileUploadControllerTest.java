@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -26,8 +27,11 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -140,6 +144,32 @@ class FileUploadControllerTest {
         assertThat(fileUploadRepository.count()).isZero();
     }
 
+    @Test
+    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    void getFileDetails_returnsMetadataForAdmin() throws Exception {
+        User user = persistUser("admin-data@example.com");
+        FileUpload upload = persistStoredFile(user, "doc.txt", "stored-doc.txt", "hello");
+
+        mockMvc.perform(get("/api/v1/uploads/{id}", upload.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(upload.getId()))
+                .andExpect(jsonPath("$.user_id").value(user.getId()))
+                .andExpect(jsonPath("$.original_filename").value("doc.txt"))
+                .andExpect(jsonPath("$.file_size").value(upload.getFileSize()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    void downloadFile_streamsStoredContentForAdmin() throws Exception {
+        User user = persistUser("admin-download@example.com");
+        FileUpload upload = persistStoredFile(user, "report.pdf", "stored-report.pdf", "payload");
+
+        mockMvc.perform(get("/api/v1/uploads/{id}/download", upload.getId()))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("report.pdf")))
+                .andExpect(content().bytes("payload".getBytes()));
+    }
+
     private User persistUser(String email) {
         Role role = roleRepository.findByNameIgnoreCase("USER")
                 .orElseGet(() -> {
@@ -160,6 +190,22 @@ class FileUploadControllerTest {
         return StringUtils.hasText(email) && email.contains("@")
                 ? email.substring(0, email.indexOf('@'))
                 : email;
+    }
+
+    private FileUpload persistStoredFile(User user, String originalName, String storedName, String content) throws Exception {
+        FileUpload upload = new FileUpload();
+        upload.setUser(user);
+        upload.setOriginalFilename(originalName);
+        upload.setStoredFilename(storedName);
+        upload.setFileSize(content.getBytes().length);
+
+        FileUpload saved = fileUploadRepository.save(upload);
+
+        Path storedPath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(storedName);
+        Files.createDirectories(storedPath.getParent());
+        Files.writeString(storedPath, content);
+
+        return saved;
     }
 
     private void cleanStorageDirectory() throws Exception {

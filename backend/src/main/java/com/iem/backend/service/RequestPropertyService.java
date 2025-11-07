@@ -1,133 +1,127 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.RequestPropertyDto;
+import com.iem.backend.dto.RequestPropertyAdminDto;
 import com.iem.backend.dto.UpdateRequestPropertyDto;
-import com.iem.backend.entity.*;
-import com.iem.backend.exception.*;
-import com.iem.backend.repository.FileUploadRepository;
+import com.iem.backend.entity.FileUpload;
+import com.iem.backend.entity.RequestProperty;
+import com.iem.backend.entity.User;
+import com.iem.backend.entity.Vessel;
+import com.iem.backend.exception.RequestPropertyNotFoundException;
+import com.iem.backend.exception.UserNotFoundException;
+import com.iem.backend.exception.VesselAlreadyOwnedException;
+import com.iem.backend.exception.VesselNotFoundException;
 import com.iem.backend.repository.RequestPropertyRepository;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RequestPropertyService {
 
-    private final VesselRepository vesselRepository;
-    private final UserRepository userRepository;
-    private final FileUploadRepository fileUploadRepository;
-    private final RequestPropertyRepository requestPropertyRepository;
+	private final VesselRepository vesselRepository;
+	private final UserRepository userRepository;
+	private final RequestPropertyRepository requestPropertyRepository;
+	private final FileUploadService fileUploadService;
 
-    public RequestPropertyService(VesselRepository vesselRepository, UserRepository userRepository, RequestPropertyRepository requestPropertyRepository, FileUploadRepository fileUploadRepository) {
-        this.vesselRepository = vesselRepository;
-        this.userRepository = userRepository;
-        this.requestPropertyRepository = requestPropertyRepository;
-        this.fileUploadRepository = fileUploadRepository;
-    }
+	public RequestPropertyService(
+			VesselRepository vesselRepository,
+			UserRepository userRepository,
+			RequestPropertyRepository requestPropertyRepository,
+			FileUploadService fileUploadService
+	) {
+		this.vesselRepository = vesselRepository;
+		this.userRepository = userRepository;
+		this.requestPropertyRepository = requestPropertyRepository;
+		this.fileUploadService = fileUploadService;
+	}
 
-    @Transactional
-    public void postRequestProperty(Integer userId, String mmsi, Integer fileId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+	@Transactional
+	public void postRequestProperty(Integer userId, String mmsi, Integer fileId) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException(userId));
 
-        Vessel vessel = vesselRepository.findByMmsi(mmsi)
-                .orElseThrow(() -> new VesselNotFoundException());
+		Vessel vessel = vesselRepository.findByMmsi(mmsi)
+				.orElseThrow(VesselNotFoundException::new);
 
-        FileUpload fileUpload = fileUploadRepository.findById(fileId).orElseThrow(() -> new FileNotFoundException());
+		FileUpload fileUpload = fileUploadService.getFileEntity(fileId);
 
-        RequestProperty requestProperty = new RequestProperty();
-        requestProperty.setUser(user);
-        requestProperty.setVessel(vessel);
-        requestProperty.setFile(fileUpload);
+		RequestProperty requestProperty = new RequestProperty();
+		requestProperty.setUser(user);
+		requestProperty.setVessel(vessel);
+		requestProperty.setFile(fileUpload);
 
-        boolean hasOwner = vessel.getUsers().stream().anyMatch(u -> "OWNER".equalsIgnoreCase(u.getRole().getName()));
-        if (hasOwner) {
-            throw new VesselAlreadyOwnedException();
-        }
+		boolean hasOwner = vessel.getUsers().stream()
+				.anyMatch(u -> "OWNER".equalsIgnoreCase(u.getRole().getName()));
+		if (hasOwner) {
+			throw new VesselAlreadyOwnedException();
+		}
 
-        requestPropertyRepository.save(requestProperty);
-    }
+		requestPropertyRepository.save(requestProperty);
+	}
 
-    public RequestPropertyDto getRequestPropertyById(Integer id) {
-        RequestProperty requestProperty = requestPropertyRepository.findById(id).orElseThrow(()-> new RequestPropertyNotFoundException());
-        RequestPropertyDto responseDto = new RequestPropertyDto(
-                requestProperty.getId(),
-                requestProperty.getUser().getId(),
-                requestProperty.getVessel().getMmsi(),
-                requestProperty.getFile().getId(),
-                requestProperty.getCreatedAt()
-        );
-        return responseDto;
+	@Transactional(readOnly = true)
+	public RequestPropertyAdminDto getRequestPropertyById(Integer id) {
+		RequestProperty requestProperty = requestPropertyRepository.findById(id)
+				.orElseThrow(RequestPropertyNotFoundException::new);
+		return RequestPropertyAdminDto.fromEntity(requestProperty);
+	}
 
-    }
+	@Transactional(readOnly = true)
+	public Page<RequestPropertyAdminDto> getAllRequestProperty(int page, int size, String sortField, String sortDirection, String search) {
+		Sort sort = sortDirection.equalsIgnoreCase("desc")
+				? Sort.by(sortField).descending()
+				: Sort.by(sortField).ascending();
 
-    public Page<RequestPropertyDto> getAllRequestProperty(int page, int size, String sortField, String sortDirection, String search) {
-        Sort sort = sortDirection.equalsIgnoreCase("desc")
-                ? Sort.by(sortField).descending()
-                : Sort.by(sortField).ascending();
+		Pageable pageable = PageRequest.of(page, size, sort);
 
-        Pageable pageable = PageRequest.of(page, size, sort);
+		Page<RequestProperty> requestPropertyPage = requestPropertyRepository.findAll(pageable);
 
-        Page<RequestProperty> requestPropertyPage;
+		return requestPropertyPage.map(RequestPropertyAdminDto::fromEntity);
+	}
 
-        requestPropertyPage = requestPropertyRepository.findAll(pageable);
+	@Transactional
+	public RequestPropertyAdminDto deleteRequestPropertyById(Integer id) {
+		RequestProperty requestProperty = requestPropertyRepository.findById(id)
+				.orElseThrow(RequestPropertyNotFoundException::new);
 
-        return requestPropertyPage.map(RequestPropertyDto::fromEntity);
-    }
+		RequestPropertyAdminDto responseDto = RequestPropertyAdminDto.fromEntity(requestProperty);
 
-    @Transactional
-    public RequestPropertyDto deleteRequestPropertyById(Integer id) {
-        RequestProperty requestProperty = requestPropertyRepository.findById(id).orElseThrow(()-> new RequestPropertyNotFoundException());
-        RequestPropertyDto responseDto = new RequestPropertyDto(
-                requestProperty.getId(),
-                requestProperty.getUser().getId(),
-                requestProperty.getVessel().getMmsi(),
-                requestProperty.getFile().getId(),
-                requestProperty.getCreatedAt()
-        );
-        requestPropertyRepository.deleteById(id);
-        fileUploadRepository.deleteById(requestProperty.getFile().getId());
-        return responseDto;
-    }
+		requestPropertyRepository.deleteById(id);
+		fileUploadService.deleteFile(requestProperty.getFile());
 
-    @Transactional
-    public RequestPropertyDto updateRequestProperty(UpdateRequestPropertyDto dto) {
-        RequestProperty requestProperty = requestPropertyRepository.findById(dto.id())
-                .orElseThrow(() -> new RequestPropertyNotFoundException());
+		return responseDto;
+	}
 
-        if (dto.fileid() != null) {
-            FileUpload file = fileUploadRepository.findById(dto.fileid()).orElseThrow(()-> new FileNotFoundException());
-            requestProperty.setFile(file);
-        }
+	@Transactional
+	public RequestPropertyAdminDto updateRequestProperty(UpdateRequestPropertyDto dto) {
+		RequestProperty requestProperty = requestPropertyRepository.findById(dto.id())
+				.orElseThrow(RequestPropertyNotFoundException::new);
 
-        if (dto.mmsi() != null && !dto.mmsi().isBlank()) {
-            Vessel vessel = vesselRepository.findByMmsi(dto.mmsi()).orElseThrow(() -> new VesselNotFoundException(dto.mmsi()));
-            requestProperty.setVessel(vessel);
-        }
+		if (dto.fileid() != null) {
+			FileUpload file = fileUploadService.getFileEntity(dto.fileid());
+			requestProperty.setFile(file);
+		}
 
-        if (dto.userid() != null) {
-            User user = userRepository.findById(dto.userid()).orElseThrow(() -> new UserNotFoundException(dto.userid()));
-            requestProperty.setUser(user);
-        }
+		if (dto.mmsi() != null && !dto.mmsi().isBlank()) {
+			Vessel vessel = vesselRepository.findByMmsi(dto.mmsi())
+					.orElseThrow(() -> new VesselNotFoundException(dto.mmsi()));
+			requestProperty.setVessel(vessel);
+		}
 
-        RequestProperty updateRequestProperty = requestPropertyRepository.save(requestProperty);
+		if (dto.userid() != null) {
+			User user = userRepository.findById(dto.userid())
+					.orElseThrow(() -> new UserNotFoundException(dto.userid()));
+			requestProperty.setUser(user);
+		}
 
-        return new RequestPropertyDto(
-                updateRequestProperty.getId(),
-                updateRequestProperty.getUser().getId(),
-                updateRequestProperty.getVessel().getMmsi(),
-                updateRequestProperty.getFile().getId(),
-                updateRequestProperty.getCreatedAt()
-        );
-    }
+		RequestProperty updateRequestProperty = requestPropertyRepository.save(requestProperty);
 
-
-
+		return RequestPropertyAdminDto.fromEntity(updateRequestProperty);
+	}
 }
+

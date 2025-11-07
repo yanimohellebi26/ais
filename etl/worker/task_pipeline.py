@@ -19,24 +19,6 @@ def run_task_pipeline(
     from worker.store import TaskStore
 
     task_id = self.request.id
-    now = datetime.utcnow().isoformat()
-
-    # --- Init METADATA --- #
-    TaskStore.set_meta(task_id, {
-        "task_id": task_id,
-        "command": "run-pipeline",
-        "pipeline": pipeline,
-        "file": file,
-        "kwargs": extra_kwargs,
-        "user": user,
-        "status": "queued",
-        "created_at": now,
-        "started_at": None,
-        "ended_at": None
-    })
-
-    # --- PIPELINE QUEUED --- #
-    TaskStore.append_log(task_id, "pipeline", "queued", {"pipeline": pipeline})
 
     # --- Start pipeline --- #
     meta = TaskStore.get_meta(task_id)
@@ -93,12 +75,12 @@ def run_task_pipeline(
                 TaskStore.set_meta(task_id, meta)
                 return
 
-
     duration = time.time() - workflow_start
     TaskStore.append_log(task_id, "pipeline", "success", {
         "pipeline": pipeline,
         "duration": f"{duration:.2f}s",
-        "message": "Pipeline executed successfully"})
+        "message": "Pipeline executed successfully"
+    })
 
     # --- Finalize --- #
     meta["ended_at"] = datetime.utcnow().isoformat()

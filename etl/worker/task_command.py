@@ -1,5 +1,6 @@
 from datetime import datetime
 import click
+
 from worker.celery_app import celery_app
 
 
@@ -27,15 +28,14 @@ def run_cli_command(self, command_name, kwargs, user=None):
 
     TaskStore.append_log(task_id, "command", "queued", {"command": command_name})
 
-    try:
-        # --- Start --- #
-        meta = TaskStore.get_meta(task_id)
-        meta["status"] = "running"
-        meta["started_at"] = datetime.utcnow().isoformat()
-        TaskStore.set_meta(task_id, meta)
-        TaskStore.append_log(task_id, "command", "running", {"command": command_name})
+    # --- Start ---
+    meta = TaskStore.get_meta(task_id)
+    meta["status"] = "running"
+    meta["started_at"] = datetime.utcnow().isoformat()
+    TaskStore.set_meta(task_id, meta)
+    TaskStore.append_log(task_id, "command", "running", {"command": command_name})
 
-        # --- CLI execute --- #
+    try:
         ctx = click.Context(cli)
         command = cli.get_command(ctx, command_name)
         if not command:
@@ -43,12 +43,13 @@ def run_cli_command(self, command_name, kwargs, user=None):
 
         normalized_kwargs = normalize_click_kwargs(command, kwargs)
 
+        # Exécution de la commande
         if hasattr(command, "callback"):
-            command.callback(**normalized_kwargs,publisher=publisher)
+            command.callback(**normalized_kwargs, publisher=publisher)
         else:
-            command(**normalized_kwargs,publisher=publisher)
+            command(**normalized_kwargs, publisher=publisher)
 
-        # --- Success --- #
+        # --- Success ---
         meta = TaskStore.get_meta(task_id)
         meta["status"] = "success"
         meta["ended_at"] = datetime.utcnow().isoformat()
@@ -75,4 +76,3 @@ def normalize_click_kwargs(command, kwargs):
         else:
             normalized[param.name] = val
     return normalized
-
