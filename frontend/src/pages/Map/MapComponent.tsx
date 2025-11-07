@@ -26,9 +26,10 @@ const MapComponent: React.FC = () => {
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
 
-            <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
-            <Slider label="Limit Positions" min={50} max={500} step={50} value={limit} onChange={setLimit} />
-
+            <div className="flex items-center gap-4 mt-4">
+                <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
+                <Slider label="Limit Positions" min={50} max={500} step={50} value={limit} onChange={setLimit} />
+            </div>
             <div className="map-container">
                 <Map
                     initialViewState={{

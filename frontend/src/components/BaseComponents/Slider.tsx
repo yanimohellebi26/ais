@@ -28,15 +28,7 @@ const Slider: React.FC<SliderProps> = ({
           {label}: {value}
         </label>
       )}
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={handleChange}
-        style={{ width: "100%" }}
-      />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={handleChange} className="range range-primary" />
     </div>
   );
 };
