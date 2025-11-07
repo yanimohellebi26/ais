@@ -21,7 +21,6 @@ class PipelineRequest(BaseModel):
     - use_timer : Active timer.
     - extra_kwargs : Pass dynamics kwargs.
     """
-    file: Optional[str] = None
     files: Optional[list[str]] = None
     continue_on_error: bool = False
     use_timer: bool = True
@@ -33,7 +32,7 @@ class PipelineRequest(BaseModel):
 
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
-    if payload.files is not None :
+    if payload.files is not None and len(payload.files) > 1:
         tasks = []
         for file in payload.files:
             task = enqueue_task(
@@ -50,12 +49,17 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
             )
             tasks.append(task)
         return {"pipeline": pipeline_name, "count": len(tasks), "status": "queued"}
+
     else:
+        file = None
+        if payload.files is not None and len(payload.files) > 0:
+            file = payload.files[0]
+
         task = enqueue_task(
             run_task_pipeline,
             kwargs={
                 "pipeline": pipeline_name,
-                "file": payload.file,
+                "file": file,
                 "extra_kwargs": payload.extra_kwargs or {},
                 "user": auth["user"],
                 "continue_on_error": payload.continue_on_error,
@@ -64,6 +68,7 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
             command_name="run-pipeline"
         )
         return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
+
 
 @router.get("/")
 async def list_pipelines(auth=Depends(verify_api_key)):

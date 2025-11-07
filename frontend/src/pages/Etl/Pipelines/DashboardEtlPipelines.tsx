@@ -5,7 +5,7 @@ import { useEtlApi } from "../../../hooks/useEtlApi";
 import { useLoading } from "../../../context/LoadingContext";
 import { toast } from "react-toastify";
 import { Pipeline } from "./interfaces";
-import PipelineSelector from "./PipelineSelector";
+import PipelineSelector from "./PipelineSelector/PipelineSelector";
 import PipelineSteps from "./PipelineSteps";
 import {useEtlWebSocket} from "../../../hooks/useEtlWebsocket";
 import PipelineMessages from "./PipelineMessages";
@@ -39,29 +39,39 @@ const DashboardEtlPipelines: React.FC = () => {
     }, []);
 
     /* Start pipeline with api call */
-    const handleStartPipeline = async ({pipeline, selectedFile, continueOnError, useTimer}: {
+    const handleStartPipeline = async ({pipeline, selectedFiles, continueOnError, useTimer}: {
         pipeline: Pipeline;
-        selectedFile: string | null;
+        selectedFiles: string[];
         continueOnError: boolean;
         useTimer: boolean;
-    }) => {
+    }): Promise<boolean> => {
         setLoading(true);
         try {
             const response = await api(`/pipelines/${pipeline.pipeline_name}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    file: selectedFile,
+                    files: selectedFiles,
                     continue_on_error: continueOnError,
                     use_timer: useTimer,
                 }),
             });
+
+            // If multiple files
+            if (selectedFiles.length > 1) {
+                toast.success("Pipelines started successfully");
+                return true;
+            }
+
+            // If one file
             setTaskId(response.task_id);
             setPipelineStatus({index:0, status:""});
             toast.success("Pipeline started successfully");
             setRunning(true);
+            return false;
         } catch (error) {
             toast.error("Failed to start pipeline");
+            return false;
         } finally {
             setLoading(false);
         }

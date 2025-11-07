@@ -26,7 +26,7 @@ const DashboardEtlHistory: React.FC = () => {
                     ...task,
                     created_at: new Date(task.created_at),
                     started_at: new Date(task.started_at),
-                    ended_at: new Date(task.ended_at),
+                    ended_at: task.ended_at ? new Date(task.ended_at) : null,
                 }));
 
                 setTasks(formatted);

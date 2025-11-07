@@ -85,10 +85,11 @@ const TasksHistory: React.FC<Props> = ({tasks}) => {
                             </td>
                             <td>{formatDate(task.created_at)}</td>
                             <td>
-                                {formatDuration(
-                                    task.ended_at.getTime() -
-                                    task.started_at.getTime()
-                                )}
+                                {task.ended_at
+                                    ? formatDuration(
+                                        task.ended_at.getTime() - task.started_at.getTime()
+                                    )
+                                    : "—"}
                             </td>
                             <td>{task.user}</td>
                             <td>{task.file ?? ""}</td>
