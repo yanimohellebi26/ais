@@ -6,11 +6,11 @@ interface ToggleButtonProps {
   onToggle?: () => void;
 }
 
-export default function ToggleButton({
+const ToggleButton : React.FC<ToggleButtonProps> = ({
   onIcon,
   offIcon,
   onToggle
-}: ToggleButtonProps) {
+}) => {
   const [active, setActive] = useState(false);
 
   const handleClick = () => {
@@ -28,3 +28,5 @@ export default function ToggleButton({
     </button>
   );
 }
+
+export default ToggleButton;
