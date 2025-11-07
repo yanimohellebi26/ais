@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -154,6 +155,16 @@ public class PositionVesselService {
 
         validateBounds(minLat, maxLat, minLon, maxLon);
 
-        return repository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+        if (isFullAccess) {
+            return repository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+        } else {
+            List<Integer> userVesselIds = vesselService.getVesselIdsByUser(user.getId());
+
+            if (userVesselIds == null || userVesselIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            return repository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds, limit);
+        }
     }
 }

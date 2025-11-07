@@ -63,6 +63,25 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
         @Param("limit") int limit
     );
 
+    @Query(
+        value = """
+            SELECT * FROM latest_positions pv
+            WHERE ST_Within(
+                pv.geom::geometry,
+                ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            )
+        """,
+        nativeQuery = true
+    )
+    List<PositionVessel> findLatestPositionWithinBoundsForVessels(
+        @Param("minLat") double minLat,
+        @Param("maxLat") double maxLat,
+        @Param("minLon") double minLon,
+        @Param("maxLon") double maxLon,
+        @Param("vesselIds") List<Integer> vesselIds,
+        @Param("limit") int limit
+    );
+
     List<PositionVessel> findPositionVesselsByVesselId(Integer vesselId);
 
     List<PositionVessel> findPositionVesselsByVesselIdAndBaseDateTimeBetween(Integer vesselId, Timestamp start, Timestamp end);
