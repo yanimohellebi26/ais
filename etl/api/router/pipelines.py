@@ -1,25 +1,17 @@
 import inspect
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
+from sqlalchemy import text
 
 from api.security_api import verify_api_key
 from etl.loader import load_pipelines
 from worker.task_pipeline import run_task_pipeline
-
+from utils.db import get_session
 
 router = APIRouter()
 
-
 class PipelineRequest(BaseModel):
-    """
-    Request to execute pipeline
-    - file : path to source file CSV.
-    - continue_on_error : Ignore errors and continue.
-    - use_timer : Active timer.
-    - extra_kwargs : Pass dynamics kwargs.
-    """
     file: Optional[str] = None
     continue_on_error: bool = False
     use_timer: bool = True
@@ -30,6 +22,21 @@ class PipelineRequest(BaseModel):
 
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
+    if not payload.file:
+        raise HTTPException(status_code=400, detail="Le champ 'file' est obligatoire.")
+
+    with get_session() as session:
+        existing = session.execute(
+            text("""
+                SELECT 1 FROM pipeline_file_registry
+                WHERE pipeline_name = :p AND file_name = :f AND status = 'running'
+            """),
+            {"p": pipeline_name, "f": payload.file}
+        ).fetchone()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Une exécution est déjà en cours pour ce fichier et cette pipeline.")
+
     task = run_task_pipeline.delay(
         pipeline_name,
         payload.file,
@@ -38,23 +45,18 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
         payload.use_timer,
         auth['user']
     )
+
     return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
 
 
 @router.get("/")
-@router.get("/")
 async def list_pipelines(auth=Depends(verify_api_key)):
-    """
-    List all pipelines defined in YAML
-    with desc and attributes of used functions
-    """
     pipelines = load_pipelines()
     result = []
 
     for pipeline_name, pipeline_def in pipelines.items():
         desc = pipeline_def.get("desc", "")
         steps_list = pipeline_def.get("steps", [])
-
         step_infos = []
 
         for func, kwargs in steps_list:
@@ -80,9 +82,4 @@ async def list_pipelines(auth=Depends(verify_api_key)):
             "steps": step_infos,
         })
 
-    return {
-        "count": len(result),
-        "pipelines": result,
-    }
-
-
+    return {"count": len(result), "pipelines": result}
