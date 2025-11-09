@@ -21,7 +21,7 @@ class PipelineRequest(BaseModel):
     - use_timer : Active timer.
     - extra_kwargs : Pass dynamics kwargs.
     """
-    file: Optional[str] = None
+    files: Optional[list[str]] = None
     continue_on_error: bool = False
     use_timer: bool = True
     extra_kwargs: Optional[Dict[str, Dict[str, Any]]] = Field(
@@ -29,25 +29,47 @@ class PipelineRequest(BaseModel):
         description="Dynamics kwargs to override pipelines parameters."
     )
 
+
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
-    task = enqueue_task(
-        run_task_pipeline,
-        kwargs={
-            "pipeline": pipeline_name,
-            "file": payload.file,
-            "extra_kwargs": payload.extra_kwargs or {},
-            "user": auth["user"],
-            "continue_on_error": payload.continue_on_error,
-            "use_timer": payload.use_timer,
-        },
-        command_name="run-pipeline"
-    )
+    if payload.files is not None and len(payload.files) > 1:
+        tasks = []
+        for file in payload.files:
+            task = enqueue_task(
+                run_task_pipeline,
+                kwargs={
+                    "pipeline": pipeline_name,
+                    "file": file,
+                    "extra_kwargs": payload.extra_kwargs or {},
+                    "user": auth["user"],
+                    "continue_on_error": payload.continue_on_error,
+                    "use_timer": payload.use_timer,
+                },
+                command_name="run-pipeline"
+            )
+            tasks.append(task)
+        return {"pipeline": pipeline_name, "count": len(tasks), "status": "queued"}
 
-    return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
+    else:
+        file = None
+        if payload.files is not None and len(payload.files) > 0:
+            file = payload.files[0]
+
+        task = enqueue_task(
+            run_task_pipeline,
+            kwargs={
+                "pipeline": pipeline_name,
+                "file": file,
+                "extra_kwargs": payload.extra_kwargs or {},
+                "user": auth["user"],
+                "continue_on_error": payload.continue_on_error,
+                "use_timer": payload.use_timer,
+            },
+            command_name="run-pipeline"
+        )
+        return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
 
 
-@router.get("/")
 @router.get("/")
 async def list_pipelines(auth=Depends(verify_api_key)):
     """

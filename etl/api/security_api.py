@@ -5,14 +5,21 @@ from datetime import datetime
 
 from fastapi import HTTPException, Header
 
-API_KEYS_FILE = os.getenv("API_KEYS_FILE", "api_keys.json")
+API_KEYS_FILE = "data/api_keys.json"
 SUPER_API_KEY = os.getenv("SUPER_API_KEY", "superapikey")  # superUserKey
 
 def load_keys():
     if not os.path.exists(API_KEYS_FILE):
         return {}
-    with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+
+    try:
+        with open(API_KEYS_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return {}
+            return json.loads(content)
+    except json.JSONDecodeError:
+        return {}
 
 def save_keys(data):
     with open(API_KEYS_FILE, "w", encoding="utf-8") as f:
