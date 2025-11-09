@@ -96,16 +96,20 @@ public class PositionVesselService {
         }
     }
 
+    private boolean hasFullAccess(Role role) {
+        return switch (role.getName()) {
+            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
+            case "OWNER", "CAPTAIN" -> false;
+            default -> throw new AccessDeniedException("Unauthorized Role");
+        };
+    }
+
     public List<PositionVessel> getLatestPositions(CustomUserDetails customUserDetails, List<String> mmsisFilter, Pageable pageable) {
 
         User user = customUserDetails.getUser();      
         Role userRole = user.getRole();
 
-        boolean isFullAccess = switch (userRole.getName()) {
-            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
-            case "OWNER", "CAPTAIN" -> false;
-            default -> throw new AccessDeniedException("Unauthorized Role");
-        };
+        boolean isFullAccess = hasFullAccess(userRole);
 
         if (!isFullAccess) {
             vesselService.checkUserHasAccessToVessels(user, mmsisFilter);
@@ -143,15 +147,7 @@ public class PositionVesselService {
         User user = customUserDetails.getUser();
         Role userRole = user.getRole();
 
-        boolean isFullAccess = switch (userRole.getName()) {
-            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
-            case "OWNER", "CAPTAIN" -> false;
-            default -> throw new AccessDeniedException("Unauthorized Role");
-        };
-
-        if (!isFullAccess) {
-            vesselService.checkUserHasAccessToVessels(user, null);
-        }
+        boolean isFullAccess = hasFullAccess(userRole);
 
         validateBounds(minLat, maxLat, minLon, maxLon);
 
