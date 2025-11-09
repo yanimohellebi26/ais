@@ -18,7 +18,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     @Query(
         value = """
-            SELECT * FROM latest_position
+            SELECT * FROM latest_positions
             WHERE id IN :ids
             """,
         countQuery = "SELECT COUNT(*) FROM latest_position WHERE id IN :ids",
@@ -70,6 +70,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
                 pv.geom::geometry,
                 ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
             )
+            AND pv.vessel_id IN :vesselIds
         """,
         nativeQuery = true
     )
