@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import { useApi } from "../../hooks/useApi";
 import { debounce } from "lodash";
+import {toast} from "react-toastify";
 
 interface VesselLayerProps {
     limit?: number
@@ -37,10 +38,9 @@ const VesselLayer : React.FC<VesselLayerProps> = ({
                 setGeoJson(data);
             } catch (err: any) {
                 if (err.statusCode === 204) {
-                    console.log("No positions in the area");
                     setGeoJson(null);
                 } else {
-                    console.error("Error loading vessel positions : ", err);
+                    toast.error("Error loading vessel positions");
                 }
             }
         }

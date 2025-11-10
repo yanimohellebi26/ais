@@ -26,24 +26,24 @@ const MapComponent: React.FC = () => {
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
 
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-4 my-4">
                 <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
                 <Slider label="Limit Positions" min={100} max={1000} step={100} value={limit} onChange={setLimit} />
             </div>
-            <div className="map-container">
+            <div className="w-full h-[60vh] md:h-[70vh] lg:h-[80vh] rounded-2xl shadow-sm bg-base-100 p-4 border-accent">
                 <Map
                     initialViewState={{
-                    longitude: 3.49409153,
-                    latitude: 47.94155256,
-                    zoom: 3.5
+                        longitude: 3.49409153,
+                        latitude: 47.94155256,
+                        zoom: 3.5,
                     }}
-                    style={{width: '100%', height: '100%'}}
+                    style={{ width: '100%', height: '100%' }}
                     mapStyle={mapStyles[styleIndex]}
-                > 
-                <VesselLayer limit={limit}/>
+                >
+                    <VesselLayer limit={limit} />
                 </Map>
             </div>
-            
+
         </div>
     );
 };

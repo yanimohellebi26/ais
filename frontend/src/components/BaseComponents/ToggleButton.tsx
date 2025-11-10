@@ -21,7 +21,7 @@ const ToggleButton : React.FC<ToggleButtonProps> = ({
   return (
 
     <div>
-      <label className="btn btn-circle swap swap-rotate">
+      <label className="btn btn-circle btn-neutral swap swap-rotate">
         <input type="checkbox" onClick={handleClick}/>
 
         <span className="swap-off fill-current flex items-center justify-center">
