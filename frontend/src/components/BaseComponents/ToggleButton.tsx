@@ -19,13 +19,21 @@ const ToggleButton : React.FC<ToggleButtonProps> = ({
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold transition-all duration-300
-        ${active ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-800"}`}
-    >
-      {active ? onIcon : offIcon}
-    </button>
+
+    <div>
+      <label className="btn btn-circle swap swap-rotate">
+        <input type="checkbox" onClick={handleClick}/>
+
+        <span className="swap-off fill-current flex items-center justify-center">
+          {offIcon}
+        </span>
+
+        <span className="swap-on fill-current flex items-center justify-center">
+          {onIcon}
+        </span>
+        </label>
+
+    </div>
   );
 }
 
