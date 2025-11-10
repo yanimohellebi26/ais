@@ -110,4 +110,31 @@ public class PositionVesselController {
 
             return ResponseEntity.ok(geoJson);
     }
+
+    @Operation(summary = "Get latest positions from users' vessels in a square")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Vessels Positions Retrieved Successfuly")
+    })
+    @GetMapping("/latest/in-bounds")
+    public ResponseEntity<Map<String, Object>> getPositionsInBounds(
+        @RequestParam double minLat,
+        @RequestParam double maxLat,
+        @RequestParam double minLon,
+        @RequestParam double maxLon,
+        @RequestParam(defaultValue = "200") int limit,
+        @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        List<PositionVessel> positions = service.getLatestPositionsInBounds(
+            user, minLat, maxLat, minLon, maxLon, limit
+        );
+
+        if (positions.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+
+        var features = mapper.toGeoJson(positions);
+        var geoJson = Map.of("type", "FeatureCollection", "features", features);
+
+        return ResponseEntity.ok(geoJson);
+    }
 }

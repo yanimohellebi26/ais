@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -95,16 +96,20 @@ public class PositionVesselService {
         }
     }
 
+    private boolean hasFullAccess(Role role) {
+        return switch (role.getName()) {
+            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
+            case "OWNER", "CAPTAIN" -> false;
+            default -> throw new AccessDeniedException("Unauthorized Role");
+        };
+    }
+
     public List<PositionVessel> getLatestPositions(CustomUserDetails customUserDetails, List<String> mmsisFilter, Pageable pageable) {
 
         User user = customUserDetails.getUser();      
         Role userRole = user.getRole();
 
-        boolean isFullAccess = switch (userRole.getName()) {
-            case "ADMIN", "MARITIME_EXPERT", "FINANCIAL_ANALYST" -> true;
-            case "OWNER", "CAPTAIN" -> false;
-            default -> throw new AccessDeniedException("Unauthorized Role");
-        };
+        boolean isFullAccess = hasFullAccess(userRole);
 
         if (!isFullAccess) {
             vesselService.checkUserHasAccessToVessels(user, mmsisFilter);
@@ -114,7 +119,7 @@ public class PositionVesselService {
 
         if (mmsisFilter != null && !mmsisFilter.isEmpty()) {
             List<Integer> vesselIds = vesselService.getVesselIdsByMmsis(mmsisFilter);
-            positions = repository.findPositionVesselsByIdIn(vesselIds, pageable);
+            positions = repository.findLatestPositionVesselsByIdIn(vesselIds, pageable);
         } else {
 
             if (!isFullAccess) {
@@ -123,7 +128,7 @@ public class PositionVesselService {
                 if (userVesselIds == null || userVesselIds.isEmpty()) {
                     positions = Page.empty(pageable);
                 } else {
-                    positions = repository.findPositionVesselsByIdIn(userVesselIds, pageable);
+                    positions = repository.findLatestPositionVesselsByIdIn(userVesselIds, pageable);
                 }
                 
             } else {
@@ -132,5 +137,30 @@ public class PositionVesselService {
         }
 
         return positions.getContent();
+    }
+
+    public List<PositionVessel> getLatestPositionsInBounds(
+        CustomUserDetails customUserDetails,
+        double minLat, double maxLat, double minLon, double maxLon,
+        int limit
+    ) {
+        User user = customUserDetails.getUser();
+        Role userRole = user.getRole();
+
+        boolean isFullAccess = hasFullAccess(userRole);
+
+        validateBounds(minLat, maxLat, minLon, maxLon);
+
+        if (isFullAccess) {
+            return repository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+        } else {
+            List<Integer> userVesselIds = vesselService.getVesselIdsByUser(user.getId());
+
+            if (userVesselIds == null || userVesselIds.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            return repository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds);
+        }
     }
 }

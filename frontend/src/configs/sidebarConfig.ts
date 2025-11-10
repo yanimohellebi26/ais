@@ -7,6 +7,7 @@ import {
     ShieldUser,
     Workflow,
     Wrench,
+    Map,
     Terminal,
     Orbit,
     History,
@@ -27,6 +28,7 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "Map", icon: Map, path: "/dashboard/map"},
     { label: "Admin",
         icon: ShieldUser,
         path: "/dashboard/admin",

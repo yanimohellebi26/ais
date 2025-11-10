@@ -17,6 +17,16 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
     Page<PositionVessel> findPositionVesselsByIdIn(Collection<Integer> ids, Pageable pageable);
 
     @Query(
+        value = """
+            SELECT * FROM latest_positions
+            WHERE id IN :ids
+            """,
+        countQuery = "SELECT COUNT(*) FROM latest_position WHERE id IN :ids",
+        nativeQuery = true
+        )
+    Page<PositionVessel> findLatestPositionVesselsByIdIn(@Param("ids") Collection<Integer> ids, Pageable pageable);
+
+    @Query(
             value = """
                 SELECT * FROM position_vessel p
                     WHERE p.base_date_time BETWEEN :start AND :end
@@ -32,6 +42,46 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             @Param("maxLat") double maxLat,
             @Param("minLon") double minLon,
             @Param("maxLon") double maxLon
+    );
+
+    @Query(
+        value = """
+            SELECT * FROM latest_positions pv
+            WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND ST_Within(
+                pv.geom::geometry,
+                ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            )
+            LIMIT :limit;
+        """,
+        nativeQuery = true
+    )
+    List<PositionVessel> findLatestPositionWithinBounds(
+        @Param("minLat") double minLat,
+        @Param("maxLat") double maxLat,
+        @Param("minLon") double minLon,
+        @Param("maxLon") double maxLon,
+        @Param("limit") int limit
+    );
+
+    @Query(
+        value = """
+            SELECT * FROM latest_positions pv
+            WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND ST_Within(
+                pv.geom::geometry,
+                ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            )
+            AND pv.vessel_id IN (:vesselIds)
+        """,
+        nativeQuery = true
+    )
+    List<PositionVessel> findLatestPositionWithinBoundsForVessels(
+        @Param("minLat") double minLat,
+        @Param("maxLat") double maxLat,
+        @Param("minLon") double minLon,
+        @Param("maxLon") double maxLon,
+        @Param("vesselIds") List<Integer> vesselIds
     );
 
     List<PositionVessel> findPositionVesselsByVesselId(Integer vesselId);
