@@ -46,15 +46,15 @@ const Slider: React.FC<SliderProps> = ({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 , width: width}}>
+    <div className="flex flex-col gab-4 font-semibold">
       {label && (
-        <label style={{ fontSize: 14, fontWeight: 500 }}>
+        <label className="text-xs">
           {label}
         </label>
       )}
       <div className="w-full max-w-xs">
         <input type="range" min={min} max={max} value={tempValue} className="range" onChange={handleChange} onMouseUp={handleUp} onTouchEnd={handleUp} onMouseDown={handleDown} onTouchStart={handleDown} step={step} />
-        <div className="flex justify-between px-2 mt-2 text-xs">
+        <div className="flex justify-between px-1 mt-2 text-xs">
           {marks.map((_, index) => (
             <span key={index} className="text-center">|</span>
           ))}

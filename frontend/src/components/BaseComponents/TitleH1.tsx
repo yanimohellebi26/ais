@@ -6,7 +6,7 @@ interface TitleH1Props {
 }
 
 const TitleH1: React.FC<TitleH1Props> = ({ children, className = "" }) => {
-  return <h1 className={`text-3xl font-bold ${className}`}>{children}</h1>;
+  return <h1 className={`text-2xl font-semibold mb-4 ${className}`}>{children}</h1>;
 };
 
 export default TitleH1;
