@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import { useApi } from "../../hooks/useApi";
+import { debounce } from "lodash";
 
 interface VesselLayerProps {
     limit?: number
@@ -31,7 +32,6 @@ const VesselLayer : React.FC<VesselLayerProps> = ({
 
             const query = `/api/v1/positions/latest/in-bounds?minLat=${minLat}&maxLat=${maxLat}&minLon=${Math.max(-180, Math.min(minLon, 180))}&maxLon=${Math.max(-180, Math.min(maxLon, 180))}&limit=${dynamicLimit}`;
 
-
             try {
                 const data = await apiFetch<any>(query);
                 setGeoJson(data);
@@ -45,12 +45,15 @@ const VesselLayer : React.FC<VesselLayerProps> = ({
             }
         }
 
+        const debouncedFetch = debounce(fetchPositionsInBounds, 500, { leading: true, trailing: false });
+
         fetchPositionsInBounds();
 
-        map.on("moveend", fetchPositionsInBounds);
+        map.on("moveend", debouncedFetch);
 
         return () => {
-            map.off("moveend", fetchPositionsInBounds);
+            map.off("moveend", debouncedFetch);
+            debouncedFetch.cancel();
         }
     }, [map, apiFetch, limit]);
 

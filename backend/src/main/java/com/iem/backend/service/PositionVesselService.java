@@ -160,7 +160,7 @@ public class PositionVesselService {
                 return Collections.emptyList();
             }
 
-            return repository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds, limit);
+            return repository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds);
         }
     }
 }

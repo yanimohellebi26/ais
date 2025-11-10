@@ -47,11 +47,12 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
     @Query(
         value = """
             SELECT * FROM latest_positions pv
-            WHERE ST_Within(
+            WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND ST_Within(
                 pv.geom::geometry,
                 ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
             )
-            LIMIT :limit
+            LIMIT :limit;
         """,
         nativeQuery = true
     )
@@ -66,11 +67,12 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
     @Query(
         value = """
             SELECT * FROM latest_positions pv
-            WHERE ST_Within(
+            WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND ST_Within(
                 pv.geom::geometry,
                 ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
             )
-            AND pv.vessel_id IN :vesselIds
+            AND pv.vessel_id IN (:vesselIds)
         """,
         nativeQuery = true
     )
@@ -79,8 +81,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
         @Param("maxLat") double maxLat,
         @Param("minLon") double minLon,
         @Param("maxLon") double maxLon,
-        @Param("vesselIds") List<Integer> vesselIds,
-        @Param("limit") int limit
+        @Param("vesselIds") List<Integer> vesselIds
     );
 
     List<PositionVessel> findPositionVesselsByVesselId(Integer vesselId);

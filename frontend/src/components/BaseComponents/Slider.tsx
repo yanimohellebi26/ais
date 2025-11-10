@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface SliderProps {
   label?: string;
@@ -19,14 +19,31 @@ const Slider: React.FC<SliderProps> = ({
   width = 500,
   onChange,
 }) => {
+
+  const [tempValue, setTempValue] = useState(value);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    if (!dragging) {
+      setTempValue(value);
+    }
+  }, [value, dragging]);
+
+  const handleDown = () => setDragging(true);
+  const handleUp = () => {
+    setDragging(false);
+    onChange(tempValue);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(Number(e.target.value));
+    const newValue = Number(e.target.value)
+    setTempValue(newValue);
   };
 
   const marks = [];
   for(let i = min; i <= max; i+= step) {
     marks.push(i);
-  }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 , width: width}}>
@@ -36,7 +53,7 @@ const Slider: React.FC<SliderProps> = ({
         </label>
       )}
       <div className="w-full max-w-xs">
-        <input type="range" min={min} max={max} value={value} className="range" onChange={handleChange} step={step} />
+        <input type="range" min={min} max={max} value={tempValue} className="range" onChange={handleChange} onMouseUp={handleUp} onTouchEnd={handleUp} onMouseDown={handleDown} onTouchStart={handleDown} step={step} />
         <div className="flex justify-between px-2 mt-2 text-xs">
           {marks.map((_, index) => (
             <span key={index} className="text-center">|</span>

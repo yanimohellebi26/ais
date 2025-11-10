@@ -28,7 +28,7 @@ const MapComponent: React.FC = () => {
 
             <div className="flex items-center gap-4 mt-4">
                 <ToggleButton onIcon={<MapIcon/>} offIcon={<Globe/>} onToggle={switchMapStyle}></ToggleButton>
-                <Slider label="Limit Positions" min={50} max={500} step={50} value={limit} onChange={setLimit} />
+                <Slider label="Limit Positions" min={100} max={1000} step={100} value={limit} onChange={setLimit} />
             </div>
             <div className="map-container">
                 <Map
