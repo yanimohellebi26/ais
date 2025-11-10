@@ -29,7 +29,7 @@ const VesselLayer : React.FC<VesselLayerProps> = ({
             const zoom = map.getZoom();
             const dynamicLimit = zoom < 5 ? limit : zoom < 8 ? limit * 3 : limit * 5;
 
-            const query = `/api/v1/positions/latest/in-bounds?minLat=${minLat}&maxLat=${maxLat}&minLon=${minLon}&maxLon=${maxLon}&limit=${dynamicLimit}`;
+            const query = `/api/v1/positions/latest/in-bounds?minLat=${minLat}&maxLat=${maxLat}&minLon=${Math.max(-180, Math.min(minLon, 180))}&maxLon=${Math.max(-180, Math.min(maxLon, 180))}&limit=${dynamicLimit}`;
 
 
             try {
