@@ -89,13 +89,27 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     List<PositionVessel> findPositionVesselsByVesselIdAndBaseDateTimeBetween(Integer vesselId, Timestamp start, Timestamp end);
 
-    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId ORDER BY p.baseDateTime DESC")
+    @Query(value = """
+        SELECT * FROM latest_positions lp
+        WHERE lp.vessel_id = :vesselId
+        """,
+        nativeQuery = true)
     Optional<PositionVessel> findLatestPositionByVesselId(@Param("vesselId") Integer vesselId);
 
-    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId AND p.baseDateTime = :ts")
+    @Query(value = """
+        SELECT * FROM latest_positions lp
+        WHERE lp.vessel_id = :vesselId
+        AND lp.base_date_time = :ts
+        """,
+            nativeQuery = true)
     Optional<PositionVessel> findPositionByVesselIdAndExactTime(@Param("vesselId") Integer vesselId, @Param("ts") Timestamp ts);
 
-    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId AND p.baseDateTime BETWEEN :start AND :end ORDER BY p.baseDateTime DESC")
+    @Query(value = """
+        SELECT * FROM latest_positions lp
+        WHERE lp.vessel_id = :vesselId
+        AND lp.base_date_time BETWEEN :start AND :end
+        """,
+            nativeQuery = true)
     Optional<PositionVessel> findLastPositionInDay(@Param("vesselId") Integer vesselId, @Param("start") Timestamp start, @Param("end") Timestamp end);
 
     @Query(value = """

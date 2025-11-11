@@ -60,8 +60,11 @@ public class VesselService {
     }
 
     public Vessel getVesselByMmsi(String mmsi) {
-        return vesselRepository.findByMmsi(mmsi)
+
+        Vessel v = vesselRepository.findByMmsi(mmsi)
                 .orElseThrow(() -> new VesselNotFoundException("Vessel not found for MMSI " + mmsi));
+
+        return v;
     }
 
     @Transactional
