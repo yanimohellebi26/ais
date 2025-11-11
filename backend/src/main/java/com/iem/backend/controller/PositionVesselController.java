@@ -144,58 +144,52 @@ public class PositionVesselController {
         return ResponseEntity.ok(geoJson);
     }
 
-    @Operation(
-            summary = "Retrieve the positions of vessels around a given vessel",
-            description = "Returns all positions of vessels located within a given radius around the specified MMSI on the specified date."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Vessels Positions successfully retrieved"),
-            @ApiResponse(responseCode = "404", description = "Vessel not found for the specified MMSI"),
-            @ApiResponse(responseCode = "400", description = "Invalid date format or future date")
-    })
-    @JsonView(Views.Public.class)
     @GetMapping("/radius")
-    public ResponseEntity<List<VesselPositionRadiusDTO>> getPositionsAroundVessel(
-            @RequestParam(name = "mmsi") String mmsi,
-            @RequestParam(name = "date", required = false) String date,
-            @RequestParam(name = "radius_km", required = false) Double radiusKm,
+    public ResponseEntity<?> getPositionsAroundVessel(
+            @RequestParam String mmsi,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false, name = "radius_km") Double radiusKm,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        Optional<Object> validateDate = Optional.empty();
-        if (date != null && !date.isBlank()) {
-            date = date.trim();
-            boolean containsTime = date.contains(" ") || date.contains(":");
-
-            try {
-                if (containsTime) {
-                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    LocalDateTime ldt = LocalDateTime.parse(date, dtf);
-                    if (ldt.isAfter(LocalDateTime.now())) {
-                        return ResponseEntity.badRequest().body(List.of());
-                    }
-                    validateDate = Optional.of(ldt);
-                } else {
-                    LocalDate ld = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
-                    if (ld.isAfter(LocalDate.now())) {
-                        return ResponseEntity.badRequest().body(List.of());
-                    }
-                    validateDate = Optional.of(ld);
-                }
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.badRequest().body(List.of());
-            }
+        Optional<Object> parsedDate = parseDate(date);
+        if (parsedDate.isEmpty() && date != null && !date.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or future date format"));
         }
 
-        List<VesselPositionRadiusDTO> result = service.getPositionsAroundVesselByMmsi(
+        List<VesselPositionRadiusDTO> positions = service.getPositionsAroundVesselByMmsi(
                 mmsi,
-                validateDate,
+                parsedDate,
                 Optional.ofNullable(radiusKm),
                 currentUser.getUser()
         );
 
-        if (result.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        if (positions.isEmpty()) {
+            return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(result);
+
+        Map<String, Object> geoJson = Map.of(
+                "type", "FeatureCollection",
+                "features", mapper.toGeoJsonFromDTOs(positions)
+        );
+
+        return ResponseEntity.ok(geoJson);
     }
+
+    private Optional<Object> parseDate(String date) {
+        if (date == null || date.isBlank()) return Optional.empty();
+
+        date = date.trim();
+        try {
+            if (date.contains(" ") || date.contains(":")) {
+                LocalDateTime ldt = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                return ldt.isAfter(LocalDateTime.now()) ? Optional.empty() : Optional.of(ldt);
+            } else {
+                LocalDate ld = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
+                return ld.isAfter(LocalDate.now()) ? Optional.empty() : Optional.of(ld);
+            }
+        } catch (DateTimeParseException e) {
+            return Optional.empty();
+        }
+    }
+
 }
