@@ -7,6 +7,7 @@ import { Map as MapIcon, Globe, Maximize, Minimize } from 'lucide-react';
 import { Map } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import VesselLayer from "./MapLayers/VesselLayer";
+import MapFilterDrawer from "./MapFilterDrawer";
 
 const mapStyles = [
     "https://demotiles.maplibre.org/globe.json",
@@ -38,22 +39,11 @@ const MapComponent: React.FC = () => {
         <>
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
+            <MapFilterDrawer/>
+
             <div className="flex gap-4 h-[80vh]">
-                <div className="flex flex-col p-4 gap-4 rounded-2xl shadow-sm bg-base-100 border-accent w-1/4 overflow-y-auto">
-                    <Slider
-                        label="Limit Positions"
-                        min={400}
-                        max={2000}
-                        step={400}
-                        value={limit}
-                        onChange={setLimit}
-                    />
-                </div>
 
                 <div ref={mapContainerRef} className="flex-1 relative rounded-2xl shadow-sm bg-base-100 border-accent overflow-hidden">
-
-
-
                     <Map
                         initialViewState={{
                             longitude: -100,
@@ -76,7 +66,6 @@ const MapComponent: React.FC = () => {
                             />
                             <VesselLayer limit={limit} />
                         </div>
-
                     </Map>
                 </div>
             </div>
