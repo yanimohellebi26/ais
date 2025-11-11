@@ -31,7 +31,8 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
                 SELECT * FROM position_vessel p
                     WHERE p.base_date_time BETWEEN :start AND :end
                     AND p.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)::geography
-                    AND ST_Within(p.geom::geometry, ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326))                                                \s
+                    AND ST_Within(p.geom::geometry, ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326))
+                    LIMIT :limit
             """,
             nativeQuery = true
         )
@@ -41,7 +42,8 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             @Param("minLat") double minLat,
             @Param("maxLat") double maxLat,
             @Param("minLon") double minLon,
-            @Param("maxLon") double maxLon
+            @Param("maxLon") double maxLon,
+            @Param("limit") int limit
     );
 
     @Query(

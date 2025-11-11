@@ -1,14 +1,16 @@
 import React from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import {useVesselPositions} from "../../../hooks/useVesselPositions";
+import {DateRange} from "react-day-picker";
 
 interface Props {
     limit?: number;
+    dateRange?: DateRange;
 }
 
-const VesselLayer: React.FC<Props> = ({ limit }) => {
+const VesselLayer: React.FC<Props> = ({ limit, dateRange }) => {
     const { current: map } = useMap();
-    const geoJson = useVesselPositions({ map, limit });
+    const geoJson = useVesselPositions({ map, limit, dateRange});
 
     if (!geoJson) return null;
 
