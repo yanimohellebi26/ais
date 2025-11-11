@@ -59,6 +59,11 @@ public class VesselService {
         return vesselRepository.findIdByUsers_Id(userId);
     }
 
+    public Vessel getVesselByMmsi(String mmsi) {
+        return vesselRepository.findByMmsi(mmsi)
+                .orElseThrow(() -> new VesselNotFoundException("Vessel not found for MMSI " + mmsi));
+    }
+
     @Transactional
     public void relateUserToVessel(Integer userId, String mmsi) {
         User user = userRepository.findById(userId)

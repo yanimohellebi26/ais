@@ -1,6 +1,9 @@
 package com.iem.backend.controller;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import com.iem.backend.dto.Views;
 import com.iem.backend.dto.positionVessel.PositionVesselGeoJson;
+import com.iem.backend.dto.positionVessel.VesselPositionRadiusDTO;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.PositionVesselService;
 import com.iem.backend.service.mapper.PositionVesselMapper;
@@ -22,6 +25,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -136,5 +142,60 @@ public class PositionVesselController {
         var geoJson = Map.of("type", "FeatureCollection", "features", features);
 
         return ResponseEntity.ok(geoJson);
+    }
+
+    @Operation(
+            summary = "Retrieve the positions of vessels around a given vessel",
+            description = "Returns all positions of vessels located within a given radius around the specified MMSI on the specified date."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Vessels Positions successfully retrieved"),
+            @ApiResponse(responseCode = "404", description = "Vessel not found for the specified MMSI"),
+            @ApiResponse(responseCode = "400", description = "Invalid date format or future date")
+    })
+    @JsonView(Views.Public.class)
+    @GetMapping("/radius")
+    public ResponseEntity<List<VesselPositionRadiusDTO>> getPositionsAroundVessel(
+            @RequestParam(name = "mmsi") String mmsi,
+            @RequestParam(name = "date", required = false) String date,
+            @RequestParam(name = "radius_km", required = false) Double radiusKm,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        Optional<Object> validateDate = Optional.empty();
+        if (date != null && !date.isBlank()) {
+            date = date.trim();
+            boolean containsTime = date.contains(" ") || date.contains(":");
+
+            try {
+                if (containsTime) {
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime ldt = LocalDateTime.parse(date, dtf);
+                    if (ldt.isAfter(LocalDateTime.now())) {
+                        return ResponseEntity.badRequest().body(List.of());
+                    }
+                    validateDate = Optional.of(ldt);
+                } else {
+                    LocalDate ld = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
+                    if (ld.isAfter(LocalDate.now())) {
+                        return ResponseEntity.badRequest().body(List.of());
+                    }
+                    validateDate = Optional.of(ld);
+                }
+            } catch (DateTimeParseException e) {
+                return ResponseEntity.badRequest().body(List.of());
+            }
+        }
+
+        List<VesselPositionRadiusDTO> result = service.getPositionsAroundVesselByMmsi(
+                mmsi,
+                validateDate,
+                Optional.ofNullable(radiusKm),
+                currentUser.getUser()
+        );
+
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+        return ResponseEntity.ok(result);
     }
 }

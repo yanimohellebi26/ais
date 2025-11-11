@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.iem.backend.entity.PositionVessel;
 import java.sql.Timestamp;
+import java.util.Optional;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
 
@@ -88,4 +89,34 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     List<PositionVessel> findPositionVesselsByVesselIdAndBaseDateTimeBetween(Integer vesselId, Timestamp start, Timestamp end);
 
+    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId ORDER BY p.baseDateTime DESC")
+    Optional<PositionVessel> findLatestPositionByVesselId(@Param("vesselId") Integer vesselId);
+
+    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId AND p.baseDateTime = :ts")
+    Optional<PositionVessel> findPositionByVesselIdAndExactTime(@Param("vesselId") Integer vesselId, @Param("ts") Timestamp ts);
+
+    @Query("SELECT p FROM PositionVessel p WHERE p.vesselId = :vesselId AND p.baseDateTime BETWEEN :start AND :end ORDER BY p.baseDateTime DESC")
+    Optional<PositionVessel> findLastPositionInDay(@Param("vesselId") Integer vesselId, @Param("start") Timestamp start, @Param("end") Timestamp end);
+
+    @Query(value = """
+                SELECT *
+                FROM position_vessel p
+                WHERE p.base_date_time BETWEEN :start AND :end
+                  AND p.vessel_id <> :targetVessel
+                  AND ST_DWithin(
+                        p.geom::geography,
+                        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                        :radiusMeters
+                  )
+               """,
+            nativeQuery = true
+    )
+    List<PositionVessel> findPositionsAround(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("radiusMeters") double radiusMeters,
+            @Param("start") Timestamp start,
+            @Param("end") Timestamp end,
+            @Param("targetVessel") Integer targetVessel
+    );
 }
