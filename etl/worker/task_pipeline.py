@@ -7,6 +7,13 @@ from utils.timer import timer
 from worker.celery_app import celery_app
 from utils.db import get_session
 
+import os
+
+if os.getenv("ENV_MODE") == "local":
+    if os.path.exists("/.dockerenv") or os.getenv("RUNNING_IN_DOCKER") == "1":
+        os.environ["ENV_MODE"] = "docker"
+        os.environ["DB_HOST"] = "ais-db"
+
 
 @celery_app.task(bind=True, name="run_pipeline")
 def run_task_pipeline(
@@ -18,9 +25,7 @@ def run_task_pipeline(
         use_timer=True,
         user=None
 ):
-    """
-    Exécute une pipeline ETL et enregistre son exécution dans la table pipeline_file_registry.
-    """
+
 
     from worker.store import TaskStore
 
@@ -46,7 +51,7 @@ def run_task_pipeline(
     with get_session() as session:
         session.execute(
             text("""
-                INSERT INTO pipeline_file_registry (pipeline_name, file_name, status, created_at)
+                INSERT INTO pipeline_file_registry (pipeline_name, filename, status, created_at)
                 VALUES (:p, :f, 'running', NOW())
             """),
             {"p": pipeline, "f": file}
@@ -68,10 +73,9 @@ def run_task_pipeline(
         meta["ended_at"] = datetime.utcnow().isoformat()
         TaskStore.set_meta(task_id, meta)
 
-        # suppression en BD si erreur
         with get_session() as session:
             session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
+                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND filename=:f"),
                 {"p": pipeline, "f": file}
             )
             session.commit()
@@ -114,7 +118,7 @@ def run_task_pipeline(
                 text("""
                     UPDATE pipeline_file_registry
                     SET status='success', ended_at=NOW()
-                    WHERE pipeline_name=:p AND file_name=:f
+                    WHERE pipeline_name=:p AND filename=:f
                 """),
                 {"p": pipeline, "f": file}
             )
@@ -130,7 +134,7 @@ def run_task_pipeline(
 
         with get_session() as session:
             session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
+                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND filename=:f"),
                 {"p": pipeline, "f": file}
             )
             session.commit()
