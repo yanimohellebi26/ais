@@ -37,7 +37,7 @@ public class PositionVesselService {
 
     public List<PositionVessel> getPositionsByDateAndBounds(
             LocalDate dateStart, Optional<LocalDate> dateEnd,
-            double minLat, double maxLat, double minLon, double maxLon
+            double minLat, double maxLat, double minLon, double maxLon, int limit
     ) {
 
         validateBounds(minLat, maxLat, minLon, maxLon);
@@ -50,7 +50,7 @@ public class PositionVesselService {
         Timestamp start = Timestamp.valueOf(dateStart.atStartOfDay());
         Timestamp end = Timestamp.valueOf(finalDateEnd.atTime(23, 59, 59));
 
-        return repository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon);
+        return repository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon, limit);
     }
 
     public List<PositionVessel> getPositionsByIdAndOptionalDate(

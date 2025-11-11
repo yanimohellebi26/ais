@@ -52,9 +52,10 @@ public class PositionVesselController {
             @RequestParam double minLat,
             @RequestParam double maxLat,
             @RequestParam double minLon,
-            @RequestParam double maxLon
+            @RequestParam double maxLon,
+            @RequestParam(defaultValue = "200") int limit
     ) {
-        List<PositionVessel> positions = service.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon);
+        List<PositionVessel> positions = service.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
         List<PositionVesselGeoJson> features = mapper.toGeoJson(positions);
 
         if (features.isEmpty()) {
