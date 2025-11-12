@@ -22,7 +22,8 @@ public record VesselResponseDto(
         Double draft,
         TransceiverClass transceiverClass,
         Timestamp baseDateTime,
-        Boolean locked
+        Boolean locked,
+        String country
 ) {
     public static VesselResponseDto fromEntity(Vessel v) { 
         return new VesselResponseDto(
@@ -40,7 +41,8 @@ public record VesselResponseDto(
                 v.getDraft(),
                 v.getTransceiverClass(),
                 v.getBaseDateTime(),
-                v.isLocked()
+                v.isLocked(),
+                v.getCountry()
         );
     }
 }

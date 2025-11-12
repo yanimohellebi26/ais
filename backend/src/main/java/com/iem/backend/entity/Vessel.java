@@ -49,6 +49,9 @@ public class Vessel {
 
     private boolean locked = false;
 
+    @Column(name="country", length = 100)
+    private String country;
+
     @Column(nullable = false, updatable = false)
     private Timestamp createdAt;
 

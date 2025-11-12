@@ -20,10 +20,9 @@ const TableShips: React.FC = () => {
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>([
         'mmsi',
-        'imo',
         'vesselName',
+        'country',
         'vesselType',
-        'cargoType',
         'baseDateTime',
         'locked'
     ]);
@@ -53,6 +52,7 @@ const TableShips: React.FC = () => {
         { id: 'width', accessorKey: 'width', header: 'Width' },
         { id: 'draft', accessorKey: 'draft', header: 'Draft' },
         { id: 'transceiverClass', accessorKey: 'transceiverClass', header: 'Transceiver Class' },
+        { id: 'country', 'accessorKey': 'country', header: 'Country' },
         { id: 'baseDateTime', accessorKey: 'baseDateTime', header: 'Base Date Time' },
         {
             id: 'locked',
@@ -104,6 +104,7 @@ const TableShips: React.FC = () => {
                     draft: v.draft ?? '-',
                     transceiverClass: v.transceiverClass ?? '-',
                     locked: v.locked ?? false,
+                    country: v.country ?? '-',
                     baseDateTime: v.baseDateTime
                         ? new Date(v.baseDateTime).toISOString().split('T')[0]
                         : '-',
