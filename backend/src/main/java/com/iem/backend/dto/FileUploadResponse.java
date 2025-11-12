@@ -1,4 +1,4 @@
 package com.iem.backend.dto;
 
-public record FileUploadResponse(String path, String originalFilename, long sizeBytes) {
+public record FileUploadResponse(Integer id, String path, String originalFilename, long sizeBytes) {
 }

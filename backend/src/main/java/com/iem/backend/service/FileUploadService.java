@@ -114,8 +114,7 @@ public class FileUploadService {
         apiLogger.success("File " + originalName + " stored for user " + userEmail);
 
         String pathToReturn = buildResponsePath(storedFilename);
-
-        return new FileUploadResponse(pathToReturn, originalName, file.getSize());
+        return new FileUploadResponse(upload.getId(), pathToReturn, originalName, file.getSize());
     }
 
     @Transactional(readOnly = true)
