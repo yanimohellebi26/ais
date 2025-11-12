@@ -87,6 +87,7 @@ public class VesselService {
 
         if (!vessel.getUsers().contains(user)) {
             vessel.getUsers().add(user);
+            vessel.setLocked(true);
             vesselRepository.save(vessel);
         }
     }
