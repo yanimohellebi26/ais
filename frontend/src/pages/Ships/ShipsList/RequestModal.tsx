@@ -61,7 +61,7 @@ const RequestModal: React.FC<RequestModalProps> = ({ vessel, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-2xl p-6 shadow-lg w-96 text-center">
+            <div className="bg-base-100 rounded-2xl p-6 shadow-lg w-96 text-center">
                 <h2 className="text-lg font-bold mb-4">Request Access</h2>
                 <p className="mb-4">
                     Upload a file to request access for vessel <b>{vessel.vesselName}</b>.

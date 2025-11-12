@@ -9,9 +9,11 @@ import TablePagination from "./TablePagination";
 import RequestModal from "./RequestModal";
 import { Vessel } from "./types";
 import {useCurrentUser} from "../../../hooks/useCurrentUser";
+import {useLoading} from "../../../context/LoadingContext";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);
+    const {setLoading} = useLoading();
     const [totalItems, setTotalItems] = useState(0);
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(50);
@@ -73,6 +75,8 @@ const TableShips: React.FC = () => {
     useEffect(() => {
         async function fetchData() {
             try {
+
+                setLoading(true);
                 const query = new URLSearchParams({
                     page: (pageIndex).toString(),
                     size: pageSize.toString(),
@@ -114,6 +118,8 @@ const TableShips: React.FC = () => {
                 } else {
                     toast.error("Unexpected error occurred");
                 }
+            } finally {
+                setLoading(false);
             }
         }
 
@@ -145,7 +151,7 @@ const TableShips: React.FC = () => {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-4">All ships available</h1>
+            <h1 className="text-2xl font-semibold mb-4">All ships available</h1>
 
             <TableControls
                 searchTerm={searchTerm}

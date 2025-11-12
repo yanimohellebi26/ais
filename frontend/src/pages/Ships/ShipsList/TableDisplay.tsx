@@ -11,7 +11,7 @@ interface Props  {
 
 const TableDisplay: React.FC<Props> = ({ table, sortColumn, sortOrder, toggleSort }) => {
     return (
-        <div className="overflow-y-auto h-126">
+        <div className="overflow-y-auto h-[65vh]">
             <table className="table table-pin-rows w-full">
                 <thead>
                 {table.getHeaderGroups().map(headerGroup => (

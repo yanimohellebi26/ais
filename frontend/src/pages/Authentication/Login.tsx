@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import {useAuth} from "../../context/AuthContext"
 import {useApi} from "../../hooks/useApi";
 import { toast } from 'react-toastify';
+import {ArrowLeft, Ship} from "lucide-react";
 
 type LoginForm = {
   email: string;
@@ -72,23 +73,23 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-100  py-10 flex flex-col items-center">
+    <div className="min-h-screen bg-base-100 py-10 flex flex-col items-center">
       <div className="flex justify-center w-full max-w-md mb-4 text-center ">
         <Button
           onClick={() => navigate("/")}
-          className="flex gap-2 items-center bg-transparent hover:bg-gray-300 text-gray-600 "
+          className="flex gap-2 items-center btn btn-ghost "
         >
-          <img src={arrowLeft} alt="Back" className="w-4 h-4" />
+          <ArrowLeft />
           Back to Home
         </Button>
       </div>
-      <div className="w-full max-w-md flex justify-center gap-4 items-center pb-5">
-        <img src={shipIcon} alt="Back" className="w-8 h-8 " />
-        <TitleH1 className="">SeaSight</TitleH1>
+      <div className="w-full max-w-md flex justify-center gap-4 items-start pb-5">
+        <Ship className="text-primary w-8 h-8"/>
+        <TitleH1 className="text-base-content">SeaSight</TitleH1>
       </div>
 
       <FormWrapper>
-        <TitleH2 className="mb-2 text-center text-black font-bold">Welcome Back</TitleH2>
+        <TitleH2 className="mb-2 text-center font-bold">Welcome Back</TitleH2>
         <P className="mb-4 text-center">
           Sign in to your maritime tracking account
         </P>
@@ -112,29 +113,29 @@ const Login = () => {
           />
           <Button
             type="submit"
-            className="w-full px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            className="w-full px-4 py-2 rounded-md btn btn-primary"
           >
             Sign In
           </Button>
         </form>
 
         {error && (
-          <p className="mt-4 text-center text-sm text-red-600">{error}</p>
+          <p className="mt-4 text-center text-sm text-error">{error}</p>
         )}
 
-        <div className="flex font-bold mt-4 items-center text-sm text-black">
+        <div className="flex font-bold mt-4 items-center text-sm">
           <Button
             onClick={() => alert("Forgot password clicked")}
-            className="bg-transparent text-blue-700 hover:underline px-0 py-0"
+            className="bg-transparent text-primary hover:underline px-0 py-0"
           >
             Forgot your password?
           </Button>
-          <div className="hidden sm:block h-4 w-px bg-gray-300 mx-4"></div>
+          <div className="hidden sm:block h-4 w-px bg-base-300 mx-4"></div>
           <div className="flex items-center gap-0 ">
             <P className="m-0 p-0 gap-0">No account?</P>
             <Button
               onClick={() => navigate("/register")}
-              className="bg-transparent text-blue-700 hover:underline px-0 py-0"
+              className="bg-transparent text-primary hover:underline px-0 py-0"
             >
               Create an account
             </Button>
