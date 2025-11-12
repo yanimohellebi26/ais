@@ -6,7 +6,9 @@ import { ApiError } from "../../../types";
 import TableControls from "./TableControls";
 import TableDisplay from "./TableDisplay";
 import TablePagination from "./TablePagination";
+import RequestModal from "./RequestModal";
 import { Vessel } from "./types";
+import {useCurrentUser} from "../../../hooks/useCurrentUser";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);
@@ -17,6 +19,7 @@ const TableShips: React.FC = () => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>([
         'mmsi',
         'imo',
+        'vesselName',
         'vesselType',
         'cargoType',
         'baseDateTime',
@@ -26,8 +29,15 @@ const TableShips: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortColumn, setSortColumn] = useState<string>('mmsi');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
 
     const api = useApi();
+
+    const handleRequestClick = (vessel: Vessel) => {
+        setSelectedVessel(vessel);
+        setIsModalOpen(true);
+    };
 
     const allColumns = useMemo<ColumnDef<Vessel, any>[]>(() => [
         { id: 'mmsi', accessorKey: 'mmsi', header: 'MMSI' },
@@ -47,8 +57,9 @@ const TableShips: React.FC = () => {
             accessorKey: 'locked',
             header: 'Locked',
             cell: props => {
+                const vessel = props.row.original;
                 return !props.getValue() ? (
-                    <button className="btn btn-xs btn-primary btn-outline">Request</button>
+                    <button className="btn btn-xs btn-primary btn-outline" onClick={() => handleRequestClick(vessel)}>Request</button>
                 ) : null;
             }
         },
@@ -160,6 +171,12 @@ const TableShips: React.FC = () => {
                 pageSize={pageSize}
                 setPageIndex={setPageIndex}
             />
+            {isModalOpen && selectedVessel && (
+                <RequestModal
+                    vessel={selectedVessel}
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
         </div>
     );
 };
