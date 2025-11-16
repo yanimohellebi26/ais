@@ -91,6 +91,11 @@ const MapComponent: React.FC = () => {
                     >
                         <div className="flex flex-col p-4 gap-4">
                             <ToggleButton
+                                onIcon={<MapIcon />}
+                                offIcon={<Globe />}
+                                onToggle={switchMapStyle}
+                            />
+                            <ToggleButton
                                 onIcon={<Minimize size={20} />}
                                 offIcon={<Maximize size={20} />}
                                 onToggle={toggleFullscreen}
