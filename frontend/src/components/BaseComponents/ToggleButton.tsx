@@ -5,6 +5,7 @@ interface ToggleButtonProps {
     offIcon: ReactNode;
     onToggle?: () => void;
     className?: string;
+    isOn?: boolean;
 }
 
 const ToggleButton : React.FC<ToggleButtonProps> = ({
@@ -12,31 +13,33 @@ const ToggleButton : React.FC<ToggleButtonProps> = ({
                                                         offIcon,
                                                         onToggle,
                                                         className,
+                                                        isOn
                                                     }) => {
     const [active, setActive] = useState(false);
 
     const handleClick = () => {
-        setActive(!active);
+        const newState = !active;
+        setActive(newState);
         onToggle?.();
     };
 
-    return (
+    const displayActive = isOn ?? active;
 
+    return (
         <div className={className}>
             <label className="btn btn-circle swap swap-rotate hover:scale-110 transition-transform duration-150 ease-in-out">
-                <input type="checkbox" onClick={handleClick}/>
+                <input type="checkbox" onClick={handleClick} checked={displayActive} readOnly />
 
                 <span className="swap-off fill-current flex items-center justify-center">
-          {offIcon}
-        </span>
+                    {offIcon}
+                </span>
 
                 <span className="swap-on fill-current flex items-center justify-center">
-          {onIcon}
-        </span>
+                    {onIcon}
+                </span>
             </label>
-
         </div>
     );
-}
+};
 
 export default ToggleButton;
