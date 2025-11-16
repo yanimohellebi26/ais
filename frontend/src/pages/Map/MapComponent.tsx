@@ -1,15 +1,16 @@
 import React, { useState, useRef } from "react";
 import TitleH1 from "../../components/BaseComponents/TitleH1";
-import ToggleButton from "../../components/BaseComponents/ToggleButton";
 import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
 import Slider from "../../components/BaseComponents/Slider";
-import { Map as MapIcon, Globe, Maximize, Minimize } from "lucide-react";
+import ToggleButton from "../../components/BaseComponents/ToggleButton";
+import {Map as MapIcon, Globe, Maximize, Minimize, Anchor} from "lucide-react";
 import { Map } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import VesselLayer from "./MapLayers/VesselLayer";
 import MapFilterDrawer from "./MapFilterDrawer";
 import DatePicker from "../../components/BaseComponents/DatePicker";
 import { DateRange } from "react-day-picker";
+import PortLayer from "./MapLayers/PortLayer";
 
 const mapStyles = [
     "https://demotiles.maplibre.org/globe.json",
@@ -21,6 +22,7 @@ const MapComponent: React.FC = () => {
     const [limit, setLimit] = useState(500);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
+    const [showPorts, setShowPorts] = useState(true);
     const mapContainerRef = useRef<HTMLDivElement>(null);
 
     const switchMapStyle = () => {
@@ -43,6 +45,16 @@ const MapComponent: React.FC = () => {
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
             <MapFilterDrawer>
+                <div className="flex items-center gap-4">
+                    <ToggleButton
+                        onIcon={<Anchor className="text-success" />}
+                        offIcon={<Anchor className="text-error" />}
+                        onToggle={() => setShowPorts((prev) => !prev)}
+                        isOn={showPorts}
+                    />
+                    <span className="text-base-content/80">Toggle ports</span>
+                </div>
+
                 <Slider
                     label="Limit Positions"
                     min={400}
@@ -59,6 +71,8 @@ const MapComponent: React.FC = () => {
                         setSelectedRange(value as DateRange | undefined);
                     }}
                 />
+
+
             </MapFilterDrawer>
 
             <div className="flex gap-4 h-[80vh]">
@@ -77,16 +91,12 @@ const MapComponent: React.FC = () => {
                     >
                         <div className="flex flex-col p-4 gap-4">
                             <ToggleButton
-                                onIcon={<MapIcon />}
-                                offIcon={<Globe />}
-                                onToggle={switchMapStyle}
-                            />
-                            <ToggleButton
                                 onIcon={<Minimize size={20} />}
                                 offIcon={<Maximize size={20} />}
                                 onToggle={toggleFullscreen}
                             />
                             <VesselLayer limit={limit} dateRange={selectedRange} />
+                            {showPorts && <PortLayer />}
                         </div>
                     </Map>
                 </div>
