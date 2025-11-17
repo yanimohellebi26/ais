@@ -51,7 +51,7 @@ def run_task_pipeline(
     with get_session() as session:
         session.execute(
             text("""
-                INSERT INTO pipeline_file_registry (pipeline_name, filename, status, created_at)
+                INSERT INTO pipeline_file_registry (pipeline_name, file_name, status, created_at)
                 VALUES (:p, :f, 'running', NOW())
             """),
             {"p": pipeline, "f": file}
@@ -75,7 +75,7 @@ def run_task_pipeline(
 
         with get_session() as session:
             session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND filename=:f"),
+                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
                 {"p": pipeline, "f": file}
             )
             session.commit()
@@ -118,7 +118,7 @@ def run_task_pipeline(
                 text("""
                     UPDATE pipeline_file_registry
                     SET status='success', ended_at=NOW()
-                    WHERE pipeline_name=:p AND filename=:f
+                    WHERE pipeline_name=:p AND file_name=:f
                 """),
                 {"p": pipeline, "f": file}
             )
@@ -134,7 +134,7 @@ def run_task_pipeline(
 
         with get_session() as session:
             session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND filename=:f"),
+                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
                 {"p": pipeline, "f": file}
             )
             session.commit()

@@ -13,7 +13,6 @@ router = APIRouter()
 
 
 class PipelineRequest(BaseModel):
-    file: Optional[str] = None
     continue_on_error: bool = False
     use_timer: bool = True
     extra_kwargs: Optional[Dict[str, Any]] = Field(
@@ -32,7 +31,7 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
         existing = session.execute(
             text("""
                 SELECT 1 FROM pipeline_file_registry
-                WHERE pipeline_name = :p AND filename = :f AND status = 'running'
+                WHERE pipeline_name = :p AND file_name = :f AND status = 'running'
             """),
             {"p": pipeline_name, "f": payload.file}
         ).scalar()
