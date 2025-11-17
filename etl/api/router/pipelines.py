@@ -15,6 +15,7 @@ router = APIRouter()
 class PipelineRequest(BaseModel):
     continue_on_error: bool = False
     use_timer: bool = True
+    file: str
     extra_kwargs: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Dynamic kwargs to override pipeline parameters."
@@ -31,7 +32,7 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
         existing = session.execute(
             text("""
                 SELECT 1 FROM pipeline_file_registry
-                WHERE pipeline_name = :p AND file_name = :f AND status = 'running'
+                WHERE pipeline_name = :p AND file_name = :f AND status IN ('success','running')
             """),
             {"p": pipeline_name, "f": payload.file}
         ).scalar()
@@ -56,26 +57,25 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
 
 @router.get("/")
 async def list_pipelines(auth=Depends(verify_api_key)):
+    """
+    List all pipelines defined in YAML
+    with desc and attributes of used functions
+    """
     pipelines = load_pipelines()
     result = []
 
-    for name, pipeline_def in pipelines.items():
+    for pipeline_name, pipeline_def in pipelines.items():
         desc = pipeline_def.get("desc", "")
         steps_list = pipeline_def.get("steps", [])
+
         step_infos = []
 
-        for step in steps_list:
-            func = step.get("func")
-            kwargs = step.get("kwargs", {})
-
-            if not callable(func):
-                continue
-
+        for func, kwargs in steps_list:
             sig = inspect.signature(func)
             params = []
-            for pname, param in sig.parameters.items():
+            for name, param in sig.parameters.items():
                 params.append({
-                    "name": pname,
+                    "name": name,
                     "type": str(param.annotation) if param.annotation != inspect._empty else "Any",
                     "default": None if param.default == inspect._empty else param.default,
                 })
@@ -88,9 +88,12 @@ async def list_pipelines(auth=Depends(verify_api_key)):
             })
 
         result.append({
-            "pipeline_name": name,
+            "pipeline_name": pipeline_name,
             "description": desc,
             "steps": step_infos,
         })
 
-    return {"count": len(result), "pipelines": result}
+    return {
+        "count": len(result),
+        "pipelines": result,
+    }
