@@ -66,13 +66,8 @@ def run_task_pipeline(
         meta["ended_at"] = datetime.utcnow().isoformat()
         TaskStore.set_meta(task_id, meta)
 
-        with get_session() as session:
-            session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
-                {"p": pipeline, "f": file}
-            )
-            session.commit()
-        return
+        PipelineHistoryDB.delete_registry_entry(pipeline, file)
+
 
     from etl.models.context import PipelineContext
     context = PipelineContext(file=file)
@@ -125,10 +120,7 @@ def run_task_pipeline(
         meta["ended_at"] = datetime.utcnow().isoformat()
         TaskStore.set_meta(task_id, meta)
 
-        with get_session() as session:
-            session.execute(
-                text("DELETE FROM pipeline_file_registry WHERE pipeline_name=:p AND file_name=:f"),
-                {"p": pipeline, "f": file}
-            )
-            session.commit()
-        return
+        PipelineHistoryDB.mark_success(pipeline, file)
+
+
+    return
