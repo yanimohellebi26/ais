@@ -21,7 +21,29 @@ const MapComponent: React.FC = () => {
     const [limit, setLimit] = useState(500);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
+
+    const [selectedVesselMmsi, setSelectedVesselMmsi] = useState<string | null>(null);
+    const [targetDate, setTargetDate] = useState<string | undefined>();
+    const [targetRadiusKm, setTargetRadiusKm] = useState<number | undefined>();
+
     const mapContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleVesselClick = (mmsi: string) => {
+        setSelectedVesselMmsi(mmsi);
+        setTargetDate(undefined);
+        setTargetRadiusKm(undefined);
+    };
+
+    const handleUpdateFilters = (date?: string, radiusKm?: number) => {
+        setTargetDate(date);
+        setTargetRadiusKm(radiusKm);
+    };
+
+    const handleReset = () => {
+        setSelectedVesselMmsi(null);
+        setTargetDate(undefined);
+        setTargetRadiusKm(undefined);
+    };
 
     const switchMapStyle = () => {
         setStyleIndex((prev) => (prev + 1) % mapStyles.length);
@@ -42,7 +64,13 @@ const MapComponent: React.FC = () => {
         <>
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
-            <MapFilterDrawer>
+            <MapFilterDrawer
+                selectedVesselMmsi={selectedVesselMmsi ?? undefined}
+                targetDate={targetDate}
+                targetRadiusKm={targetRadiusKm}
+                onFetchNearbyVessels={handleUpdateFilters}
+                resetSelectedVessel={handleReset}
+            >
                 <Slider
                     label="Limit Positions"
                     min={400}
@@ -86,7 +114,14 @@ const MapComponent: React.FC = () => {
                                 offIcon={<Maximize size={20} />}
                                 onToggle={toggleFullscreen}
                             />
-                            <VesselLayer limit={limit} dateRange={selectedRange} />
+                            <VesselLayer
+                                limit={limit}
+                                dateRange={selectedRange}
+                                targetMmsi={selectedVesselMmsi ?? undefined}
+                                targetDate={targetDate}
+                                targetRadiusKm={targetRadiusKm}
+                                onVesselClick={handleVesselClick}
+                            />
                         </div>
                     </Map>
                 </div>

@@ -1,19 +1,56 @@
 import React from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import {useVesselPositions} from "../../../hooks/useVesselPositions";
+import {useVesselPositionsRadius} from "../../../hooks/useVesselPositionsRadius";
 import {DateRange} from "react-day-picker";
 
 interface Props {
     limit?: number;
     dateRange?: DateRange;
+    targetMmsi?: string;
+    targetDate?: string;
+    targetRadiusKm?: number;
+    onVesselClick?: (mmsi: string) => void;
 }
 
-const VesselLayer: React.FC<Props> = ({ limit, dateRange }) => {
+const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetMmsi, targetDate, targetRadiusKm, onVesselClick }) => {
     const { current: map } = useMap();
-    const geoJson = useVesselPositions({ map, limit, dateRange});
+
+    const radiusGeoJson = useVesselPositionsRadius({
+        map,
+        mmsi: targetMmsi ?? "",
+        date: targetDate,
+        radiusKm: targetRadiusKm,
+        enabled: !!targetMmsi
+    });
+
+    const normalGeoJson = useVesselPositions({
+        map,
+        limit,
+        dateRange
+    });
+
+    //const geoJson = targetMmsi ? radiusGeoJson : normalGeoJson;
+    const geoJson = normalGeoJson;
 
     if (!geoJson) return null;
+/*
+    const handleClick = (e: any) => {
+        if(!map) return;
+        const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
+        if(features.length && features[0].properties?.mmsi){
+            onVesselClick?.(features[0].properties.mmsi);
+        }
+    };
 
+    React.useEffect(() => {
+        if(!map) return;
+        map.on("click", handleClick);
+        return () => {
+            map.off("click", handleClick);
+        };
+    }, [map, onVesselClick]);
+*/
     return (
         <Source
             id="vessels-source"
