@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from api.security_api import verify_api_key
 from etl.loader import load_pipelines
+from worker.pipeline_history_db import PipelineHistoryDB
 from worker.task_pipeline import run_task_pipeline
 from utils.db import get_session
 
@@ -25,22 +26,13 @@ class PipelineRequest(BaseModel):
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
 
-    if not payload.file:
-        raise HTTPException(status_code=400, detail="Le champ 'file' est obligatoire.")
-
-    with get_session() as session:
-        existing = session.execute(
-            text("""
-                SELECT 1 FROM pipeline_file_registry
-                WHERE pipeline_name = :p AND file_name = :f AND status IN ('success','running')
-            """),
-            {"p": pipeline_name, "f": payload.file}
-        ).scalar()
-
-        if existing:
+    if payload.file:
+        try:
+            PipelineHistoryDB.check_if_running(pipeline_name=pipeline_name,file=payload.file)
+        except Exception:
             raise HTTPException(
                 status_code=400,
-                detail="Une exécution est déjà en cours pour ce fichier et cette pipeline."
+                detail=f"Pipeline ${pipeline_name} already running/executed on file ${payload.file}."
             )
 
         task = run_task_pipeline.delay(

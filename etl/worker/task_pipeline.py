@@ -9,6 +9,8 @@ from utils.db import get_session
 
 import os
 
+from worker.pipeline_history_db import PipelineHistoryDB
+
 if os.getenv("ENV_MODE") == "local":
     if os.path.exists("/.dockerenv") or os.getenv("RUNNING_IN_DOCKER") == "1":
         os.environ["ENV_MODE"] = "docker"
@@ -25,7 +27,6 @@ def run_task_pipeline(
         use_timer=True,
         user=None
 ):
-
 
     from worker.store import TaskStore
 
@@ -48,15 +49,7 @@ def run_task_pipeline(
 
     TaskStore.append_log(task_id, "pipeline", "queued", {"pipeline": pipeline})
 
-    with get_session() as session:
-        session.execute(
-            text("""
-                INSERT INTO pipeline_file_registry (pipeline_name, file_name, status, created_at)
-                VALUES (:p, :f, 'running', NOW())
-            """),
-            {"p": pipeline, "f": file}
-        )
-        session.commit()
+    PipelineHistoryDB.insert_history_running(pipeline_name=pipeline,file=file)
 
     # --- Start pipeline --- #
     meta = TaskStore.get_meta(task_id)
