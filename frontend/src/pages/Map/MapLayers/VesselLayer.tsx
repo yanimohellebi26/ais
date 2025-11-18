@@ -3,6 +3,7 @@ import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import {useVesselPositions} from "../../../hooks/useVesselPositions";
 import {useVesselPositionsRadius} from "../../../hooks/useVesselPositionsRadius";
 import {DateRange} from "react-day-picker";
+import {toast} from "react-toastify";
 
 interface Props {
     limit?: number;
@@ -30,11 +31,8 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetMmsi, targetDate
         dateRange
     });
 
-    //const geoJson = targetMmsi ? radiusGeoJson : normalGeoJson;
-    const geoJson = normalGeoJson;
+    const geoJson = targetMmsi ? radiusGeoJson : normalGeoJson;
 
-    if (!geoJson) return null;
-/*
     const handleClick = (e: any) => {
         if(!map) return;
         const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
@@ -50,7 +48,8 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetMmsi, targetDate
             map.off("click", handleClick);
         };
     }, [map, onVesselClick]);
-*/
+
+    if (!geoJson) return null;
     return (
         <Source
             id="vessels-source"
