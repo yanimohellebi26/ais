@@ -52,7 +52,7 @@ const TableShips: React.FC = () => {
         { id: 'width', accessorKey: 'width', header: 'Width' },
         { id: 'draft', accessorKey: 'draft', header: 'Draft' },
         { id: 'transceiverClass', accessorKey: 'transceiverClass', header: 'Transceiver Class' },
-        { id: 'country', 'accessorKey': 'country', header: 'Country' },
+        { id: 'country', 'accessorKey': 'country', header: 'Country', enableSorting: false },
         { id: 'baseDateTime', accessorKey: 'baseDateTime', header: 'Base Date Time' },
         {
             id: 'locked',
@@ -143,12 +143,16 @@ const TableShips: React.FC = () => {
     };
 
     const toggleSort = (col: string) => {
+        const columnDef = allColumns.find(c => c.id === col);
+        if (!columnDef || columnDef.enableSorting === false) return;
+
         if (col === sortColumn) setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
         else {
             setSortColumn(col);
             setSortOrder('asc');
         }
     };
+
 
     return (
         <div>

@@ -42,7 +42,7 @@ public record VesselResponseDto(
                 v.getTransceiverClass(),
                 v.getBaseDateTime(),
                 v.isLocked(),
-                v.getCountry()
+                v.getCountryName()
         );
     }
 }
