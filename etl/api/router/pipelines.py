@@ -1,49 +1,72 @@
 import inspect
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
-from sqlalchemy import text
 
 from api.security_api import verify_api_key
 from etl.loader import load_pipelines
-from worker.pipeline_history_db import PipelineHistoryDB
+from worker.helpers import enqueue_task
 from worker.task_pipeline import run_task_pipeline
-from utils.db import get_session
+
 
 router = APIRouter()
 
 
 class PipelineRequest(BaseModel):
+    """
+    Request to execute pipeline
+    - file : path to source file CSV.
+    - continue_on_error : Ignore errors and continue.
+    - use_timer : Active timer.
+    - extra_kwargs : Pass dynamics kwargs.
+    """
+    files: Optional[list[str]] = None
     continue_on_error: bool = False
     use_timer: bool = True
-    file: str
-    extra_kwargs: Optional[Dict[str, Any]] = Field(
+    extra_kwargs: Optional[Dict[str, Dict[str, Any]]] = Field(
         default=None,
-        description="Dynamic kwargs to override pipeline parameters."
+        description="Dynamics kwargs to override pipelines parameters."
     )
 
 
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
-
-    if payload.file:
-        try:
-            PipelineHistoryDB.check_if_running(pipeline_name=pipeline_name,file=payload.file)
-        except Exception:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Pipeline ${pipeline_name} already running/executed on file ${payload.file}."
+    if payload.files is not None and len(payload.files) > 1:
+        tasks = []
+        for file in payload.files:
+            task = enqueue_task(
+                run_task_pipeline,
+                kwargs={
+                    "pipeline": pipeline_name,
+                    "file": file,
+                    "extra_kwargs": payload.extra_kwargs or {},
+                    "user": auth["user"],
+                    "continue_on_error": payload.continue_on_error,
+                    "use_timer": payload.use_timer,
+                },
+                command_name="run-pipeline"
             )
+            tasks.append(task)
+        return {"pipeline": pipeline_name, "count": len(tasks), "status": "queued"}
 
-        task = run_task_pipeline.delay(
-            pipeline_name,
-            payload.file,
-            payload.extra_kwargs or {},
-            payload.continue_on_error,
-            payload.use_timer,
-            auth["user"]
+    else:
+        file = None
+        if payload.files is not None and len(payload.files) > 0:
+            file = payload.files[0]
+
+        task = enqueue_task(
+            run_task_pipeline,
+            kwargs={
+                "pipeline": pipeline_name,
+                "file": file,
+                "extra_kwargs": payload.extra_kwargs or {},
+                "user": auth["user"],
+                "continue_on_error": payload.continue_on_error,
+                "use_timer": payload.use_timer,
+            },
+            command_name="run-pipeline"
         )
-
         return {"pipeline": pipeline_name, "task_id": task.id, "status": "queued"}
 
 
@@ -89,3 +112,5 @@ async def list_pipelines(auth=Depends(verify_api_key)):
         "count": len(result),
         "pipelines": result,
     }
+
+

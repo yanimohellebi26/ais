@@ -49,6 +49,11 @@ public class Vessel {
 
     private boolean locked = false;
 
+    @ManyToOne
+    @JoinColumn(name = "mid_code")
+    @JsonIgnore
+    private Mid mid;
+
     @Column(nullable = false, updatable = false)
     private Timestamp createdAt;
 
@@ -66,6 +71,11 @@ public class Vessel {
     @JsonIgnore
     private List<User> users = new ArrayList<>();
 
-
+    @Transient
+    public String getCountryName() {
+        return (mid != null && mid.getCountry() != null)
+                ? mid.getCountry().getName()
+                : null;
+    }
 }
 

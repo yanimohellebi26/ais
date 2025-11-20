@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.iem.backend.dto.UpdateUserRequest;
 import com.iem.backend.dto.UpdatePasswordRequest;
 import com.iem.backend.service.UserService;
-import com.iem.backend.utils.ApiLogger;
 import com.iem.backend.dto.UserDTO;
 import com.iem.backend.dto.Views;
-import com.iem.backend.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

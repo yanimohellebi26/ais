@@ -6,19 +6,23 @@ import { ApiError } from "../../../types";
 import TableControls from "./TableControls";
 import TableDisplay from "./TableDisplay";
 import TablePagination from "./TablePagination";
+import RequestModal from "./RequestModal";
 import { Vessel } from "./types";
+import {useCurrentUser} from "../../../hooks/useCurrentUser";
+import {useLoading} from "../../../context/LoadingContext";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);
+    const {setLoading} = useLoading();
     const [totalItems, setTotalItems] = useState(0);
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(50);
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>([
         'mmsi',
-        'imo',
+        'vesselName',
+        'country',
         'vesselType',
-        'cargoType',
         'baseDateTime',
         'locked'
     ]);
@@ -26,8 +30,15 @@ const TableShips: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortColumn, setSortColumn] = useState<string>('mmsi');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
 
     const api = useApi();
+
+    const handleRequestClick = (vessel: Vessel) => {
+        setSelectedVessel(vessel);
+        setIsModalOpen(true);
+    };
 
     const allColumns = useMemo<ColumnDef<Vessel, any>[]>(() => [
         { id: 'mmsi', accessorKey: 'mmsi', header: 'MMSI' },
@@ -41,14 +52,16 @@ const TableShips: React.FC = () => {
         { id: 'width', accessorKey: 'width', header: 'Width' },
         { id: 'draft', accessorKey: 'draft', header: 'Draft' },
         { id: 'transceiverClass', accessorKey: 'transceiverClass', header: 'Transceiver Class' },
+        { id: 'country', 'accessorKey': 'country', header: 'Country', enableSorting: false },
         { id: 'baseDateTime', accessorKey: 'baseDateTime', header: 'Base Date Time' },
         {
             id: 'locked',
             accessorKey: 'locked',
             header: 'Locked',
             cell: props => {
+                const vessel = props.row.original;
                 return !props.getValue() ? (
-                    <button className="btn btn-xs btn-primary btn-outline">Request</button>
+                    <button className="btn btn-xs btn-primary btn-outline" onClick={() => handleRequestClick(vessel)}>Request</button>
                 ) : null;
             }
         },
@@ -62,6 +75,8 @@ const TableShips: React.FC = () => {
     useEffect(() => {
         async function fetchData() {
             try {
+
+                setLoading(true);
                 const query = new URLSearchParams({
                     page: (pageIndex).toString(),
                     size: pageSize.toString(),
@@ -89,6 +104,7 @@ const TableShips: React.FC = () => {
                     draft: v.draft ?? '-',
                     transceiverClass: v.transceiverClass ?? '-',
                     locked: v.locked ?? false,
+                    country: v.country ?? '-',
                     baseDateTime: v.baseDateTime
                         ? new Date(v.baseDateTime).toISOString().split('T')[0]
                         : '-',
@@ -103,6 +119,8 @@ const TableShips: React.FC = () => {
                 } else {
                     toast.error("Unexpected error occurred");
                 }
+            } finally {
+                setLoading(false);
             }
         }
 
@@ -125,6 +143,9 @@ const TableShips: React.FC = () => {
     };
 
     const toggleSort = (col: string) => {
+        const columnDef = allColumns.find(c => c.id === col);
+        if (!columnDef || columnDef.enableSorting === false) return;
+
         if (col === sortColumn) setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
         else {
             setSortColumn(col);
@@ -132,9 +153,10 @@ const TableShips: React.FC = () => {
         }
     };
 
+
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-4">All ships available</h1>
+            <h1 className="text-2xl font-semibold mb-4">All ships available</h1>
 
             <TableControls
                 searchTerm={searchTerm}
@@ -160,6 +182,12 @@ const TableShips: React.FC = () => {
                 pageSize={pageSize}
                 setPageIndex={setPageIndex}
             />
+            {isModalOpen && selectedVessel && (
+                <RequestModal
+                    vessel={selectedVessel}
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

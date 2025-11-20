@@ -10,6 +10,7 @@ import withReactContent from "sweetalert2-react-content";
 import { UpdateUserRequest } from "../../../types";
 import Button from "../../../components/BaseComponents/Button";
 import { jwtDecode } from "jwt-decode";
+import {useLoading} from "../../../context/LoadingContext";
 
 const MySwal = withReactContent(Swal);
 
@@ -33,6 +34,7 @@ const getCurrentUserId = (token: string | null): number | undefined => {
 const TableUsers: React.FC = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
+    const {setLoading} = useLoading();
 
     const api = useApi();
     
@@ -41,11 +43,14 @@ const TableUsers: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const data = await api<User[]>("/api/v1/users");
                 setUsers(data);
 
             } catch(error) {
                 toast.error("Error while displaying all the users");
+            } finally {
+                setLoading(false);
             }
         };
 

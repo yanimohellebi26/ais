@@ -1,11 +1,24 @@
 import React, {useState} from "react";
 import {TasksHistoryParams} from "./interfaces";
+import LogsModal from "./LogsModal.tsx";
 
 interface Props {
     tasks: TasksHistoryParams[];
 }
 
 const TasksHistory: React.FC<Props> = ({tasks}) => {
+    const [selectedTask, setSelectedTask] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const openLogs = (taskId: string) => {
+        setSelectedTask(taskId);
+        setIsModalOpen(true);
+    };
+
+    const closeLogs = () => {
+        setIsModalOpen(false);
+        setSelectedTask(null);
+    };
 
     const formatDate = (date?: Date) => {
         if(!date) return;
@@ -54,28 +67,50 @@ const TasksHistory: React.FC<Props> = ({tasks}) => {
                         <th>Duration</th>
                         <th>User</th>
                         <th>File</th>
+                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
-                    {tasks.length > 0 && (
-                        tasks.map((task) => {
-                            return <tr>
-                                <td>{task.pipeline ?? task.command}</td>
-                                <td>
-                                    <div className={`badge badge-soft ${STATUS_CLASS[task.status] || ''}`}>
-                                        {task.status}
-                                    </div>
-                                </td>
-                                <td>{formatDate(task.created_at)}</td>
-                                <td>{formatDuration(task.ended_at.getTime() - task.started_at.getTime())}</td>
-                                <td>{task.user}</td>
-                                <td>{task.file ?? ''}</td>
-                            </tr>
-                        })
-                    )}
+                    {tasks.map((task) => (
+                        <tr key={task.task_id}>
+                            <td>{task.pipeline ?? task.command}</td>
+                            <td>
+                                <div
+                                    className={`badge badge-soft ${
+                                        STATUS_CLASS[task.status] || ""
+                                    }`}
+                                >
+                                    {task.status}
+                                </div>
+                            </td>
+                            <td>{formatDate(task.created_at)}</td>
+                            <td>
+                                {task.ended_at
+                                    ? formatDuration(
+                                        task.ended_at.getTime() - task.started_at.getTime()
+                                    )
+                                    : "—"}
+                            </td>
+                            <td>{task.user}</td>
+                            <td>{task.file ?? ""}</td>
+                            <td>
+                                <button
+                                    className="btn btn-xs btn-outline btn-secondary"
+                                    onClick={() => openLogs(task.task_id)}
+                                >
+                                    Logs
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
                     </tbody>
                 </table>
             </div>
+            <LogsModal
+                isOpen={isModalOpen}
+                onClose={closeLogs}
+                taskId={selectedTask}
+            />
         </div>
     );
 };

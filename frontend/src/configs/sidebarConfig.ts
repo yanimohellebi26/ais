@@ -7,7 +7,11 @@ import {
     ShieldUser,
     Workflow,
     Wrench,
-    Terminal, Orbit, History
+    Map,
+    Terminal,
+    Orbit,
+    History,
+    FileText
 } from "lucide-react";
 import React from "react";
 
@@ -24,12 +28,14 @@ export type MenuItem = {
 
 export const menuItems: MenuItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { label: "Map", icon: Map, path: "/dashboard/map"},
     { label: "Admin",
         icon: ShieldUser,
         path: "/dashboard/admin",
         roles: ["ROLE_ADMIN"],
         children: [
-            {label: "List Users", path: "/dashboard/admin/list-users", icon: Users}
+            {label: "List Users", path: "/dashboard/admin/list-users", icon: Users},
+            {label: "Request Property", path: "/dashboard/admin/request-property", icon: FileText}
         ]
     },
     { label: "Ships",

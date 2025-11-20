@@ -17,7 +17,7 @@ const SelectRole: React.FC<SelectRoleProps> = ({
 }) => {
   return (
     <div className={`flex flex-col mb-4 ${className}`}>
-      <label htmlFor={name} className="mb-2 text-sm font-medium text-gray-700">
+      <label htmlFor={name} className="mb-2 text-sm font-medium ">
         {label}
       </label>
 
@@ -26,8 +26,7 @@ const SelectRole: React.FC<SelectRoleProps> = ({
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full bg-gray-100 text-gray-500 p-2 rounded-md 
-                   focus:outline-none  "
+        className="w-full select"
       >
         <option value="" disabled hidden> 
           Select your role

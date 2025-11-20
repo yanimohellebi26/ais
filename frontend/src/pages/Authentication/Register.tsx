@@ -10,6 +10,7 @@ import arrowLeft from "../../assets/arrow-left.svg";
 import shipIcon from "../../assets/ship-icon.svg";
 import { useNavigate } from "react-router-dom";
 import {toast} from "react-toastify";
+import {ArrowLeft, Ship} from "lucide-react";
 
 type RegisterForm = {
   username: string;
@@ -109,23 +110,23 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 flex flex-col items-center">
-      <div className="flex justify-center w-full max-w-md mb-4 text-center ">
-        <Button
-          onClick={() => navigate("/")}
-          className="flex gap-2 items-center bg-transparent hover:bg-gray-300 text-gray-600 "
-        >
-          <img src={arrowLeft} alt="Back" className="w-4 h-4" />
-          Back to Home
-        </Button>
-      </div>
-      <div className="w-full max-w-md flex justify-center gap-4 items-center pb-5">
-        <img src={shipIcon} alt="Back" className="w-8 h-8 " />
-        <TitleH1 className="">SeaSight</TitleH1>
-      </div>
+      <div className="min-h-screen bg-base-100 py-10 flex flex-col items-center">
+        <div className="flex justify-center w-full max-w-md mb-4 text-center ">
+          <Button
+              onClick={() => navigate("/")}
+              className="flex gap-2 items-center btn btn-ghost "
+          >
+            <ArrowLeft />
+            Back to Home
+          </Button>
+        </div>
+        <div className="w-full max-w-md flex justify-center gap-4 items-start pb-5">
+          <Ship className="text-primary w-8 h-8"/>
+          <TitleH1 className="text-base-content">SeaSight</TitleH1>
+        </div>
 
       <FormWrapper>
-        <TitleH2 className="mb-2 text-center text-black font-bold">Create Account</TitleH2>
+        <TitleH2 className="mb-2 text-center font-bold">Create Account</TitleH2>
         <P className="mb-4 text-center">
           Join the maritime tracking platform
         </P>
@@ -160,7 +161,7 @@ const Register = () => {
             <SelectRole name="role" value={formData.role} onChange={handleRoleChange} />
             <Button
               type="submit"
-              className="w-full px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+              className="w-full px-4 py-2 rounded-md btn btn-primary"
               disabled={loading}
             >
               {loading ? "Creating..." : "Create Account"}
@@ -168,13 +169,13 @@ const Register = () => {
           </div>
         </form>
 
-        {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-center text-sm text-error">{error}</p>}
 
-        <div className="flex  mt-4 text-sm font-bold items-center text-black">
+        <div className="flex  mt-4 text-sm font-bold items-center">
           <P>Already have an account ?</P>
           <Button
             onClick={() => navigate("/login")}
-            className="bg-transparent text-blue-700 hover:underline px-0 py-0"
+            className="bg-transparent text-primary hover:underline px-0 py-0"
           >
             Sign in
           </Button>

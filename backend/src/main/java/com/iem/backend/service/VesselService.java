@@ -39,6 +39,33 @@ public class VesselService {
         }
     }
 
+    public void checkUserHasAccessToVessels(User user, List<String> mmsisFilter) {
+        if (mmsisFilter == null || mmsisFilter.isEmpty()) return;
+
+        List<String> userMmsis = vesselRepository.findMmsiByUsers_id(user.getId());
+
+        for (String mmsi : mmsisFilter) {
+            if (!userMmsis.contains(mmsi)) {
+                throw new ForbiddenException("No access to the vessel with mmsi : " + mmsi);
+            }
+        }
+    }
+
+    public List<Integer> getVesselIdsByMmsis(List<String> mmsis) {
+        return vesselRepository.findIdByMmsiIn(mmsis);
+    }
+
+    public List<Integer> getVesselIdsByUser(Integer userId) {
+        return vesselRepository.findIdByUsers_Id(userId);
+    }
+
+    public Vessel getVesselByMmsi(String mmsi) {
+
+        Vessel v = vesselRepository.findByMmsi(mmsi)
+                .orElseThrow(() -> new VesselNotFoundException("Vessel not found for MMSI " + mmsi));
+
+        return v;
+    }
 
     @Transactional
     public void relateUserToVessel(Integer userId, String mmsi) {
@@ -60,6 +87,7 @@ public class VesselService {
 
         if (!vessel.getUsers().contains(user)) {
             vessel.getUsers().add(user);
+            vessel.setLocked(true);
             vesselRepository.save(vessel);
         }
     }

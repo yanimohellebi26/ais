@@ -41,6 +41,20 @@ load-positions:
         handle_missing: "skip"
         batch_size: 100000
 
+load-ports:
+  desc: "Load ports in database"
+  steps:
+    - func: extract_data_from_file
+      kwargs:
+        selected_map: ["code","name","latitude","longitude","country_code"]
+        separator: ';'
+    - func: remove_rows_with_empty
+      kwargs:
+        required: ["code","name","latitude","longitude","country_code"]
+    - func: load_port_db
+      kwargs:
+        handle_missing: "skip"
+
 test:
   desc: "Test pipeline"
   steps:

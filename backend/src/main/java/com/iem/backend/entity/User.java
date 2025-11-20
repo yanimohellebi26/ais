@@ -10,6 +10,9 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,9 +39,11 @@ public class User {
     private Role role;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     private OffsetDateTime createdAt;
 
     @Column(name = "last_update")
+    @UpdateTimestamp
     private OffsetDateTime lastUpdate;
 
     @ManyToMany(mappedBy = "users")
