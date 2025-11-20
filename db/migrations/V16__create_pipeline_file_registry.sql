@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS pipeline_file_registry (
     status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT NOW(),
     ended_at TIMESTAMP,
-    CONSTRAINT uq_pipeline_file UNIQUE (pipeline_name, file_name, status)
+    CONSTRAINT uq_pipeline_file UNIQUE (pipeline_name, file_name)
 );
