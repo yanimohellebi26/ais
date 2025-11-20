@@ -20,6 +20,7 @@ interface Props {
         selectedFiles: string[];
         continueOnError: boolean;
         useTimer: boolean;
+        force: boolean;
     }) => Promise<boolean>;
     onStop: () => void;
 }
@@ -40,6 +41,7 @@ const PipelineSelector: React.FC<Props> = ({
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
     const [continueOnError, setContinueOnError] = useState(false);
     const [useTimer, setUseTimer] = useState(true);
+    const [force,setForce] = useState(false);
 
     useEffect(() => {
         const fetchFiles = async () => {
@@ -78,6 +80,7 @@ const PipelineSelector: React.FC<Props> = ({
                                         selectedFiles,
                                         continueOnError,
                                         useTimer,
+                                        force
                                     });
                                     if (shouldRedirect) navigate("/dashboard/etl/history");
                                 }
@@ -114,8 +117,10 @@ const PipelineSelector: React.FC<Props> = ({
                             <PipelineOptions
                                 continueOnError={continueOnError}
                                 useTimer={useTimer}
+                                force={force}
                                 onChangeContinue={setContinueOnError}
                                 onChangeTimer={setUseTimer}
+                                onChangeForce={setForce}
                             />
                         </div>
 

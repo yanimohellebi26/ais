@@ -4,6 +4,7 @@ from datetime import datetime
 from etl.loader import load_pipelines
 from utils.timer import timer
 from worker.celery_app import celery_app
+from worker.pipeline_history_db import PipelineHistoryDB
 
 
 @celery_app.task(bind=True, name="run_pipeline",soft_time_limit=3600, time_limit=3700)
@@ -24,6 +25,7 @@ def run_task_pipeline(
     meta = TaskStore.get_meta(task_id)
     meta["status"] = "running"
     meta["started_at"] = datetime.utcnow().isoformat()
+    meta["user"] = user
     TaskStore.set_meta(task_id, meta)
 
     # --- Load pipelines --- #
@@ -43,6 +45,8 @@ def run_task_pipeline(
     workflow_start = time.time()
 
     TaskStore.append_log(task_id, "pipeline", "running", {"pipeline": pipeline,"steps_count": len(tasks["steps"])})
+
+    PipelineHistoryDB.insert_history_running(pipeline_name=pipeline, file=file)
 
     count = 0
     for func, kwargs in tasks["steps"]:
@@ -66,6 +70,8 @@ def run_task_pipeline(
             error_msg = str(e)
             TaskStore.append_log(task_id, "step", "error", {"index": count, "step": step_name, "error": error_msg})
 
+            PipelineHistoryDB.delete_registry_entry(pipeline, file)
+
             if continue_on_error:
                 TaskStore.append_log(task_id, "pipeline", "warning", {"pipeline": pipeline, "message": "Error ignored, continuing pipeline"})
                 continue
@@ -86,3 +92,5 @@ def run_task_pipeline(
     meta["ended_at"] = datetime.utcnow().isoformat()
     meta["status"] = "success"
     TaskStore.set_meta(task_id, meta)
+
+    PipelineHistoryDB.mark_success(pipeline, file)

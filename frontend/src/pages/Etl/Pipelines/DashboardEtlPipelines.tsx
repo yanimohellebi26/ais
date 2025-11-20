@@ -39,11 +39,12 @@ const DashboardEtlPipelines: React.FC = () => {
     }, []);
 
     /* Start pipeline with api call */
-    const handleStartPipeline = async ({pipeline, selectedFiles, continueOnError, useTimer}: {
+    const handleStartPipeline = async ({pipeline, selectedFiles, continueOnError, useTimer, force}: {
         pipeline: Pipeline;
         selectedFiles: string[];
         continueOnError: boolean;
         useTimer: boolean;
+        force: boolean;
     }): Promise<boolean> => {
         setLoading(true);
         try {
@@ -54,6 +55,7 @@ const DashboardEtlPipelines: React.FC = () => {
                     files: selectedFiles,
                     continue_on_error: continueOnError,
                     use_timer: useTimer,
+                    force: force
                 }),
             });
 
@@ -70,7 +72,8 @@ const DashboardEtlPipelines: React.FC = () => {
             setRunning(true);
             return false;
         } catch (error) {
-            toast.error("Failed to start pipeline");
+            //@ts-ignore
+            toast.error(error.message ?? "Failed to start pipeline");
             return false;
         } finally {
             setLoading(false);
