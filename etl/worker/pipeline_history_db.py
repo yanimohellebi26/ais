@@ -5,19 +5,19 @@ from utils.db import get_session
 
 class PipelineHistoryDB:
     @staticmethod
-    def check_if_running(pipeline_name, file):
+    def check_if_running(pipeline_name, files):
         with get_session() as session:
-            existing = session.execute(
+            results = session.execute(
                 text("""
-                           SELECT 1 FROM pipeline_file_registry
-                           WHERE pipeline_name = :p AND file_name = :f AND status IN ('success','running')
-                       """),
-                {"p": pipeline_name, "f": file}
-            ).scalar()
-
-            if existing:
-                raise Exception()
-
+                    SELECT file_name 
+                    FROM pipeline_file_registry
+                    WHERE pipeline_name = :p 
+                      AND file_name = ANY(:files)
+                      AND status IN ('success','running')
+                """),
+                {"p": pipeline_name, "files": files},
+            ).fetchall()
+            return [row[0] for row in results]
 
     @staticmethod
     def insert_history_running(pipeline_name, file):
@@ -26,6 +26,7 @@ class PipelineHistoryDB:
                 text("""
                     INSERT INTO pipeline_file_registry (pipeline_name, file_name, status, created_at)
                     VALUES (:p, :f, 'running', NOW())
+                    ON CONFLICT (pipeline_name, file_name) DO NOTHING
                 """),
                 {"p": pipeline_name, "f": file}
             )

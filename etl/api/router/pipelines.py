@@ -1,6 +1,6 @@
 import inspect
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
@@ -8,7 +8,7 @@ from api.security_api import verify_api_key
 from etl.loader import load_pipelines
 from worker.helpers import enqueue_task
 from worker.task_pipeline import run_task_pipeline
-
+from worker.pipeline_history_db import PipelineHistoryDB
 
 router = APIRouter()
 
@@ -21,18 +21,25 @@ class PipelineRequest(BaseModel):
     - use_timer : Active timer.
     - extra_kwargs : Pass dynamics kwargs.
     """
-    files: Optional[list[str]] = None
+    files: list[str] = Field(..., min_length=1)
     continue_on_error: bool = False
     use_timer: bool = True
     extra_kwargs: Optional[Dict[str, Dict[str, Any]]] = Field(
         default=None,
         description="Dynamics kwargs to override pipelines parameters."
     )
+    force: bool = False
 
 
 @router.post("/{pipeline_name}")
 async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depends(verify_api_key)):
-    if payload.files is not None and len(payload.files) > 1:
+    if len(payload.files) > 1:
+
+        if not payload.force:
+            found_files = PipelineHistoryDB.check_if_running(pipeline_name, payload.files)
+            if len(found_files) > 0:
+                raise HTTPException(status_code=400, detail=f"Pipeline {pipeline_name} already running or executed on file(s) {found_files}")
+
         tasks = []
         for file in payload.files:
             task = enqueue_task(
@@ -51,9 +58,11 @@ async def run_pipeline(pipeline_name: str, payload: PipelineRequest, auth=Depend
         return {"pipeline": pipeline_name, "count": len(tasks), "status": "queued"}
 
     else:
-        file = None
-        if payload.files is not None and len(payload.files) > 0:
-            file = payload.files[0]
+        file = payload.files[0]
+
+        if not payload.force and len(PipelineHistoryDB.check_if_running(pipeline_name, [file])) > 0:
+            raise HTTPException(status_code=400,
+                                detail=f"Pipeline {pipeline_name} already running or executed on file {file}")
 
         task = enqueue_task(
             run_task_pipeline,
