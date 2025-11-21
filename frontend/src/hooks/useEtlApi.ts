@@ -30,7 +30,7 @@ export function useEtlApi() {
         if (!response.ok) {
             throw {
                 name: "EtlApiError",
-                message: data?.message || `ETL API error: ${response.status}`,
+                message: data?.detail || `ETL API error: ${response.status}`,
                 statusCode: data?.statusCode ?? response.status,
                 path: endpoint,
                 timestamp: new Date().toISOString(),

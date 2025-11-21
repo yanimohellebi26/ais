@@ -1,5 +1,8 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from api.router import commands, pipelines, tasks, logs, api_keys, healtcheck, websockets, files
 
@@ -12,6 +15,16 @@ app.add_middleware(  # type: ignore
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    message = errors[0].get("msg", "Invalid request")
+
+    return JSONResponse(
+        status_code=422,
+        content={"detail": message},
+    )
 
 @app.get("/ping")
 async def ping():

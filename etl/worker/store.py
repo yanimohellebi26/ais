@@ -1,12 +1,10 @@
-# worker/store.py
 import json
-from datetime import datetime
 from worker.celery_app import redis_client
 from worker.messages import build_message
 
 
 class TaskStore:
-    """Central monitoring of Celery tasks metadata and logs t"""
+    """Central monitoring of Celery tasks metadata and logs"""
 
     # -------------------- METADATA -------------------- #
     @staticmethod
