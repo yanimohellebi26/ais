@@ -15,8 +15,6 @@ import java.util.Optional;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
 
-    Page<PositionVessel> findPositionVesselsByIdIn(Collection<Integer> ids, Pageable pageable);
-
     @Query(
         value = """
             SELECT * FROM latest_positions

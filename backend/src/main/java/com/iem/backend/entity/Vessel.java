@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -55,8 +57,10 @@ public class Vessel {
     private Mid mid;
 
     @Column(nullable = false, updatable = false)
+    @CreationTimestamp
     private Timestamp createdAt;
 
+    @UpdateTimestamp
     private Timestamp lastUpdate;
 
     @Column(nullable = false)

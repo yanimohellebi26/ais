@@ -36,14 +36,14 @@ export interface ApiError extends Error {
 
 export interface RequestPropertyAdmin {
     id: number;
-    userid: number;
+    userId: number;
     username: string;
-    user_email: string;
-    user_role: string;
+    userEmail: string;
+    userRole: string;
     mmsi: string;
-    fileid: number;
-    file_name: string;
-    created_at: string;
+    fileId: number;
+    fileName: string;
+    createdAt: string;
 }
 
 export interface FileUploadDetails {

@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -29,5 +30,6 @@ public class Role {
     private String name;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     private OffsetDateTime createdAt;
 }

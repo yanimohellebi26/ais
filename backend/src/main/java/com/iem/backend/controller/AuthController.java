@@ -1,15 +1,11 @@
 package com.iem.backend.controller;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import com.iem.backend.dto.RegisterRequest;
-import com.iem.backend.dto.UserDTO;
-import com.iem.backend.dto.Views;
-import com.iem.backend.dto.TokenRequest;
-import com.iem.backend.dto.TokenResponse;
+import com.iem.backend.dto.user.RegisterRequest;
+import com.iem.backend.dto.user.LoginRequest;
+import com.iem.backend.dto.user.TokenResponse;
+import com.iem.backend.dto.user.UserResponse;
 import com.iem.backend.service.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,28 +24,14 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Register a user",
-            description = "Create a new user in database")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User creation is a success"),
-            @ApiResponse(responseCode = "400", description = "Error during registration")
-    })
     @PostMapping("/register")
-    @JsonView(Views.Public.class)
-    public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
-        UserDTO response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(authService.register(dto));
     }
 
-    @Operation(summary = "Login as a user",
-            description = "return a Token to use other endpoint")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Login is success and return Token"),
-            @ApiResponse(responseCode = "400", description = "Error during login")
-    })
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid  @RequestBody TokenRequest request) {
-        TokenResponse response = authService.login(request);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest dto) {
+        return ResponseEntity.ok(authService.login(dto));
     }
 }

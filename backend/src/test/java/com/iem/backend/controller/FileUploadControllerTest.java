@@ -1,5 +1,6 @@
 package com.iem.backend.controller;
 
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.FileUpload;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
@@ -14,7 +15,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -29,10 +31,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -64,10 +63,18 @@ class FileUploadControllerTest {
         cleanStorageDirectory();
     }
 
+    private void authenticate(User user) {
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities())
+        );
+    }
+
     @Test
-    @WithMockUser(username = "captain@example.com", roles = "USER")
     void uploadFile_successfullyStoresFileAndMetadata() throws Exception {
-        User user = persistUser("captain@example.com");
+        User user = persistUser("captain@example.com","OWNER");
+        authenticate(user);
+
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "notes.txt",
@@ -96,9 +103,9 @@ class FileUploadControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "limit@example.com", roles = "USER")
     void uploadFile_respectsPerUserLimit() throws Exception {
-        persistUser("limit@example.com");
+        User user = persistUser("limit@example.com","OWNER");
+        authenticate(user);
 
         for (int i = 0; i < 10; i++) {
             MockMultipartFile file = new MockMultipartFile(
@@ -126,9 +133,9 @@ class FileUploadControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "size@example.com", roles = "USER")
     void uploadFile_rejectsPayloadAboveConfiguredLimit() throws Exception {
-        persistUser("size@example.com");
+        User user = persistUser("size@example.com","OWNER");
+        authenticate(user);
 
         byte[] oversized = new byte[(int) (TEN_MB + 1)];
         MockMultipartFile file = new MockMultipartFile(
@@ -145,36 +152,39 @@ class FileUploadControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
     void getFileDetails_returnsMetadataForAdmin() throws Exception {
-        User user = persistUser("admin-data@example.com");
-        FileUpload upload = persistStoredFile(user, "doc.txt", "stored-doc.txt", "hello");
+        User admin = persistUser("admin-data@example.com","ADMIN");
+        authenticate(admin);
+
+        FileUpload upload = persistStoredFile(admin, "doc.txt", "stored-doc.txt", "hello");
 
         mockMvc.perform(get("/api/v1/uploads/{id}", upload.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(upload.getId()))
-                .andExpect(jsonPath("$.user_id").value(user.getId()))
-                .andExpect(jsonPath("$.original_filename").value("doc.txt"))
-                .andExpect(jsonPath("$.file_size").value(upload.getFileSize()));
+                .andExpect(jsonPath("$.userId").value(admin.getId()))
+                .andExpect(jsonPath("$.originalFilename").value("doc.txt"))
+                .andExpect(jsonPath("$.fileSize").value(upload.getFileSize()));
     }
 
     @Test
-    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
     void downloadFile_streamsStoredContentForAdmin() throws Exception {
-        User user = persistUser("admin-download@example.com");
-        FileUpload upload = persistStoredFile(user, "report.pdf", "stored-report.pdf", "payload");
+        User admin = persistUser("admin-download@example.com","ADMIN");
+        authenticate(admin);
+
+        FileUpload upload = persistStoredFile(admin, "report.pdf", "stored-report.pdf", "payload");
 
         mockMvc.perform(get("/api/v1/uploads/{id}/download", upload.getId()))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("report.pdf")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        org.hamcrest.Matchers.containsString("report.pdf")))
                 .andExpect(content().bytes("payload".getBytes()));
     }
 
-    private User persistUser(String email) {
-        Role role = roleRepository.findByNameIgnoreCase("USER")
+    private User persistUser(String email, String roleName) {
+        Role role = roleRepository.findByNameIgnoreCase(roleName)
                 .orElseGet(() -> {
                     Role newRole = new Role();
-                    newRole.setName("USER");
+                    newRole.setName(roleName);
                     return roleRepository.save(newRole);
                 });
 
@@ -197,7 +207,7 @@ class FileUploadControllerTest {
         upload.setUser(user);
         upload.setOriginalFilename(originalName);
         upload.setStoredFilename(storedName);
-        upload.setFileSize(content.getBytes().length);
+        upload.setFileSize((long) content.getBytes().length);
 
         FileUpload saved = fileUploadRepository.save(upload);
 
@@ -222,7 +232,6 @@ class FileUploadControllerTest {
                         try {
                             Files.deleteIfExists(path);
                         } catch (Exception ignored) {
-                            // best effort cleanup for test isolation
                         }
                     });
         }

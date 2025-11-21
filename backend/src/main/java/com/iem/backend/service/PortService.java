@@ -23,7 +23,6 @@ public class PortService {
     public List<Port> getPortByBounds(
             double minLat, double maxLat, double minLon, double maxLon, int limit
     ) {
-
         validateBounds(minLat, maxLat, minLon, maxLon);
 
         return repository.findByBounds(minLat, maxLat, minLon, maxLon, limit);
