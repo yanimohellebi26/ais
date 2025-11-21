@@ -18,16 +18,30 @@ export const useVesselPositionsRadius = ({ map, vesselId, date, radiusKm, enable
         if(!map || !enabled || vesselId==null) return;
 
         const fetchNearby = async () => {
-            const params = new URLSearchParams();
-            params.set("vesselId", vesselId.toString());
-            if(date) params.set("date", date);
-            if(radiusKm) params.set("radius_km", radiusKm.toString());
-
-            const url = `/api/v1/positions/radius?${params.toString()}`;
-
             try {
+                const targetVesselData = await apiFetch<any>(`/api/v1/positions/${vesselId}`);
+
+                if(!radiusKm){
+                    setGeoJson(targetVesselData);
+                    return;
+                }
+                const params = new URLSearchParams();
+                params.set("vesselId", vesselId.toString());
+                if(date) params.set("date", date);
+                if(radiusKm) params.set("radius_km", radiusKm.toString());
+
+                const url = `/api/v1/positions/radius?${params.toString()}`;
                 const data = await apiFetch<any>(url);
-                setGeoJson(data);
+
+                const feature = [
+                    ...targetVesselData.features,
+                    ...(data?.features?.filter((f: any) => f.properties.vesselId !== vesselId) || [])
+                ];
+
+                setGeoJson({
+                    type: "FeatureCollection",
+                    features: feature
+                });
             } catch {
                 setGeoJson(null);
             }

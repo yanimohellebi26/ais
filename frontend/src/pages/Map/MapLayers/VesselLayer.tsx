@@ -36,8 +36,9 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, target
     const handleClick = (e: any) => {
         if(!map) return;
         const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
-        if(features.length && features[0].properties?.id != null){
-            onVesselClick?.(Number(features[0].properties.id));
+        const vesselId = features[0].properties?.vesselId;
+        if(features.length && vesselId != null){
+            onVesselClick?.(Number(vesselId));
         }
     };
 
@@ -99,7 +100,12 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, target
                 filter={["!", ["has", "point_count"]]}
                 paint={{
                     "circle-radius": 6,
-                    "circle-color": "#007BFF",
+                    "circle-color": [
+                        "case",
+                        ["==", ["get", "vesselId"], targetVesselId ?? -1],
+                        "#FF0000",
+                        "#007BFF"
+                    ],
                     "circle-stroke-width": 2,
                     "circle-stroke-color": "#FFFFFF",
                 }}
