@@ -3,14 +3,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MapFilterDrawerProps {
     children?: React.ReactNode;
-    selectedVesselMmsi?: string;
+    selectedVesselId?: number;
     targetDate?: string;
     targetRadiusKm?: number;
     onFetchNearbyVessels?: (date?: string, radiusKm?: number) => void;
     resetSelectedVessel?: () => void;
 }
 
-const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVesselMmsi, targetDate, targetRadiusKm, onFetchNearbyVessels, resetSelectedVessel, }) => {
+const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVesselId, targetDate, targetRadiusKm, onFetchNearbyVessels, resetSelectedVessel, }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [dateInput, setDateInput] = useState<string>(targetDate ?? "");
     const [radiusKm, setRadiusKm] = useState<number>(targetRadiusKm ?? 50);
@@ -24,7 +24,7 @@ const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVes
     }, [targetRadiusKm]);
 
     const handleFetch = () => {
-        if(!selectedVesselMmsi) return;
+        if(!selectedVesselId) return;
         onFetchNearbyVessels?.(dateInput.trim() || undefined, radiusKm);
     };
 
@@ -51,10 +51,10 @@ const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVes
             {!collapsed && (
                 <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto">
                     {/* Selected vessel section */}
-                    {selectedVesselMmsi && (
+                    {selectedVesselId && (
                         <div className="p-4 border border-base-300 rounded-lg bg-base-200">
                             <h3 className="font-semibold mb-2">Selected vessel</h3>
-                            <p>MMSI : {selectedVesselMmsi}</p>
+                            <p>ID : {selectedVesselId}</p>
 
                             <div className="mt-4 flex flex-col gap-2">
                                 <label className="font-medium">Date (optional)</label>

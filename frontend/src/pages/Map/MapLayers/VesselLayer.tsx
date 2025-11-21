@@ -8,21 +8,21 @@ import {toast} from "react-toastify";
 interface Props {
     limit?: number;
     dateRange?: DateRange;
-    targetMmsi?: string;
+    targetVesselId?: number;
     targetDate?: string;
     targetRadiusKm?: number;
-    onVesselClick?: (mmsi: string) => void;
+    onVesselClick?: (vesselId: number) => void;
 }
 
-const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetMmsi, targetDate, targetRadiusKm, onVesselClick }) => {
+const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, targetDate, targetRadiusKm, onVesselClick }) => {
     const { current: map } = useMap();
 
     const radiusGeoJson = useVesselPositionsRadius({
         map,
-        mmsi: targetMmsi ?? "",
+        vesselId: targetVesselId ?? -1,
         date: targetDate,
         radiusKm: targetRadiusKm,
-        enabled: !!targetMmsi
+        enabled: targetVesselId != null
     });
 
     const normalGeoJson = useVesselPositions({
@@ -31,13 +31,13 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetMmsi, targetDate
         dateRange
     });
 
-    const geoJson = targetMmsi ? radiusGeoJson : normalGeoJson;
+    const geoJson = targetVesselId ? radiusGeoJson : normalGeoJson;
 
     const handleClick = (e: any) => {
         if(!map) return;
         const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
-        if(features.length && features[0].properties?.mmsi){
-            onVesselClick?.(features[0].properties.mmsi);
+        if(features.length && features[0].properties?.id != null){
+            onVesselClick?.(Number(features[0].properties.id));
         }
     };
 

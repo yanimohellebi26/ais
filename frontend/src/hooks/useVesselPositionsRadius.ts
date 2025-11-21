@@ -4,22 +4,22 @@ import { useApi } from "./useApi";
 
 interface Props {
     map:any;
-    mmsi: string;
+    vesselId: number;
     date?: string;
     radiusKm?: number;
     enabled?: boolean;
 }
 
-export const useVesselPositionsRadius = ({ map, mmsi, date, radiusKm, enabled = true }: Props) => {
+export const useVesselPositionsRadius = ({ map, vesselId, date, radiusKm, enabled = true }: Props) => {
     const apiFetch = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
 
     useEffect(() => {
-        if(!map || !enabled || !mmsi) return;
+        if(!map || !enabled || vesselId==null) return;
 
         const fetchNearby = async () => {
             const params = new URLSearchParams();
-            params.set("mmsi", mmsi);
+            params.set("vesselId", vesselId.toString());
             if(date) params.set("date", date);
             if(radiusKm) params.set("radius_km", radiusKm.toString());
 
@@ -43,6 +43,6 @@ export const useVesselPositionsRadius = ({ map, mmsi, date, radiusKm, enabled = 
             debouncedFetch.cancel();
         };
 
-    }, [map, apiFetch, mmsi, date, radiusKm, enabled]);
+    }, [map, apiFetch, vesselId, date, radiusKm, enabled]);
     return geoJson;
 };

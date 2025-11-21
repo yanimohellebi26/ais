@@ -169,15 +169,12 @@ public class PositionVesselService {
         }
     }
 
-    public List<VesselPositionRadiusDTO> getPositionsAroundVesselByMmsi(
-            String targetMmsi,
+    public List<VesselPositionRadiusDTO> getPositionsAroundVesselById(
+            Integer targetVesselId,
             Optional<Object> dateOpt,
             Optional<Double> radiusKmOpt,
             User currentUser
     ){
-        Vessel targetVessel = vesselService.getVesselByMmsi(targetMmsi);
-        Integer targetVesselId = targetVessel.getId();
-
         List<String> allowed = List.of("ADMIN","MARITIME_EXPERT","FINANCIAL_ANALYST");
         if (!allowed.contains(currentUser.getRole().getName())) {
             vesselService.checkUserHasAccessToVessel(currentUser,targetVesselId);

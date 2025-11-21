@@ -147,7 +147,7 @@ public class PositionVesselController {
 
     @GetMapping("/radius")
     public ResponseEntity<?> getPositionsAroundVessel(
-            @RequestParam String mmsi,
+            @RequestParam Integer vesselId,
             @RequestParam(required = false) String date,
             @RequestParam(required = false, name = "radius_km") Double radiusKm,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -157,8 +157,8 @@ public class PositionVesselController {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid or future date format"));
         }
 
-        List<VesselPositionRadiusDTO> positions = service.getPositionsAroundVesselByMmsi(
-                mmsi,
+        List<VesselPositionRadiusDTO> positions = service.getPositionsAroundVesselById(
+                vesselId,
                 parsedDate,
                 Optional.ofNullable(radiusKm),
                 currentUser.getUser()

@@ -24,14 +24,14 @@ const MapComponent: React.FC = () => {
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
     const [showPorts, setShowPorts] = useState(true);
 
-    const [selectedVesselMmsi, setSelectedVesselMmsi] = useState<string | null>(null);
+    const [selectedVesselId, setSelectedVesselId] = useState<number | null>(null);
     const [targetDate, setTargetDate] = useState<string | undefined>();
     const [targetRadiusKm, setTargetRadiusKm] = useState<number | undefined>();
 
     const mapContainerRef = useRef<HTMLDivElement>(null);
 
-    const handleVesselClick = (mmsi: string) => {
-        setSelectedVesselMmsi(mmsi);
+    const handleVesselClick = (id: number) => {
+        setSelectedVesselId(id);
         setTargetDate(undefined);
         setTargetRadiusKm(undefined);
     };
@@ -42,7 +42,7 @@ const MapComponent: React.FC = () => {
     };
 
     const handleReset = () => {
-        setSelectedVesselMmsi(null);
+        setSelectedVesselId(null);
         setTargetDate(undefined);
         setTargetRadiusKm(undefined);
     };
@@ -67,7 +67,7 @@ const MapComponent: React.FC = () => {
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
             <MapFilterDrawer
-                selectedVesselMmsi={selectedVesselMmsi ?? undefined}
+                selectedVesselId={selectedVesselId ?? undefined}
                 targetDate={targetDate}
                 targetRadiusKm={targetRadiusKm}
                 onFetchNearbyVessels={handleUpdateFilters}
@@ -130,7 +130,7 @@ const MapComponent: React.FC = () => {
                             <VesselLayer
                                 limit={limit}
                                 dateRange={selectedRange}
-                                targetMmsi={selectedVesselMmsi ?? undefined}
+                                targetVesselId={selectedVesselId ?? undefined}
                                 targetDate={targetDate}
                                 targetRadiusKm={targetRadiusKm}
                                 onVesselClick={handleVesselClick}
