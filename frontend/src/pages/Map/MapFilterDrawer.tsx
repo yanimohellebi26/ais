@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Search, RefreshCcw, Calendar, Ship } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface MapFilterDrawerProps {
     children?: React.ReactNode;
@@ -24,8 +25,21 @@ const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVes
         setRadiusKm(targetRadiusKm ?? 50);
     }, [targetRadiusKm]);
 
+    const isValidDateFormat = (value: string): boolean => {
+        if (!value.trim()) return true;
+
+        const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+        const dateTimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+        return dateOnlyRegex.test(value) || dateTimeRegex.test(value);
+    };
+
     const handleFetch = () => {
         if(!selectedVesselId) return;
+        if (!isValidDateFormat(dateInput)) {
+            toast.error("Invalid date format. Use yyyy-MM-dd or yyyy-MM-dd HH:mm:ss");
+            return;
+        }
         onFetchNearbyVessels?.(dateInput.trim() || undefined, radiusKm);
     };
 
