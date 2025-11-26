@@ -8,7 +8,7 @@ public record RequestPropertyDetails(
         String username,
         String userEmail,
         String userRole,
-        String mmsi,
+        Integer vesselId,
         Integer fileId,
         String fileName,
         OffsetDateTime createdAt

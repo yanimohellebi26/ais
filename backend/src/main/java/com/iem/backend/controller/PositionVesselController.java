@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +42,6 @@ public class PositionVesselController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MARITIME_EXPERT','FINANCIAL_ANALYST')")
     public ResponseEntity<GeoJsonFeatureCollection<PositionVesselProperties>> getPositionsVessels(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEnd,
@@ -49,9 +49,18 @@ public class PositionVesselController {
             @RequestParam double maxLat,
             @RequestParam double minLon,
             @RequestParam double maxLon,
-            @RequestParam(defaultValue = "200") int limit
+            @RequestParam(defaultValue = "200") int limit,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        List<PositionVessel> positions = positionVesselService.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
+        List<String> allowed = List.of("ADMIN","MARITIME_EXPERT","FINANCIAL_ANALYST");
+        List<PositionVessel> positions;
+
+        if (allowed.contains(currentUser.getUser().getRole().getName())) {
+            positions = positionVesselService.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
+        } else {
+            positions = positionVesselService.getUserVesselsPositionsByDateAndBounds(currentUser.getUser().getId(),dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
+        }
+
         if(positions.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }

@@ -71,7 +71,7 @@ const AdminRequestProperty: React.FC = () => {
             await api("/api/v1/vessels/related", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: row.userId, mmsi: row.mmsi }),
+                body: JSON.stringify({ userId: row.userId, vesselId: row.vesselId }),
             });
             await api(`/api/v1/request-property/${row.id}`, { method: "DELETE" });
             toast.success("Request accepted");

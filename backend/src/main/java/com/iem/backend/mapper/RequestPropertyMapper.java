@@ -14,7 +14,7 @@ public interface RequestPropertyMapper {
     @Mapping(target = "userRole", source = "user.role.name")
     @Mapping(target = "fileId", source = "file.id")
     @Mapping(target = "fileName", source = "file.originalFilename")
-    @Mapping(target = "mmsi", source = "vessel.mmsi")
+    @Mapping(target = "vesselId", source = "vessel.id")
     RequestPropertyDetails toDetails(RequestProperty entity);
 }
 

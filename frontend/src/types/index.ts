@@ -40,7 +40,7 @@ export interface RequestPropertyAdmin {
     username: string;
     userEmail: string;
     userRole: string;
-    mmsi: string;
+    vesselId: number;
     fileId: number;
     fileName: string;
     createdAt: string;
