@@ -14,8 +14,8 @@ public class GeoJsonMapper {
         );
     }
 
-    public <T> GeoJsonFeature<T> feature(T props, GeoJsonGeometry geometry) {
-        return new GeoJsonFeature<>(props, geometry);
+    public <T> GeoJsonFeature<T> feature(Object id, T props, GeoJsonGeometry geometry) {
+        return new GeoJsonFeature<>(id, props, geometry);
     }
 
     public <T> GeoJsonFeatureCollection<T> featureCollection(

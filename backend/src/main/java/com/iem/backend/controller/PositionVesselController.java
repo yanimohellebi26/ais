@@ -14,7 +14,6 @@ import com.iem.backend.entity.PositionVessel;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +21,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,6 +65,7 @@ public class PositionVesselController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         positions,
+                        PositionVessel::getId,
                         positionVesselMapper::toProperties,
                         PositionVessel::getGeom
                 )
@@ -88,6 +87,7 @@ public class PositionVesselController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         positions,
+                        PositionVessel::getId,
                         positionVesselMapper::toProperties,
                         PositionVessel::getGeom
                 )
@@ -109,6 +109,7 @@ public class PositionVesselController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         positions,
+                        PositionVessel::getId,
                         positionVesselMapper::toProperties,
                         PositionVessel::getGeom
                 )
@@ -135,6 +136,7 @@ public class PositionVesselController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         positions,
+                        PositionVessel::getId,
                         positionVesselMapper::toProperties,
                         PositionVessel::getGeom
                 )
@@ -172,6 +174,7 @@ public class PositionVesselController {
         GeoJsonFeatureCollection<PositionVesselRadiusProperties> geojson =
                 geoJsonService.toGeoJson(
                         positions,
+                        PositionVessel::getId,
                         pv -> radiusMap.get(pv.getId()),
                         PositionVessel::getGeom
                 );

@@ -31,6 +31,7 @@ public class GeoJsonService {
      */
     public <E, T> GeoJsonFeatureCollection<T> toGeoJson(
             List<E> entities,
+            Function<E, Object> getId,
             Function<E, T> toProps,
             Function<E, Point> toGeometry
     ) {
@@ -39,10 +40,12 @@ public class GeoJsonService {
                 .map(entity -> {
                     T props = toProps.apply(entity);
                     GeoJsonGeometry geom = geoJsonMapper.point(toGeometry.apply(entity));
-                    return geoJsonMapper.feature(props, geom);
+                    Object id = getId.apply(entity);
+                    return geoJsonMapper.feature(id, props, geom);
                 })
                 .toList();
 
         return geoJsonMapper.featureCollection(features);
     }
+
 }

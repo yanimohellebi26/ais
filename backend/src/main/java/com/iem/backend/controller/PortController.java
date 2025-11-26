@@ -33,6 +33,7 @@ public class PortController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         ports,
+                        Port::getId,
                         portMapper::toProperties,
                         Port::getGeom
                 )
@@ -53,6 +54,7 @@ public class PortController {
         return ResponseEntity.ok(
                 geoJsonService.toGeoJson(
                         ports,
+                        Port::getId,
                         portMapper::toProperties,
                         Port::getGeom
                 )
