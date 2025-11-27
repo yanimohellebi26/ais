@@ -28,7 +28,7 @@ export const useVesselPositionsRadius = ({ map, vesselId, date, radiusKm, enable
                 const params = new URLSearchParams();
                 params.set("vesselId", vesselId.toString());
                 if(date) params.set("date", date);
-                if(radiusKm) params.set("radius_km", radiusKm.toString());
+                if(radiusKm) params.set("radiusKm", radiusKm.toString());
 
                 const url = `/api/v1/positions/radius?${params.toString()}`;
                 const data = await apiFetch<any>(url);
