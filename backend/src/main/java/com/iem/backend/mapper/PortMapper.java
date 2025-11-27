@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface PortMapper {
 
     @Mapping(target = "portId", source = "id")
+    @Mapping(target = "country", source = "country.name")
     PortProperties toProperties(Port port);
 }
 
