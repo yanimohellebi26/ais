@@ -15,8 +15,6 @@ import java.util.Optional;
 
 public interface PositionVesselRepository extends JpaRepository<PositionVessel, Long>{
 
-    Page<PositionVessel> findPositionVesselsByIdIn(Collection<Integer> ids, Pageable pageable);
-
     @Query(
         value = """
             SELECT * FROM latest_positions
@@ -38,6 +36,30 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             nativeQuery = true
         )
     List<PositionVessel> findByDateAndBounds(
+            @Param("start") java.sql.Timestamp start,
+            @Param("end") java.sql.Timestamp end,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("minLon") double minLon,
+            @Param("maxLon") double maxLon,
+            @Param("limit") int limit
+    );
+
+    @Query(
+            value = """
+                SELECT p.* FROM position_vessel p
+                    JOIN vessel v ON p.vessel_id = v.id
+                    JOIN user_vessel uv ON uv.vessel_id = p.vessel_id
+                    WHERE uv.user_id = :userId
+                    AND p.base_date_time BETWEEN :start AND :end
+                    AND p.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)::geography
+                    AND ST_Within(p.geom::geometry, ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326))
+                    LIMIT :limit
+            """,
+            nativeQuery = true
+    )
+    List<PositionVessel> findByDateAndBoundsAndUserId(
+            @Param("userId") int userId,
             @Param("start") java.sql.Timestamp start,
             @Param("end") java.sql.Timestamp end,
             @Param("minLat") double minLat,
@@ -135,4 +157,5 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             @Param("end") Timestamp end,
             @Param("targetVessel") Integer targetVessel
     );
+
 }

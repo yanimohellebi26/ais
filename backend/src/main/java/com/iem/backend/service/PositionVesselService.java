@@ -1,12 +1,15 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.positionVessel.VesselPositionRadiusDTO;
+import com.iem.backend.dto.positionVessel.PositionVesselRadiusProperties;
 import com.iem.backend.entity.*;
+import com.iem.backend.exception.ApiExceptions;
 import com.iem.backend.exception.ApiExceptions.*;
+import com.iem.backend.mapper.PositionVesselMapper;
 import com.iem.backend.repository.PositionVesselRepository;
 
 import org.locationtech.jts.geom.Point;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -15,31 +18,29 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PositionVesselService {
 
-    private final PositionVesselRepository repository;
+    private final PositionVesselRepository positionVesselRepository;
     private final VesselService vesselService;
+    private final PositionVesselMapper positionVesselMapper;
 
-    private static final double DEFAULT_RADIUS_KM = 50.0;
     private static final double MAX_RADIUS_KM = 500.0;
     private static final long WINDOW_HOURS = 12L;
 
-    public PositionVesselService(PositionVesselRepository repository,VesselService vesselService) {
-        this.repository = repository;
+    public PositionVesselService(PositionVesselRepository positionVesselRepository, VesselService vesselService, PositionVesselMapper positionVesselMapper) {
+        this.positionVesselRepository = positionVesselRepository;
         this.vesselService = vesselService;
+        this.positionVesselMapper = positionVesselMapper;
     }
 
     public List<PositionVessel> getPositionsByDateAndBounds(
             LocalDate dateStart, Optional<LocalDate> dateEnd,
             double minLat, double maxLat, double minLon, double maxLon, int limit
     ) {
-
         validateBounds(minLat, maxLat, minLon, maxLon);
 
         LocalDate finalDateEnd = dateEnd.orElse(dateStart);
@@ -50,7 +51,25 @@ public class PositionVesselService {
         Timestamp start = Timestamp.valueOf(dateStart.atStartOfDay());
         Timestamp end = Timestamp.valueOf(finalDateEnd.atTime(23, 59, 59));
 
-        return repository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon, limit);
+        return positionVesselRepository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon, limit);
+    }
+
+    public List<PositionVessel> getUserVesselsPositionsByDateAndBounds(
+            Integer userId,
+            LocalDate dateStart, Optional<LocalDate> dateEnd,
+            double minLat, double maxLat, double minLon, double maxLon, int limit
+    ) {
+        validateBounds(minLat, maxLat, minLon, maxLon);
+
+        LocalDate finalDateEnd = dateEnd.orElse(dateStart);
+        if (finalDateEnd.isBefore(dateStart)) {
+            throw new BadRequestException("End date must be after start date");
+        }
+
+        Timestamp start = Timestamp.valueOf(dateStart.atStartOfDay());
+        Timestamp end = Timestamp.valueOf(finalDateEnd.atTime(23, 59, 59));
+
+        return positionVesselRepository.findByDateAndBoundsAndUserId(userId, start, end, minLat, maxLat, minLon, maxLon, limit);
     }
 
     public List<PositionVessel> getPositionsByIdAndOptionalDate(
@@ -59,14 +78,17 @@ public class PositionVesselService {
 
         List<String> allowed = List.of("ADMIN","MARITIME_EXPERT","FINANCIAL_ANALYST");
         if (!allowed.contains(currentUser.getRole().getName())) {
-            vesselService.checkUserHasAccessToVessel(currentUser,vesselId);
+
+            if(!vesselService.checkUserAccessToVessel(currentUser,vesselId)) {
+                throw new ForbiddenException("Not allowed to access this position");
+            }
         }
 
         List<PositionVessel> positionVessels;
 
         if (dateStartOpt.isEmpty() && dateEndOpt.isEmpty()) {
             // No date, all positions
-            positionVessels = repository.findPositionVesselsByVesselId(vesselId);
+            positionVessels = positionVesselRepository.findPositionVesselsByVesselId(vesselId);
         } else {
 
             LocalDate startDate = dateStartOpt.orElse(LocalDate.now());
@@ -79,7 +101,7 @@ public class PositionVesselService {
             Timestamp start = Timestamp.valueOf(startDate.atStartOfDay());
             Timestamp end = Timestamp.valueOf(endDate.atTime(23, 59, 59));
 
-            positionVessels = repository.findPositionVesselsByVesselIdAndBaseDateTimeBetween(vesselId, start, end);
+            positionVessels = positionVesselRepository.findPositionVesselsByVesselIdAndBaseDateTimeBetween(vesselId, start, end);
         }
 
         if (positionVessels.isEmpty()) {
@@ -109,22 +131,25 @@ public class PositionVesselService {
         };
     }
 
-    public List<PositionVessel> getLatestPositions(CustomUserDetails customUserDetails, List<String> mmsisFilter, Pageable pageable) {
+    public List<PositionVessel> getLatestPositions(CustomUserDetails currentUser, List<Integer> ids, int page, int size) {
 
-        User user = customUserDetails.getUser();      
+        User user = currentUser.getUser();
         Role userRole = user.getRole();
 
         boolean isFullAccess = hasFullAccess(userRole);
 
         if (!isFullAccess) {
-            vesselService.checkUserHasAccessToVessels(user, mmsisFilter);
+            if(!vesselService.checkUserAccessToVessels(user, ids)) {
+                throw new ForbiddenException("Not allowed to access the vessels");
+            };
         }
+
+        Pageable pageable = PageRequest.of(page, size);
 
         Page<PositionVessel> positions;
 
-        if (mmsisFilter != null && !mmsisFilter.isEmpty()) {
-            List<Integer> vesselIds = vesselService.getVesselIdsByMmsis(mmsisFilter);
-            positions = repository.findLatestPositionVesselsByIdIn(vesselIds, pageable);
+        if (ids != null && !ids.isEmpty()) {
+            positions = positionVesselRepository.findLatestPositionVesselsByIdIn(ids, pageable);
         } else {
 
             if (!isFullAccess) {
@@ -133,11 +158,11 @@ public class PositionVesselService {
                 if (userVesselIds == null || userVesselIds.isEmpty()) {
                     positions = Page.empty(pageable);
                 } else {
-                    positions = repository.findLatestPositionVesselsByIdIn(userVesselIds, pageable);
+                    positions = positionVesselRepository.findLatestPositionVesselsByIdIn(userVesselIds, pageable);
                 }
                 
             } else {
-                positions = repository.findAll(pageable);
+                positions = positionVesselRepository.findAll(pageable);
             }
         }
 
@@ -145,11 +170,11 @@ public class PositionVesselService {
     }
 
     public List<PositionVessel> getLatestPositionsInBounds(
-        CustomUserDetails customUserDetails,
+        CustomUserDetails currentUser,
         double minLat, double maxLat, double minLon, double maxLon,
         int limit
     ) {
-        User user = customUserDetails.getUser();
+        User user = currentUser.getUser();
         Role userRole = user.getRole();
 
         boolean isFullAccess = hasFullAccess(userRole);
@@ -157,7 +182,7 @@ public class PositionVesselService {
         validateBounds(minLat, maxLat, minLon, maxLon);
 
         if (isFullAccess) {
-            return repository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
+            return positionVesselRepository.findLatestPositionWithinBounds(minLat, maxLat, minLon, maxLon, limit);
         } else {
             List<Integer> userVesselIds = vesselService.getVesselIdsByUser(user.getId());
 
@@ -165,27 +190,31 @@ public class PositionVesselService {
                 return Collections.emptyList();
             }
 
-            return repository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds);
+            return positionVesselRepository.findLatestPositionWithinBoundsForVessels(minLat, maxLat, minLon, maxLon, userVesselIds);
         }
     }
 
-    public List<VesselPositionRadiusDTO> getPositionsAroundVesselById(
-            Integer targetVesselId,
+    public List<PositionVessel> getPositionsAroundVesselById(
+            Integer vesselId,
             Optional<Object> dateOpt,
-            Optional<Double> radiusKmOpt,
-            User currentUser
+            Double radiusKmOpt,
+            CustomUserDetails currentUser
     ){
+
+        User user = currentUser.getUser();
         List<String> allowed = List.of("ADMIN","MARITIME_EXPERT","FINANCIAL_ANALYST");
-        if (!allowed.contains(currentUser.getRole().getName())) {
-            vesselService.checkUserHasAccessToVessel(currentUser,targetVesselId);
+        if (!allowed.contains(user.getRole().getName())) {
+            if(!vesselService.checkUserAccessToVessel(user,vesselId)) {
+                throw new ForbiddenException("Not allowed to access this position");
+            }
         }
 
-        double radiusKm = radiusKmOpt.orElse(DEFAULT_RADIUS_KM);
+        double radiusKm = radiusKmOpt;
         if(radiusKm <= 0 || radiusKm > MAX_RADIUS_KM){
             throw new BadRequestException("Radius must be > 0 and <= "+ MAX_RADIUS_KM + " km");
         }
 
-        PositionVessel targetPosition = resolveTargetPositionVessel(targetVesselId, dateOpt);
+        PositionVessel targetPosition = resolveTargetPositionVessel(vesselId, dateOpt);
         Point targetGeom = targetPosition.getGeom();
         Timestamp targetTime = targetPosition.getBaseDateTime();
         if(targetGeom == null) throw new NotFoundException("Target vessel geom not found");
@@ -196,30 +225,42 @@ public class PositionVesselService {
         Timestamp startDate = Timestamp.from(targetTime.toInstant().minus(Duration.ofHours(WINDOW_HOURS)));
         Timestamp endDate = Timestamp.from(targetTime.toInstant().plus(Duration.ofHours(WINDOW_HOURS)));
 
-        List<PositionVessel> allPositions = repository.findPositionsAround(
+        return positionVesselRepository.findPositionsAround(
                 targetLat,
                 targetLon,
                 radiusKm * 1000.0,
                 startDate,
                 endDate,
-                targetVesselId
+                vesselId
         );
-
-        return allPositions.stream()
-                .map(p -> new VesselPositionRadiusDTO(
-                        p.getVessel().getMmsi(),
-                        p.getGeom().getY(),
-                        p.getGeom().getX(),
-                        haversine(targetLat, targetLon, p.getGeom().getY(), p.getGeom().getX()),
-                        p.getBaseDateTime()
-                ))
-                .sorted(Comparator.comparing(VesselPositionRadiusDTO::distanceKm))
-                .toList();
     }
+
+    public Map<Long, PositionVesselRadiusProperties> mapWithDistance(
+            List<PositionVessel> vessels,
+            Integer vesselId,
+            Optional<Object> dateOpt
+    ) {
+        PositionVessel targetPosition = resolveTargetPositionVessel(vesselId, dateOpt);
+        Point origin = targetPosition.getGeom();
+
+        return vessels.stream().collect(Collectors.toMap(
+                PositionVessel::getId,
+                pv -> {
+                    PositionVesselRadiusProperties dto = positionVesselMapper.toRadiusProperties(pv);
+                    double distance = haversine(
+                            origin.getY(), origin.getX(),
+                            pv.getGeom().getY(), pv.getGeom().getX()
+                    );
+                    dto.setDistanceKm(distance);
+                    return dto;
+                }
+        ));
+    }
+
 
     private PositionVessel resolveTargetPositionVessel(Integer vesselId, Optional<Object> dateOpt){
         if(dateOpt.isEmpty()){
-            return repository.findLatestPositionByVesselId(vesselId)
+            return positionVesselRepository.findLatestPositionByVesselId(vesselId)
                     .orElseThrow(() -> new NotFoundException("No positions found for target vessel"));
         }
 
@@ -227,12 +268,12 @@ public class PositionVesselService {
 
         if(date instanceof LocalDateTime ldt){
             Timestamp ts = Timestamp.valueOf(ldt);
-            return repository.findPositionByVesselIdAndExactTime(vesselId, ts)
+            return positionVesselRepository.findPositionByVesselIdAndExactTime(vesselId, ts)
                     .orElseThrow(() -> new NotFoundException("No position found for vessel at the given time"));
         } else if (date instanceof LocalDate ld){
             Timestamp startDay = Timestamp.valueOf(ld.atStartOfDay());
             Timestamp endDay = Timestamp.valueOf(ld.atTime(23, 59, 59));
-            return repository.findLastPositionInDay(vesselId, startDay, endDay)
+            return positionVesselRepository.findLastPositionInDay(vesselId, startDay, endDay)
                     .orElseThrow(() -> new NotFoundException("No position found for the vessel at the given day"));
         } else {
             throw new BadRequestException("Invalid date type");
@@ -252,5 +293,6 @@ public class PositionVesselService {
         double c = 2 * Math.asin(Math.sqrt(a));
         return R * c;
     }
+
 
 }

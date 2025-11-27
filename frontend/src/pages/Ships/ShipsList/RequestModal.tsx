@@ -43,9 +43,8 @@ const RequestModal: React.FC<RequestModalProps> = ({ vessel, onClose }) => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    userid: userData.id,
-                    mmsi: vessel.mmsi,
-                    fileid: fileId,
+                    vesselId: vessel.id,
+                    fileId: fileId,
                 }),
             });
 

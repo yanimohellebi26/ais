@@ -7,30 +7,22 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface VesselRepository extends JpaRepository<Vessel, Integer> {
 
-    Optional<Vessel> findByMmsi(String mmsi);
-
-    @Query("SELECT v FROM Vessel v WHERE UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :name, '%'))")
-    Page<Vessel> searchByVesselName(@Param("name") String name, Pageable pageable);
+    Page<Vessel> findByVesselNameContainingIgnoreCase(String name, Pageable pageable);
 
     @Query("SELECT v FROM Vessel v WHERE v.mmsi = :mmsi OR UPPER(v.vesselName) LIKE UPPER(CONCAT('%', :mmsi, '%'))")
     Page<Vessel> searchByMmsiOrVesselName(@Param("mmsi") String mmsi, Pageable pageable);
     
-    @Query("SELECT v FROM Vessel v JOIN v.users u WHERE u.id = :userId")
-    List<Vessel> findByUserId(@Param("userId") Integer userId);
+    List<Vessel> findByUsers_Id(Integer userId);
 
-    boolean existsByIdAndUsers_Id(Integer vesselId, Integer userId);
+    long countByUsers_IdAndIdIn(Integer userId, Collection<Integer> vesselIds);
 
     @Query("SELECT v.id FROM Vessel v JOIN v.users u WHERE u.id = :userId")
     List<Integer> findIdByUsers_Id(Integer userId);
 
-    @Query("SELECT v.mmsi FROM Vessel v JOIN v.users u WHERE u.id = :userId")
-    List<String> findMmsiByUsers_id(Integer userId);
-
-    @Query("SELECT v.id FROM Vessel v WHERE v.mmsi IN :mmsiList")
-    List<Integer> findIdByMmsiIn(List<String> mmsiList);
 }

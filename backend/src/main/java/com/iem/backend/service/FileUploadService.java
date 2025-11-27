@@ -1,15 +1,15 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.FileUploadDetailsDto;
-import com.iem.backend.dto.FileUploadResponse;
+import com.iem.backend.dto.fileUpload.FileUploadDetails;
+import com.iem.backend.dto.fileUpload.FileUploadResponse;
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.FileUpload;
 import com.iem.backend.entity.User;
-import com.iem.backend.exception.FileNotFoundException;
-import com.iem.backend.exception.UserNotFoundException;
+import com.iem.backend.exception.ApiExceptions;
+import com.iem.backend.mapper.FileUploadMapper;
 import com.iem.backend.repository.FileUploadRepository;
-import com.iem.backend.repository.UserRepository;
-import com.iem.backend.utils.ApiLogger;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -36,62 +36,58 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class FileUploadService {
 
     private final Path storageLocation;
     private final long maxFileSize;
     private final int perUserLimit;
     private final FileUploadRepository fileUploadRepository;
-    private final UserRepository userRepository;
-    private final ApiLogger apiLogger;
     private final String originalUploadDirProperty;
+    private final FileUploadMapper fileUploadMapper;
 
     public FileUploadService(
             @Value("${app.upload.dir:uploads}") String uploadDir,
             @Value("${app.upload.max-size-bytes:10485760}") long maxFileSize,
             @Value("${app.upload.per-user-limit:10}") int perUserLimit,
             FileUploadRepository fileUploadRepository,
-            UserRepository userRepository,
-            ApiLogger apiLogger
+            FileUploadMapper fileUploadMapper
     ) {
         this.storageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         this.originalUploadDirProperty = uploadDir;
         this.maxFileSize = maxFileSize;
         this.perUserLimit = perUserLimit;
         this.fileUploadRepository = fileUploadRepository;
-        this.userRepository = userRepository;
-        this.apiLogger = apiLogger;
+        this.fileUploadMapper = fileUploadMapper;
+
     }
 
     @PostConstruct
     void initStorage() {
         try {
             Files.createDirectories(storageLocation);
-            apiLogger.success("Upload directory ready at " + storageLocation);
+            log.info("Upload directory ready at {}", storageLocation);
         } catch (IOException e) {
-            apiLogger.error("Failed to initialize upload directory", e);
+            log.error("Failed to initialize upload directory", e);
             throw new IllegalStateException("Cannot create upload directory", e);
         }
     }
 
     @Transactional
-    public FileUploadResponse store(MultipartFile file, String userEmail) {
+    public FileUploadResponse store(MultipartFile file, CustomUserDetails currentUser) {
         if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty or missing");
+            throw new ApiExceptions.BadRequestException("File is empty or missing");
         }
 
         if (file.getSize() > maxFileSize) {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Maximum upload size exceeded (10 MB)");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(userEmail)
-        .orElseThrow(UserNotFoundException::new);
-
-        enforcePerUserLimit(user);
+        enforcePerUserLimit(currentUser.getUser());
 
         String originalName = StringUtils.hasText(file.getOriginalFilename())
-        ? Objects.requireNonNull(file.getOriginalFilename()).trim()
-        : "file";
+            ? Objects.requireNonNull(file.getOriginalFilename()).trim()
+            : "file";
         String extension = extractExtension(originalName);
         String hashedName = hashFilename(originalName);
         String storedFilename = hashedName + extension;
@@ -100,33 +96,33 @@ public class FileUploadService {
         try (InputStream inputStream = file.getInputStream()) {
             Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            apiLogger.error("Failed to store uploaded file", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to store the uploaded file", e);
+            log.error("Failed to store uploaded file", e);
+            throw new ApiExceptions.InternalServerErrorException("Unable to store the uploaded file");
         }
 
         FileUpload upload = new FileUpload();
-        upload.setUser(user);
+        upload.setUser(currentUser.getUser());
         upload.setOriginalFilename(originalName);
         upload.setStoredFilename(storedFilename);
         upload.setFileSize(file.getSize());
 
         fileUploadRepository.save(upload);
-        apiLogger.success("File " + originalName + " stored for user " + userEmail);
 
         String pathToReturn = buildResponsePath(storedFilename);
-        return new FileUploadResponse(upload.getId(), pathToReturn, originalName, file.getSize());
+
+        return fileUploadMapper.toResponse(upload, pathToReturn);
     }
 
     @Transactional(readOnly = true)
-    public FileUpload getFileEntity(Integer id) {
+    public FileUpload getFileById(Integer id) {
         return fileUploadRepository.findById(id)
-                .orElseThrow(FileNotFoundException::new);
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("File not found"));
     }
 
     @Transactional(readOnly = true)
-    public FileUploadDetailsDto getFileDetails(Integer id) {
-        FileUpload fileUpload = getFileEntity(id);
-        return FileUploadDetailsDto.fromEntity(fileUpload);
+    public FileUploadDetails getFileDetails(Integer id) {
+        FileUpload fileUpload = getFileById(id);
+        return fileUploadMapper.toFileUploadDetails(fileUpload);
     }
 
     @Transactional(readOnly = true)
@@ -134,22 +130,18 @@ public class FileUploadService {
         try {
             Path filePath = storageLocation.resolve(fileUpload.getStoredFilename()).normalize();
             if (!Files.exists(filePath)) {
-                throw new FileNotFoundException();
+                throw new ApiExceptions.NotFoundException("File not found");
             }
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() && resource.isReadable()) {
                 return resource;
             }
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File is not readable");
+            log.error("File is not readable");
+            throw new ApiExceptions.InternalServerErrorException("File is not readable");
         } catch (MalformedURLException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to read the stored file", e);
+            log.error("Unable to read the stored file",e);
+            throw new ApiExceptions.InternalServerErrorException("Unable to read the stored file");
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Resource loadAsResource(Integer id) {
-        FileUpload fileUpload = getFileEntity(id);
-        return loadAsResource(fileUpload);
     }
 
     @Transactional
@@ -158,7 +150,7 @@ public class FileUploadService {
         try {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            apiLogger.error("Failed to delete stored file " + filePath, e);
+            log.error("Failed to delete stored file {}", filePath, e);
         }
         fileUploadRepository.delete(fileUpload);
     }
@@ -168,7 +160,7 @@ public class FileUploadService {
             return;
         }
 
-        long uploadsCount = fileUploadRepository.countByUser_Id(user.getId());
+        int uploadsCount = fileUploadRepository.countByUser_Id(user.getId());
         if (uploadsCount >= perUserLimit) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Per-user upload limit of " + perUserLimit + " files reached");

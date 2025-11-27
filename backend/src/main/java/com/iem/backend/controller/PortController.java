@@ -1,68 +1,61 @@
 package com.iem.backend.controller;
 
-import com.iem.backend.dto.ports.PortGeoJson;
+import com.iem.backend.common.geoJson.GeoJsonFeatureCollection;
+import com.iem.backend.dto.ports.PortProperties;
 import com.iem.backend.entity.Port;
+import com.iem.backend.mapper.PortMapper;
+import com.iem.backend.service.GeoJsonService;
 import com.iem.backend.service.PortService;
-import com.iem.backend.service.mapper.PortMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/ports")
 public class PortController {
 
-    private final PortService service;
-    private final PortMapper mapper;
+    private final PortService portService;
+    private final PortMapper portMapper;
+    private final GeoJsonService geoJsonService;
 
-    public PortController(PortService service, PortMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
+    public PortController(PortService portService, PortMapper portMapper, GeoJsonService geoJsonService) {
+        this.portService = portService;
+        this.portMapper = portMapper;
+        this.geoJsonService = geoJsonService;
     }
 
     @GetMapping
-    public ResponseEntity<Map<String,Object>> getPorts() {
-        List<Port> ports = service.getPorts();
-        List<PortGeoJson> features = mapper.toGeoJson(ports);
+    public ResponseEntity<GeoJsonFeatureCollection<PortProperties>> getAllPorts() {
+        List<Port> ports = portService.getPorts();
+        if (ports.isEmpty()) return ResponseEntity.noContent().build();
 
-        if (features.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        }
-
-        Map<String, Object> geoJson = Map.of(
-                "type", "FeatureCollection",
-                "features", features
+        return ResponseEntity.ok(
+                geoJsonService.toGeoJson(
+                        ports,
+                        portMapper::toProperties,
+                        Port::getGeom
+                )
         );
-
-        return ResponseEntity.ok(geoJson);
     }
 
     @GetMapping("/bounds")
-    public ResponseEntity<Map<String, Object>> getPorts(
+    public ResponseEntity<GeoJsonFeatureCollection<PortProperties>> getPortsByBounds(
             @RequestParam double minLat,
             @RequestParam double maxLat,
             @RequestParam double minLon,
             @RequestParam double maxLon,
             @RequestParam(defaultValue = "200") int limit
     ) {
-        List<Port> ports = service.getPortByBounds(minLat, maxLat, minLon, maxLon, limit);
-        List<PortGeoJson> features = mapper.toGeoJson(ports);
+        List<Port> ports = portService.getPortByBounds(minLat, maxLat, minLon, maxLon, limit);
+        if (ports.isEmpty()) return ResponseEntity.noContent().build();
 
-        if (features.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        }
-
-        Map<String, Object> geoJson = Map.of(
-                "type", "FeatureCollection",
-                "features", features
+        return ResponseEntity.ok(
+                geoJsonService.toGeoJson(
+                        ports,
+                        portMapper::toProperties,
+                        Port::getGeom
+                )
         );
-
-        return ResponseEntity.ok(geoJson);
     }
 }

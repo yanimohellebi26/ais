@@ -1,198 +1,117 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.UpdatePasswordRequest;
-import com.iem.backend.dto.UpdateUserRequest;
-import com.iem.backend.dto.UserDTO;
+import com.iem.backend.dto.user.UpdateUserPasswordRequest;
+import com.iem.backend.dto.user.UpdateUserRequest;
+import com.iem.backend.dto.user.UserResponse;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.User;
-import com.iem.backend.exception.RoleNotFoundException;
-import com.iem.backend.exception.UserNotFoundException;
 import com.iem.backend.entity.Role;
+import com.iem.backend.exception.ApiExceptions;
+import com.iem.backend.mapper.UserMapper;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
-import com.iem.backend.utils.ApiLogger;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import java.security.Principal;
-import java.time.OffsetDateTime;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final ApiLogger apiLogger;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
-    /**
-     * Initializes the service with the user account repository.
-     *
-     * @param userRepository repository for accessing user data
-     * @param apiLogger used for logs
-     * @param roleRepository repository for accessing role data
-     * @param passwordEncoder user for encoding password
-     */
-    public UserService(UserRepository userRepository, ApiLogger apiLogger, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
         this.userRepository = userRepository;
-        this.apiLogger = apiLogger;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
     @Transactional
-    public UserDTO updateUser(UpdateUserRequest dto) {
-        User user = userRepository.findById(dto.id())
-            .orElseThrow(() -> {
-                apiLogger.warn("User not found with id " + dto.id());
-                return new UserNotFoundException(dto.id());
-            });
+    public UserResponse updateUser(UpdateUserRequest request) {
+        User user = userRepository.findById(request.id())
+            .orElseThrow(() -> new ApiExceptions.NotFoundException("User not found"));
 
-        if (dto.password() != null && !dto.password().isBlank()) {
-            String passwordEncoded = passwordEncoder.encode(dto.password());
+        if (request.password() != null && !request.password().isBlank()) {
+            String passwordEncoded = passwordEncoder.encode(request.password());
             user.setPasswordHash(passwordEncoded);
-            apiLogger.info("Password updated for user id " + dto.id());
         }
 
-        if (dto.role() != null && !dto.role().isBlank()) {
-            Role role = roleRepository.findByNameIgnoreCase(dto.role())
-                .orElseThrow(() -> {
-                    apiLogger.warn("Role not found for " + dto.role());
-                    return new RoleNotFoundException(dto.role());
-                });
-
+        if (request.role() != null && !request.role().isBlank()) {
+            Role role = roleRepository.findByNameIgnoreCase(request.role())
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("Role not found"));
             user.setRole(role);
-            apiLogger.info("Role updated for id " + dto.id() + " with " + dto.role());
         }
 
         user.setLastUpdate(OffsetDateTime.now());
 
         User updatedUser = userRepository.save(user);
-        apiLogger.success("User updated successfully: id " + updatedUser.getId());
 
-        return new UserDTO(
-            updatedUser.getId(),
-            updatedUser.getUsername(),
-            updatedUser.getEmail(),
-            updatedUser.getRole().getName(),
-            null,
-            updatedUser.getLastUpdate(),
-            null
-        );
+        return userMapper.toResponse(updatedUser);
     }
 
     @Transactional
-    public UserDTO deleteUserById(Integer id) {
+    public void deleteUserById(Integer id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> {
-                apiLogger.warn("Attempt to delete user with id " + id + " but was not found");
-                return new UserNotFoundException(id);
-            });
-
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("User not found"));
         userRepository.delete(user);
-        apiLogger.success("User with id "+ id + " deleted successfuly");
-
-        return new UserDTO(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getRole().getName(),
-            null,
-            null,
-            OffsetDateTime.now()
-        );
     }
     
     @Transactional(readOnly = true)
-    public List<UserDTO> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
-
-        apiLogger.info("Retrieved " + users.size() + " users from the database.");
-
-        return users.stream()
-            .map(user -> new UserDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole().getName(),
-                user.getCreatedAt(),
-                user.getLastUpdate(),
-                null
-            ))
-            .toList();
+        return userMapper.toResponseList(users);
     }
 
-    /**
-     * Loads a user by their email address for authentication.
-     *
-     * @param email user's email
-     * @return user details for authentication
-     * @throws UsernameNotFoundException if no user is found with the given email
-     */
     @Override
     public UserDetails loadUserByUsername(String email) {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
-
         return new CustomUserDetails(user);
     }
 
     @Transactional
-    public UserDTO getUserById(int id, Principal principal){
-        User user = userRepository.findById(id)
-            .orElseThrow(() -> {
-                apiLogger.warn("User not found with id " + id);
-                return new UserNotFoundException(id);
-            });
-
-        String CurrentUserEmail = principal.getName();
-        User CurrentUser = userRepository.findByEmailIgnoreCase(CurrentUserEmail)
-            .orElseThrow(()-> new UserNotFoundException("user not found with "+CurrentUserEmail));
-        
-        boolean isSelf = CurrentUser.getId().equals(id);
-        boolean isAdmin = "ADMIN".equalsIgnoreCase(CurrentUser.getRole().getName());
+    public UserResponse getUserById(Integer id, CustomUserDetails currentUser) {
+        boolean isSelf = currentUser.getUser().getId().equals(id);
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getUser().getRole().getName());
 
         if(!isAdmin && !isSelf){
-            throw new AuthorizationDeniedException("You are not allowed to see this account ");
+            throw new ApiExceptions.UnauthorizedException("You are not allowed to see this account");
         }
 
-        return new UserDTO(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getRole().getName(),
-            null,
-            null,
-            OffsetDateTime.now()
-        );
+        return userMapper.toResponse(currentUser.getUser());
     }
 
     @Transactional
-    public void updatePassword(int id, UpdatePasswordRequest dto, Principal principal){
+    public void updatePassword(Integer id, UpdateUserPasswordRequest request, CustomUserDetails currentUser) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> {
-                apiLogger.warn("User not found with id " + id);
-                return new UserNotFoundException(id);
-            });
+                .orElseThrow(() -> new ApiExceptions.NotFoundException("User not found"));
 
-        String CurrentUserEmail = principal.getName();
-        if (!CurrentUserEmail.equalsIgnoreCase(user.getEmail())){
-            throw new AuthorizationDeniedException("You are not allowed to change this password");
+        String currentUserEmail = currentUser.getUsername();
+        if (!currentUserEmail.equalsIgnoreCase(user.getEmail())){
+            throw new ApiExceptions.UnauthorizedException("You are not allowed to change this password");
         }
 
-        if (!passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
-            throw new AuthorizationDeniedException("Old pasword is incorrect");
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
+            throw new ApiExceptions.UnauthorizedException("Old pasword is incorrect");
         }
 
-        String newEcodedPassword = passwordEncoder.encode(dto.newPassword());
-        user.setPasswordHash(newEcodedPassword);
+        String newEncodedPassword = passwordEncoder.encode(request.newPassword());
+        user.setPasswordHash(newEncodedPassword);
         user.setLastUpdate(OffsetDateTime.now());
+
         userRepository.save(user);
     }
 

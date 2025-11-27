@@ -9,7 +9,7 @@ export type RequestPropertyRow = {
     username: string;
     userEmail: string;
     userRole: string;
-    mmsi: string;
+    vesselId: number;
     fileId: number;
     fileName: string;
     createdAt: string;
@@ -17,14 +17,14 @@ export type RequestPropertyRow = {
 
 const mapToRow = (item: RequestPropertyAdmin): RequestPropertyRow => ({
     id: item.id,
-    userId: item.userid,
+    userId: item.userId,
     username: item.username,
-    userEmail: item.user_email,
-    userRole: item.user_role,
-    mmsi: item.mmsi,
-    fileId: item.fileid,
-    fileName: item.file_name || `file-${item.fileid}`,
-    createdAt: item.created_at,
+    userEmail: item.userEmail,
+    userRole: item.userRole,
+    vesselId: item.vesselId,
+    fileId: item.fileId,
+    fileName: item.fileName || `file-${item.fileId}`,
+    createdAt: item.createdAt,
 });
 
 export const useRequestProperty = (setLoading: (value: boolean) => void) => {

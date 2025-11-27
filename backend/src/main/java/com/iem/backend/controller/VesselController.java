@@ -1,18 +1,19 @@
 package com.iem.backend.controller;
-import com.iem.backend.dto.RequestVesselDto;
-import com.iem.backend.dto.ResponseVesselDto;
-import com.iem.backend.dto.UserVesselRequestDto;
-import com.iem.backend.dto.VesselResponseDto;
+import com.iem.backend.dto.vessel.VesselCreateRequest;
+import com.iem.backend.dto.vessel.VesselRelateRequest;
+import com.iem.backend.dto.vessel.VesselDetails;
+import com.iem.backend.dto.vessel.VesselUpdateRequest;
+import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.VesselService;
 import jakarta.validation.Valid;
 
-import java.security.Principal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,15 +26,8 @@ public class VesselController {
         this.vesselService = vesselService;
     }
 
-    @PostMapping("/related")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> relateUserToVessel(@Valid @RequestBody UserVesselRequestDto dto) {
-        vesselService.relateUserToVessel(dto.userId(), dto.mmsi());
-        return ResponseEntity.ok("User related to vessel successfully");
-    }
-
     @GetMapping
-    public ResponseEntity<Page<VesselResponseDto>> getAllVessels(
+    public ResponseEntity<Page<VesselDetails>> getAllVessels (
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "id,asc") String[] sort,
@@ -41,42 +35,56 @@ public class VesselController {
     ) {
         String sortField = sort[0];
         String sortDirection = sort.length > 1 ? sort[1] : "asc";
-
-        Page<VesselResponseDto> vesselsPage = vesselService.getAllVessels(page, size, sortField, sortDirection, search);
-        return ResponseEntity.ok(vesselsPage);
+        return ResponseEntity.ok(
+                vesselService.getAllVessels(page, size, sortField, sortDirection, search)
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<VesselResponseDto> getVesselById(@PathVariable Integer id){
+    public ResponseEntity<VesselDetails> getVesselById(@PathVariable Integer id) {
         return ResponseEntity.ok(vesselService.findById(id));
-    } 
+    }
 
-    @PostMapping() 
+    @PostMapping()
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ResponseVesselDto> createVessel(@Valid @RequestBody RequestVesselDto dto){
-        ResponseVesselDto vesselCreated = vesselService.createVessel(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(vesselCreated);
+    public ResponseEntity<VesselDetails> createVessel(@Valid @RequestBody VesselCreateRequest dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                vesselService.createVessel(dto)
+        );
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
-    public ResponseEntity<VesselResponseDto> updateVessel (@PathVariable Integer id, @RequestBody RequestVesselDto dto,Principal principal){
-        return ResponseEntity.ok(vesselService.updateVessel(id,dto,principal));
+    public ResponseEntity<VesselDetails> updateVessel(
+            @PathVariable Integer id,
+            @RequestBody VesselUpdateRequest dto,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        return ResponseEntity.ok(vesselService.updateVessel(id, dto, currentUser));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteVessel (@PathVariable Integer id){
+    public ResponseEntity<Void> deleteVessel(@PathVariable Integer id) {
         vesselService.deleteVessel(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/related")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<VesselDetails> relateUserToVessel(@Valid @RequestBody VesselRelateRequest dto) {
+        return ResponseEntity.ok(
+                vesselService.relateUserToVessel(dto)
+        );
+    }
+
     @GetMapping("/userId/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER','CAPTAIN')")
-    public ResponseEntity<List<VesselResponseDto>> getVesselsByUserID(@PathVariable Integer id, Principal principal){
-        List<VesselResponseDto> vessels = vesselService.getVesselsByUserID(id,principal);
+    public ResponseEntity<List<VesselDetails>> getVesselsByUserId(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        List<VesselDetails> vessels = vesselService.getVesselsByUserId(id,currentUser);
         return ResponseEntity.ok(vessels);
     }
-    
+
 }
 

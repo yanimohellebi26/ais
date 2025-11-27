@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -31,5 +32,6 @@ public class RequestProperty {
     private Vessel vessel;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     private OffsetDateTime createdAt;
 }

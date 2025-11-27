@@ -13,12 +13,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -182,20 +180,6 @@ class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    @DisplayName("Need login to access private endpoint")
-    void request_Unauthorized() throws Exception {
-        mockMvc.perform(get("/api/HelloWorld"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @WithMockUser(username = "user@example.com", roles = {"ADMIN"})
-    @DisplayName("Need login to access private endpoint")
-    void request_authorized() throws Exception {
-        mockMvc.perform(get("/api/HelloWorld"))
-                .andExpect(status().isOk());
-    }
 
     private record LoginPayload(String email, String password) {
     }

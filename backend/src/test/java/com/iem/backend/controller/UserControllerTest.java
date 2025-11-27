@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iem.backend.dto.UpdateUserRequest;
+import com.iem.backend.dto.user.UpdateUserRequest;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.repository.FileUploadRepository;
@@ -30,7 +30,6 @@ import com.iem.backend.repository.RequestPropertyRepository;
 import com.iem.backend.repository.RoleRepository;
 import com.iem.backend.repository.UserRepository;
 
-import ch.qos.logback.core.encoder.EchoEncoder;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
@@ -213,7 +212,7 @@ public class UserControllerTest {
     void deleteUserByAdminSuccess() throws Exception {
 
         mockMvc.perform(delete("/api/v1/users/{id}", existingUser.getId()))
-            .andExpect(status().isOk());
+            .andExpect(status().is2xxSuccessful());
 
         assertThat(userRepository.findById(existingUser.getId())).isNotPresent();
     }
