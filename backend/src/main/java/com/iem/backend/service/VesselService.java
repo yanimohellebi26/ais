@@ -1,9 +1,6 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.vessel.VesselCreateRequest;
-import com.iem.backend.dto.vessel.VesselDetails;
-import com.iem.backend.dto.vessel.VesselRelateRequest;
-import com.iem.backend.dto.vessel.VesselUpdateRequest;
+import com.iem.backend.dto.vessel.*;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
@@ -12,18 +9,17 @@ import com.iem.backend.exception.ApiExceptions.*;
 import com.iem.backend.mapper.VesselMapper;
 import com.iem.backend.repository.UserRepository;
 import com.iem.backend.repository.VesselRepository;
+import com.iem.backend.specifications.VesselSpecifications;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class VesselService {
@@ -91,25 +87,67 @@ public class VesselService {
         return vesselMapper.toDetails(vessel);
     }
 
-    public Page<VesselDetails> getAllVessels(int page, int size, String sortField, String sortDirection, String search) {
+    public Page<VesselDetails> getAllVessels(
+            int page, int size, String sortField, String sortDirection,
+            VesselFilter filter
+    ) {
         Sort sort = sortDirection.equalsIgnoreCase("desc")
                 ? Sort.by(sortField).descending()
                 : Sort.by(sortField).ascending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Vessel> vesselsPage;
+        List<Specification<Vessel>> specs = new ArrayList<>();
 
-        if (search == null || search.isEmpty()) {
-            vesselsPage = vesselRepository.findAll(pageable);
-        } else if (search.matches("\\d+")) {
-            vesselsPage = vesselRepository.searchByMmsiOrVesselName(search, pageable);
-        } else {
-            vesselsPage = vesselRepository.findByVesselNameContainingIgnoreCase(search, pageable);
+        if (filter.country() != null && !filter.country().isBlank()) {
+            specs.add(VesselSpecifications.hasCountry(filter.country()));
         }
 
+        if (filter.mid() != null) {
+            specs.add(VesselSpecifications.hasMid(filter.mid()));
+        }
+
+        if (filter.mmsi() != null && !filter.mmsi().isBlank()) {
+            specs.add(VesselSpecifications.mmsiEquals(filter.mmsi()));
+        }
+
+        if (filter.name() != null && !filter.name().isBlank()) {
+            specs.add(VesselSpecifications.nameContains(filter.name()));
+        }
+
+        if (filter.minLength() != null) {
+            specs.add(VesselSpecifications.lengthMin(filter.minLength()));
+        }
+
+        if (filter.maxLength() != null) {
+            specs.add(VesselSpecifications.lengthMax(filter.maxLength()));
+        }
+
+        if (filter.minDraft() != null) {
+            specs.add(VesselSpecifications.draftMin(filter.minDraft()));
+        }
+
+        if (filter.maxDraft() != null) {
+            specs.add(VesselSpecifications.draftMax(filter.maxDraft()));
+        }
+
+        // Search global = name or MMSI
+        if (filter.search() != null && !filter.search().isBlank()) {
+            String s = filter.search();
+            if (s.matches("\\d+")) {
+                specs.add(VesselSpecifications.mmsiEquals(s));
+            } else {
+                specs.add(VesselSpecifications.nameContains(s));
+            }
+        }
+
+        Specification<Vessel> finalSpec = Specification.allOf(specs);
+
+        Page<Vessel> vesselsPage = vesselRepository.findAll(finalSpec, pageable);
         return vesselsPage.map(vesselMapper::toDetails);
     }
+
+
 
     public VesselDetails findById(Integer vesselId) {
         Vessel vessel = vesselRepository.findById(vesselId).

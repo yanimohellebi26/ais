@@ -1,14 +1,12 @@
 package com.iem.backend.controller;
-import com.iem.backend.dto.vessel.VesselCreateRequest;
-import com.iem.backend.dto.vessel.VesselRelateRequest;
-import com.iem.backend.dto.vessel.VesselDetails;
-import com.iem.backend.dto.vessel.VesselUpdateRequest;
+import com.iem.backend.dto.vessel.*;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.VesselService;
 import jakarta.validation.Valid;
 
 import java.util.List;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,18 +25,20 @@ public class VesselController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<VesselDetails>> getAllVessels (
+    public ResponseEntity<Page<VesselDetails>> getAllVessels(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "id,asc") String[] sort,
-            @RequestParam(required = false) String search
+            @ParameterObject VesselFilter filter
     ) {
         String sortField = sort[0];
         String sortDirection = sort.length > 1 ? sort[1] : "asc";
+
         return ResponseEntity.ok(
-                vesselService.getAllVessels(page, size, sortField, sortDirection, search)
+                vesselService.getAllVessels(page, size, sortField, sortDirection, filter)
         );
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<VesselDetails> getVesselById(@PathVariable Integer id) {
