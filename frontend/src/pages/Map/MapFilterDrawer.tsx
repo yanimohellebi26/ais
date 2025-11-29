@@ -1,27 +1,12 @@
 import React, {useState} from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import SelectedVesselPanel from "../../components/BaseComponents/SelectedVesselPanel";
 
 interface MapFilterDrawerProps {
     children?: React.ReactNode;
-    selectedVesselId?: number;
-    targetDate?: string;
-    targetRadiusKm?: number;
-    onFetchNearbyVessels?: (date?: string, radiusKm?: number) => void;
-    resetSelectedVessel?: () => void;
 }
 
-const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVesselId, targetDate, targetRadiusKm, onFetchNearbyVessels, resetSelectedVessel, }) => {
+const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
-
-    const handleFetch = (date?: string, radius?: number) => {
-        if(!selectedVesselId) return;
-        onFetchNearbyVessels?.(date, radius);
-    };
-
-    const handleReset = () => {
-        resetSelectedVessel?.();
-    };
 
     return (
         <aside
@@ -41,16 +26,6 @@ const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children, selectedVes
 
             {!collapsed && (
                 <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto">
-                    {/* Selected vessel section */}
-                    {selectedVesselId && (
-                        <SelectedVesselPanel
-                            vesselId={selectedVesselId}
-                            initialDate={targetDate}
-                            initialRadiusKm={targetRadiusKm}
-                            onSearch={handleFetch}
-                            onReset={handleReset}
-                        />
-                    )}
                     {children}
                 </div>
             )}

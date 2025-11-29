@@ -36,17 +36,34 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, target
     const handleClick = (e: any) => {
         if(!map) return;
         const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
+        if (features.length === 0) return;
         const vesselId = features[0].properties?.vesselId;
-        if(features.length && vesselId != null){
+        if(vesselId != null){
             onVesselClick?.(Number(vesselId));
         }
     };
 
     React.useEffect(() => {
         if(!map) return;
+        const handleMouseEnter = () => {
+            if (map.getCanvas()) {
+                map.getCanvas().style.cursor = "pointer";
+            }
+        };
+
+        const handleMouseLeave = () => {
+            if (map.getCanvas()) {
+                map.getCanvas().style.cursor = "";
+            }
+        };
+
+        map.on("mouseenter", "unclustered-point", handleMouseEnter);
+        map.on("mouseleave", "unclustered-point", handleMouseLeave);
         map.on("click", handleClick);
         return () => {
             map.off("click", handleClick);
+            map.off("mouseenter", "unclustered-point", handleMouseEnter);
+            map.off("mouseleave", "unclustered-point", handleMouseLeave);
         };
     }, [map, onVesselClick]);
 

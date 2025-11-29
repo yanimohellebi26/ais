@@ -25,10 +25,10 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
     const isValidDateFormat = (value: string): boolean => {
         if (!value.trim()) return true;
 
-        const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
-        const dateTimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
+        const dateTime = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
-        return dateOnlyRegex.test(value) || dateTimeRegex.test(value);
+        return dateOnly.test(value) || dateTime.test(value);
     };
 
     const handleSearch = () => {
@@ -37,6 +37,10 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
             return;
         }
         onSearch?.(dateInput.trim() || undefined, radiusKm);
+    };
+
+    const handleReset = () => {
+        onReset?.();
     };
 
     return (
@@ -89,7 +93,7 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
 
                 <button
                     className="btn btn-outline btn-error btn-sm w-full"
-                    onClick={onReset}
+                    onClick={handleReset}
                 >
                     <RefreshCcw className="w-4 h-4"/>
                     Reset

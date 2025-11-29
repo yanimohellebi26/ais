@@ -11,6 +11,7 @@ import MapFilterDrawer from "./MapFilterDrawer";
 import DatePicker from "../../components/BaseComponents/DatePicker";
 import { DateRange } from "react-day-picker";
 import PortLayer from "./MapLayers/PortLayer";
+import SelectedVesselPanel from "./Filters/SelectedVesselPanel";
 
 const mapStyles = [
     "https://demotiles.maplibre.org/globe.json",
@@ -66,13 +67,18 @@ const MapComponent: React.FC = () => {
         <>
             <Breadcrumbs />
             <TitleH1>Interactive Sea Sight Map</TitleH1>
-            <MapFilterDrawer
-                selectedVesselId={selectedVesselId ?? undefined}
-                targetDate={targetDate}
-                targetRadiusKm={targetRadiusKm}
-                onFetchNearbyVessels={handleUpdateFilters}
-                resetSelectedVessel={handleReset}
-            >
+            <MapFilterDrawer>
+
+                {selectedVesselId && (
+                    <SelectedVesselPanel
+                        vesselId={selectedVesselId}
+                        initialDate={targetDate}
+                        initialRadiusKm={targetRadiusKm}
+                        onSearch={handleUpdateFilters}
+                        onReset={handleReset}
+                    />
+                )}
+
                 <div className="flex items-center gap-4">
                     <ToggleButton
                         onIcon={<Anchor className="text-success" />}
