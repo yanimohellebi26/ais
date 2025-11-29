@@ -7,7 +7,7 @@ import TableControls from "./TableControls";
 import TableDisplay from "./TableDisplay";
 import TablePagination from "./TablePagination";
 import RequestModal from "./RequestModal";
-import { Vessel } from "./types";
+import { Vessel } from "../interfaces";
 import {useCurrentUser} from "../../../hooks/useCurrentUser";
 import {useLoading} from "../../../context/LoadingContext";
 

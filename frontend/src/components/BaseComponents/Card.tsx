@@ -11,14 +11,8 @@ const Card: React.FC<CardsProps> = ({
 }) => {
     return (
         <div
-            className={`
-                card
-                bg-base-100
-                relative
-                shadow-md 
-                rounded-4xl 
-                overflow-hidden 
-                backdrop-blur-sm
+            className={`card
+                rounded-2xl shadow-sm bg-base-100 p-4
                 ${className ?? ""}
             `}
         >

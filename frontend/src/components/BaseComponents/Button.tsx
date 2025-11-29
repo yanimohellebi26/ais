@@ -20,7 +20,7 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`cursor-pointer px-4 py-2 rounded-md ${className}`.trim()}
+      className={`btn ${className}`}
     >
       {children}
     </button>

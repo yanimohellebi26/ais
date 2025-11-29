@@ -12,6 +12,22 @@ export interface Vessel {
     width: number | null;
     draft: number | null;
     transceiverClass: string | null;
-    locked: boolean;
     baseDateTime: string;
+    locked: boolean;
+    country: string;
+    users: UserPublicDetails[];
+}
+
+export interface UserPublicDetails {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+}
+
+export type CaptainDetails = {
+    id:number;
+    username:string;
+    email:string;
+    role:string;
 }

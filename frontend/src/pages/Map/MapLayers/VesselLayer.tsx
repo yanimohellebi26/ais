@@ -12,9 +12,10 @@ interface Props {
     targetDate?: string;
     targetRadiusKm?: number;
     onVesselClick?: (vesselId: number) => void;
+    ids?: number[];
 }
 
-const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, targetDate, targetRadiusKm, onVesselClick }) => {
+const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, targetDate, targetRadiusKm, onVesselClick, ids}) => {
     const { current: map } = useMap();
 
     const radiusGeoJson = useVesselPositionsRadius({
@@ -28,20 +29,23 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, target
     const normalGeoJson = useVesselPositions({
         map,
         limit,
-        dateRange
+        dateRange,
+        ids
     });
 
     const geoJson = targetVesselId ? radiusGeoJson : normalGeoJson;
 
     const handleClick = (e: any) => {
-        if(!map) return;
-        const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
+        if (!map) return;
+        if (!map.getLayer("unclustered-point")) return;
+        const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"] });
         if (features.length === 0) return;
         const vesselId = features[0].properties?.vesselId;
-        if(vesselId != null){
+        if (vesselId != null) {
             onVesselClick?.(Number(vesselId));
         }
     };
+
 
     React.useEffect(() => {
         if(!map) return;
