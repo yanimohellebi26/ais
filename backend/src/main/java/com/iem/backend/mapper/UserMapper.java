@@ -1,5 +1,6 @@
 package com.iem.backend.mapper;
 
+import com.iem.backend.dto.user.UserPublicDetails;
 import com.iem.backend.dto.user.UserResponse;
 import com.iem.backend.entity.User;
 import org.mapstruct.Mapper;
@@ -14,4 +15,9 @@ public interface UserMapper {
     UserResponse toResponse(User user);
 
     List<UserResponse> toResponseList(List<User> users);
+
+    @Mapping(source = "role.name", target = "role")
+    UserPublicDetails toPublicDetails(User user);
+
+    List<UserPublicDetails> toPublicDetails(List<User> users);
 }

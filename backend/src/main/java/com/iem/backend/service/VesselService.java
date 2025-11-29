@@ -1,9 +1,6 @@
 package com.iem.backend.service;
 
-import com.iem.backend.dto.vessel.VesselCreateRequest;
-import com.iem.backend.dto.vessel.VesselDetails;
-import com.iem.backend.dto.vessel.VesselRelateRequest;
-import com.iem.backend.dto.vessel.VesselUpdateRequest;
+import com.iem.backend.dto.vessel.*;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.User;
 import com.iem.backend.entity.Vessel;
@@ -91,6 +88,26 @@ public class VesselService {
         return vesselMapper.toDetails(vessel);
     }
 
+    @Transactional
+    public void unrelate(VesselRelateRequest dto, CustomUserDetails currentUser) {
+        if(!checkUserAccessToVessel(currentUser.getUser(),dto.vesselId())) {
+            throw new ForbiddenException("Not allowed to access this vessel");
+        }
+
+        User captain = userRepository.findById(dto.userId()).orElseThrow(() -> new ApiExceptions.NotFoundException("User not found"));
+        String roleName = captain.getRole().getName();
+
+        Vessel vessel = vesselRepository.findById(dto.vesselId()).orElseThrow(() -> new ApiExceptions.NotFoundException("Vessel not found"));
+
+        if ("CAPTAIN".equalsIgnoreCase(roleName) && vessel.getUsers().contains(captain)){
+            vessel.getUsers().remove(captain);
+            vesselRepository.save(vessel);
+        }
+        else {
+            throw new ApiExceptions.BadRequestException("Not allowed to unrelate this user from this vessel or relation does not exist");
+        }
+    }
+
     public Page<VesselDetails> getAllVessels(int page, int size, String sortField, String sortDirection, String search) {
         Sort sort = sortDirection.equalsIgnoreCase("desc")
                 ? Sort.by(sortField).descending()
@@ -158,16 +175,16 @@ public class VesselService {
         vesselRepository.delete(vessel);
     }
 
-    public List<VesselDetails> getVesselsByUserId(Integer userId, CustomUserDetails currentUser) {
+    public List<VesselUsersDetails> getVesselsByUserId(Integer userId, CustomUserDetails currentUser) {
         if (!"ADMIN".equalsIgnoreCase(currentUser.getUser().getRole().getName())){
             if(!Objects.equals(currentUser.getUser().getId(), userId)){
-                throw new ApiExceptions.ForbiddenException("You are not allowed to update this Vessel");
+                throw new ApiExceptions.ForbiddenException("You are not allowed to get this Vessel details");
             }    
         }
 
         List<Vessel> vessels = vesselRepository.findByUsers_Id(userId);
 
-        return vesselMapper.toDetails(vessels);
+        return vesselMapper.toUsersDetails(vessels);
     }
 
     public List<Vessel> findByIds(List<Integer> ids) {
