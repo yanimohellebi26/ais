@@ -172,9 +172,15 @@ const TableShips: React.FC = () => {
         }
     };
 
+    const filtersAreEqual = (a: VesselFilters, b: VesselFilters) => {
+        return JSON.stringify(a) === JSON.stringify(b);
+    };
+
     const handleFiltersChange = (newFilters: VesselFilters) => {
-        setFilters(newFilters);
-        setPageIndex(0); // Reset to first page when filters change
+        if (!filtersAreEqual(filters, newFilters)) {
+            setFilters(newFilters);
+            setPageIndex(0);
+        }
     };
 
     const handleResetFilters = () => {
@@ -221,8 +227,6 @@ const TableShips: React.FC = () => {
                     />
                 </div>
             </div>
-
-
 
             {isModalOpen && selectedVessel && (
                 <RequestModal
