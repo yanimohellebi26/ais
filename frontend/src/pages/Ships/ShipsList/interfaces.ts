@@ -25,6 +25,7 @@ export interface VesselFilters {
     minDraft?: number;
     maxDraft?: number;
     search?: string;
+    vesselType?: number;
 }
 
 export interface Country {
@@ -32,4 +33,10 @@ export interface Country {
     alpha2: string;
     alpha3: string;
     mid: number;
+}
+
+export interface VesselType {
+    code : number;
+    description: string;
+    vesselGroup: string;
 }

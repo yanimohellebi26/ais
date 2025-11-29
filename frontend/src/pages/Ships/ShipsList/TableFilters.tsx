@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useApi } from "../../../hooks/useApi";
 import { toast } from "react-toastify";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { VesselFilters } from "./interfaces";
+import { VesselFilters , VesselType } from "./interfaces";
 import { Country } from "./interfaces";
-
-
+import {useLoading} from "../../../context/LoadingContext";
 
 interface Props {
     filters: VesselFilters;
@@ -17,28 +16,45 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
     const [localFilters, setLocalFilters] = useState<VesselFilters>(filters);
     const [isExpanded, setIsExpanded] = useState(false);
     const [countries, setCountries] = useState<Country[]>([]);
-    const [loadingCountries, setLoadingCountries] = useState(false);
-
+    const [vesselTypes, setVesselTypes] = useState<VesselType[]>([]);
     const api = useApi();
+    const {loading, setLoading} = useLoading();
 
     // Fetch countries on mount
     useEffect(() => {
         async function fetchCountries() {
             try {
-                setLoadingCountries(true);
+                setLoading(true);
                 const response = await api("/api/v1/country", {
                     method: "GET",
                     headers: { "Content-Type": "application/json" }
                 });
                 setCountries(response || []);
             } catch (e) {
-                console.error("Failed to fetch countries:", e);
                 toast.error("Failed to load countries");
             } finally {
-                setLoadingCountries(false);
+                setLoading(false);
             }
         }
         fetchCountries();
+    }, []);
+
+    useEffect(() => {
+        async function fetchVesselTypes() {
+            try {
+                setLoading(true);
+                const response = await api("/api/v1/vessel-type", {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
+                setVesselTypes(response || []);
+            } catch (e) {
+                toast.error("Failed to load countries");
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchVesselTypes();
     }, []);
 
     // Debounce filter changes
@@ -114,12 +130,32 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                                 className="select select-bordered select-sm"
                                 value={localFilters.country || ""}
                                 onChange={e => handleCountryChange(e.target.value)}
-                                disabled={loadingCountries}
+                                disabled={loading}
                             >
                                 <option value="">All countries</option>
                                 {countries.map(country => (
                                     <option key={country.name} value={country.name}>
                                         {country.name} ({country.alpha2})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* VesselType - Dropdown */}
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Vessel type</span>
+                            </label>
+                            <select
+                                className="select select-bordered select-sm"
+                                value={localFilters.vesselType || ""}
+                                onChange={e => handleChange("vesselType", e.target.value)}
+                                disabled={loading}
+                            >
+                                <option value="">All vessel types</option>
+                                {vesselTypes.map(vesselType => (
+                                    <option key={vesselType.code} value={vesselType.code}>
+                                        {vesselType.description} ({vesselType.code})
                                     </option>
                                 ))}
                             </select>

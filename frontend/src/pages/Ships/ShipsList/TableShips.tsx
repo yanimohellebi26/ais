@@ -93,6 +93,7 @@ const TableShips: React.FC = () => {
 
                 // Add filters
                 if (filters.country) params.country = filters.country;
+                if (filters.vesselType) params.vesselType = filters.vesselType.toString();
                 if (filters.minLength !== undefined) params.minLength = filters.minLength.toString();
                 if (filters.maxLength !== undefined) params.maxLength = filters.maxLength.toString();
                 if (filters.minWidth !== undefined) params.minWidth = filters.minWidth.toString();

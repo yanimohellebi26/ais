@@ -10,6 +10,11 @@ public class VesselSpecifications {
                 cb.equal(cb.lower(root.get("mid").get("country").get("name")), country.toLowerCase());
     }
 
+    public static Specification<Vessel> hasVesselType(Integer vesselType) {
+        return (root, query, cb) ->
+                cb.equal(root.get("vesselType").get("id"), vesselType);
+    }
+
     public static Specification<Vessel> hasMid(Integer mid) {
         return (root, query, cb) ->
                 cb.equal(root.get("mid").get("mid"), mid);
@@ -54,6 +59,8 @@ public class VesselSpecifications {
         return (root, query, cb) ->
                 cb.lessThanOrEqualTo(root.get("draft"), max);
     }
+
+
 }
 
 

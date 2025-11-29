@@ -103,6 +103,10 @@ public class VesselService {
             specs.add(VesselSpecifications.hasCountry(filter.country()));
         }
 
+        if (filter.vesselType() != null) {
+            specs.add(VesselSpecifications.hasVesselType(filter.vesselType()));
+        }
+
         if (filter.mid() != null) {
             specs.add(VesselSpecifications.hasMid(filter.mid()));
         }
@@ -131,7 +135,6 @@ public class VesselService {
             specs.add(VesselSpecifications.widthMax(filter.maxWidth()));
         }
 
-
         if (filter.minDraft() != null) {
             specs.add(VesselSpecifications.draftMin(filter.minDraft()));
         }
@@ -155,8 +158,6 @@ public class VesselService {
         Page<Vessel> vesselsPage = vesselRepository.findAll(finalSpec, pageable);
         return vesselsPage.map(vesselMapper::toDetails);
     }
-
-
 
     public VesselDetails findById(Integer vesselId) {
         Vessel vessel = vesselRepository.findById(vesselId).
