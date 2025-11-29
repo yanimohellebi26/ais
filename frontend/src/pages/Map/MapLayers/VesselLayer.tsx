@@ -1,19 +1,73 @@
 import React from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import {useVesselPositions} from "../../../hooks/useVesselPositions";
+import {useVesselPositionsRadius} from "../../../hooks/useVesselPositionsRadius";
 import {DateRange} from "react-day-picker";
+import {toast} from "react-toastify";
 
 interface Props {
     limit?: number;
     dateRange?: DateRange;
+    targetVesselId?: number;
+    targetDate?: string;
+    targetRadiusKm?: number;
+    onVesselClick?: (vesselId: number) => void;
 }
 
-const VesselLayer: React.FC<Props> = ({ limit, dateRange }) => {
+const VesselLayer: React.FC<Props> = ({ limit, dateRange, targetVesselId, targetDate, targetRadiusKm, onVesselClick }) => {
     const { current: map } = useMap();
-    const geoJson = useVesselPositions({ map, limit, dateRange});
+
+    const radiusGeoJson = useVesselPositionsRadius({
+        map,
+        vesselId: targetVesselId ?? -1,
+        date: targetDate,
+        radiusKm: targetRadiusKm,
+        enabled: targetVesselId != null
+    });
+
+    const normalGeoJson = useVesselPositions({
+        map,
+        limit,
+        dateRange
+    });
+
+    const geoJson = targetVesselId ? radiusGeoJson : normalGeoJson;
+
+    const handleClick = (e: any) => {
+        if(!map) return;
+        const features = map.queryRenderedFeatures(e.point, { layers: ["unclustered-point"]});
+        if (features.length === 0) return;
+        const vesselId = features[0].properties?.vesselId;
+        if(vesselId != null){
+            onVesselClick?.(Number(vesselId));
+        }
+    };
+
+    React.useEffect(() => {
+        if(!map) return;
+        const handleMouseEnter = () => {
+            if (map.getCanvas()) {
+                map.getCanvas().style.cursor = "pointer";
+            }
+        };
+
+        const handleMouseLeave = () => {
+            if (map.getCanvas()) {
+                map.getCanvas().style.cursor = "";
+            }
+        };
+
+        map.on("mouseenter", "unclustered-point", handleMouseEnter);
+        map.on("mouseleave", "unclustered-point", handleMouseLeave);
+        map.on("click", handleClick);
+        return () => {
+            map.off("click", handleClick);
+            map.off("mouseenter", "unclustered-point", handleMouseEnter);
+            map.off("mouseleave", "unclustered-point", handleMouseLeave);
+        };
+    }, [map, onVesselClick]);
 
     if (!geoJson) return null;
-
     return (
         <Source
             id="vessels-source"
@@ -63,7 +117,12 @@ const VesselLayer: React.FC<Props> = ({ limit, dateRange }) => {
                 filter={["!", ["has", "point_count"]]}
                 paint={{
                     "circle-radius": 6,
-                    "circle-color": "#007BFF",
+                    "circle-color": [
+                        "case",
+                        ["==", ["get", "vesselId"], targetVesselId ?? -1],
+                        "#FF0000",
+                        "#007BFF"
+                    ],
                     "circle-stroke-width": 2,
                     "circle-stroke-color": "#FFFFFF",
                 }}

@@ -11,6 +11,7 @@ public interface PositionVesselMapper {
 
     @Mapping(target = "status", source = "status.description")
     @Mapping(target = "mmsi", source="vessel.mmsi")
+    @Mapping(target = "vesselId", source = "vessel.id")
     PositionVesselProperties toProperties(PositionVessel positionVessel);
 
     @Mapping(target = "id", source = "id")
