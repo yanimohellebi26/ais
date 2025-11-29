@@ -8,15 +8,17 @@ interface Props {
     allColumns: ColumnMeta[];
     visibleColumns: string[];
     toggleColumn: (colId: string) => void;
-};
+    totalShips?: number;
+}
 
 const TableControls: React.FC<Props> = ({
-                                                         searchTerm,
-                                                         setSearchTerm,
-                                                         allColumns,
-                                                         visibleColumns,
-                                                         toggleColumn
-                                                     }) => {
+    searchTerm,
+    setSearchTerm,
+    allColumns,
+    visibleColumns,
+    toggleColumn,
+    totalShips
+                                        }) => {
     const [inputValue, setInputValue] = useState(searchTerm);
 
     useEffect(() => {
@@ -54,6 +56,10 @@ const TableControls: React.FC<Props> = ({
                         </li>
                     ))}
                 </ul>
+            </div>
+
+            <div className="badge badge-primary">
+                Total Ships: <strong>{totalShips}</strong>
             </div>
         </div>
     );

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { useApi } from "../../../hooks/useApi";
-import { Vessel } from "./types";
+import { Vessel } from "./interfaces";
 import { useCurrentUser } from "../../../hooks/useCurrentUser";
 
 interface RequestModalProps {

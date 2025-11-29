@@ -6,14 +6,15 @@ import { ApiError } from "../../../types";
 import TableControls from "./TableControls";
 import TableDisplay from "./TableDisplay";
 import TablePagination from "./TablePagination";
+import TableFilters from "./TableFilters";
 import RequestModal from "./RequestModal";
-import { Vessel } from "./types";
-import {useCurrentUser} from "../../../hooks/useCurrentUser";
-import {useLoading} from "../../../context/LoadingContext";
+import {Vessel, VesselFilters} from "./interfaces";
+import { useCurrentUser } from "../../../hooks/useCurrentUser";
+import { useLoading } from "../../../context/LoadingContext";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);
-    const {setLoading} = useLoading();
+    const { setLoading } = useLoading();
     const [totalItems, setTotalItems] = useState(0);
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(50);
@@ -28,6 +29,7 @@ const TableShips: React.FC = () => {
     ]);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState<VesselFilters>({});
     const [sortColumn, setSortColumn] = useState<string>('mmsi');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,14 +77,30 @@ const TableShips: React.FC = () => {
     useEffect(() => {
         async function fetchData() {
             try {
-
                 setLoading(true);
-                const query = new URLSearchParams({
-                    page: (pageIndex).toString(),
+
+                // Build query params
+                const params: Record<string, string> = {
+                    page: pageIndex.toString(),
                     size: pageSize.toString(),
-                    search: searchTerm,
                     sort: `${sortColumn},${sortOrder}`,
-                });
+                };
+
+                // Add search term
+                if (searchTerm) {
+                    params.search = searchTerm;
+                }
+
+                // Add filters
+                if (filters.country) params.country = filters.country;
+                if (filters.minLength !== undefined) params.minLength = filters.minLength.toString();
+                if (filters.maxLength !== undefined) params.maxLength = filters.maxLength.toString();
+                if (filters.minWidth !== undefined) params.minWidth = filters.minWidth.toString();
+                if (filters.maxWidth !== undefined) params.maxWidth = filters.maxWidth.toString();
+                if (filters.minDraft !== undefined) params.minDraft = filters.minDraft.toString();
+                if (filters.maxDraft !== undefined) params.maxDraft = filters.maxDraft.toString();
+
+                const query = new URLSearchParams(params);
 
                 const response = await api(`/api/v1/vessels?${query.toString()}`, {
                     method: 'GET',
@@ -125,7 +143,7 @@ const TableShips: React.FC = () => {
         }
 
         fetchData();
-    }, [pageIndex, pageSize, searchTerm, sortColumn, sortOrder]);
+    }, [pageIndex, pageSize, searchTerm, sortColumn, sortOrder, filters]);
 
     const table = useReactTable({
         data,
@@ -153,6 +171,15 @@ const TableShips: React.FC = () => {
         }
     };
 
+    const handleFiltersChange = (newFilters: VesselFilters) => {
+        setFilters(newFilters);
+        setPageIndex(0); // Reset to first page when filters change
+    };
+
+    const handleResetFilters = () => {
+        setFilters({});
+        setPageIndex(0);
+    };
 
     return (
         <div>
@@ -167,21 +194,35 @@ const TableShips: React.FC = () => {
                 }))}
                 visibleColumns={visibleColumns}
                 toggleColumn={toggleColumn}
+                totalShips={totalItems}
             />
 
-            <TableDisplay
-                table={table}
-                sortColumn={sortColumn}
-                sortOrder={sortOrder}
-                toggleSort={toggleSort}
+            <TableFilters
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                onReset={handleResetFilters}
             />
 
-            <TablePagination
-                pageIndex={pageIndex}
-                totalItems={totalItems}
-                pageSize={pageSize}
-                setPageIndex={setPageIndex}
-            />
+            <div className="card bg-base-200 mb-4">
+                <div className="card-body p-4">
+                    <TableDisplay
+                        table={table}
+                        sortColumn={sortColumn}
+                        sortOrder={sortOrder}
+                        toggleSort={toggleSort}
+                    />
+
+                    <TablePagination
+                        pageIndex={pageIndex}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        setPageIndex={setPageIndex}
+                    />
+                </div>
+            </div>
+
+
+
             {isModalOpen && selectedVessel && (
                 <RequestModal
                     vessel={selectedVessel}

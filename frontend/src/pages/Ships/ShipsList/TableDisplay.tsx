@@ -1,6 +1,6 @@
 import React from "react";
 import { flexRender, Table } from "@tanstack/react-table";
-import { Vessel } from "./types";
+import { Vessel } from "./interfaces";
 
 interface Props  {
     table: Table<Vessel>;

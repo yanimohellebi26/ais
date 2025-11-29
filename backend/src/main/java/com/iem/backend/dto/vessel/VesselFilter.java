@@ -7,6 +7,8 @@ public record VesselFilter(
         String name,
         Double minLength,
         Double maxLength,
+        Double minWidth,
+        Double maxWidth,
         Double minDraft,
         Double maxDraft,
         String search

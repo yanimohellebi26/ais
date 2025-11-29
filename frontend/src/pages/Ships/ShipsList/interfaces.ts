@@ -15,3 +15,21 @@ export interface Vessel {
     locked: boolean;
     baseDateTime: string;
 }
+
+export interface VesselFilters {
+    country?: string;
+    minLength?: number;
+    maxLength?: number;
+    minWidth?: number;
+    maxWidth?: number;
+    minDraft?: number;
+    maxDraft?: number;
+    search?: string;
+}
+
+export interface Country {
+    name: string;
+    alpha2: string;
+    alpha3: string;
+    mid: number;
+}

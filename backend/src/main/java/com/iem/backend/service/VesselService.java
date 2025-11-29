@@ -123,6 +123,15 @@ public class VesselService {
             specs.add(VesselSpecifications.lengthMax(filter.maxLength()));
         }
 
+        if (filter.minWidth() != null) {
+            specs.add(VesselSpecifications.widthMin(filter.minWidth()));
+        }
+
+        if (filter.maxWidth() != null) {
+            specs.add(VesselSpecifications.widthMax(filter.maxWidth()));
+        }
+
+
         if (filter.minDraft() != null) {
             specs.add(VesselSpecifications.draftMin(filter.minDraft()));
         }

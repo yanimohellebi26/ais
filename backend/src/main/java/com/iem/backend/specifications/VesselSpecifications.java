@@ -35,6 +35,16 @@ public class VesselSpecifications {
                 cb.lessThanOrEqualTo(root.get("length"), max);
     }
 
+    public static Specification<Vessel> widthMin(Double min) {
+        return (root, query, cb) ->
+                cb.greaterThanOrEqualTo(root.get("width"), min);
+    }
+
+    public static Specification<Vessel> widthMax(Double max) {
+        return (root, query, cb) ->
+                cb.lessThanOrEqualTo(root.get("width"), max);
+    }
+
     public static Specification<Vessel> draftMin(Double min) {
         return (root, query, cb) ->
                 cb.greaterThanOrEqualTo(root.get("draft"), min);
