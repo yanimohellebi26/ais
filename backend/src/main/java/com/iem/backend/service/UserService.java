@@ -2,6 +2,7 @@ package com.iem.backend.service;
 
 import com.iem.backend.dto.user.UpdateUserPasswordRequest;
 import com.iem.backend.dto.user.UpdateUserRequest;
+import com.iem.backend.dto.user.UserPublicDetails;
 import com.iem.backend.dto.user.UserResponse;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.User;
@@ -13,12 +14,12 @@ import com.iem.backend.repository.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -113,6 +114,12 @@ public class UserService implements UserDetailsService {
         user.setLastUpdate(OffsetDateTime.now());
 
         userRepository.save(user);
+    }
+
+    public List<UserPublicDetails> getUsersByRole(String role) {
+        List<User> users = userRepository.findByRole_Name(role);
+
+        return userMapper.toPublicDetails(users);
     }
 
 }

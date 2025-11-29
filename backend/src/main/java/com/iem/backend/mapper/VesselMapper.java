@@ -4,6 +4,7 @@ import com.iem.backend.dto.vessel.VesselCreateRequest;
 import com.iem.backend.dto.vessel.VesselDetails;
 import com.iem.backend.dto.vessel.VesselUpdateRequest;
 
+import com.iem.backend.dto.vessel.VesselUsersDetails;
 import com.iem.backend.entity.Vessel;
 import org.mapstruct.*;
 
@@ -11,7 +12,7 @@ import java.util.List;
 
 @Mapper(
         componentModel = "spring",
-        uses = {VesselMapperHelper.class}
+        uses = {VesselMapperHelper.class, UserMapper.class}
 )
 public interface VesselMapper {
 
@@ -45,4 +46,16 @@ public interface VesselMapper {
     @Mapping(target = "baseDateTime", ignore = true)
     @Mapping(target = "lastUpdate", ignore = true)
     void updateEntityFromRequest(VesselUpdateRequest dto, @MappingTarget Vessel vessel);
+
+    @Mapping(target = "vesselType", source = "vesselType.id")
+    @Mapping(target = "vesselTypeName", source = "vesselType.description")
+    @Mapping(target = "cargoType", source = "cargoType.id")
+    @Mapping(target = "cargoTypeName", source = "cargoType.description")
+    @Mapping(target = "country", expression = "java(vessel.getCountryName())")
+    @Mapping(target = "users", source = "users") // use UserMapper.toPublicDetails
+    VesselUsersDetails toUsersDetails(Vessel vessel);
+
+    List<VesselUsersDetails> toUsersDetails(List<Vessel> vessels);
+
+
 }

@@ -8,9 +8,10 @@ interface Props {
     map: any;
     limit?: number;
     dateRange?: DateRange;
+    ids?: number[];
 }
 
-export const useVesselPositions = ({ map, limit = 200, dateRange }: Props) => {
+export const useVesselPositions = ({ map, limit = 200, dateRange, ids}: Props) => {
     const apiFetch = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
 
@@ -53,6 +54,11 @@ export const useVesselPositions = ({ map, limit = 200, dateRange }: Props) => {
                 params.set("limit",dynamicLimit.toString());
 
                 url = `/api/v1/positions?${params.toString()}`;
+            } else if(ids && ids.length > 0) {
+                // Specific vessel IDs API
+                params.set("ids", ids.join(","));
+
+                url = `/api/v1/positions/latest?${params.toString()}`;
             } else {
                 // Latest positions API
                 params.set("minLat", minLat.toString());

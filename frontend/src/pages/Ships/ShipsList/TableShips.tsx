@@ -8,9 +8,9 @@ import TableDisplay from "./TableDisplay";
 import TablePagination from "./TablePagination";
 import TableFilters from "./TableFilters";
 import RequestModal from "./RequestModal";
-import {Vessel, VesselFilters} from "./interfaces";
-import { useCurrentUser } from "../../../hooks/useCurrentUser";
-import { useLoading } from "../../../context/LoadingContext";
+import { Vessel } from "../interfaces";
+import {useCurrentUser} from "../../../hooks/useCurrentUser";
+import {useLoading} from "../../../context/LoadingContext";
 
 const TableShips: React.FC = () => {
     const [data, setData] = useState<Vessel[]>([]);

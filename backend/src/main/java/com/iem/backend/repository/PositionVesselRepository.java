@@ -18,7 +18,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
     @Query(
         value = """
             SELECT * FROM latest_positions
-            WHERE id IN :ids
+            WHERE vessel_id IN :ids
             """,
         countQuery = "SELECT COUNT(*) FROM latest_positions WHERE id IN :ids",
         nativeQuery = true

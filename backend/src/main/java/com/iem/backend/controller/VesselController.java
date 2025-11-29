@@ -77,14 +77,22 @@ public class VesselController {
         );
     }
 
+    @PostMapping("/unrelate")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseEntity<Void> unrelateUserFromVessel(
+            @Valid @RequestBody VesselRelateRequest dto,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        vesselService.unrelate(dto,currentUser);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/userId/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER','CAPTAIN')")
-    public ResponseEntity<List<VesselDetails>> getVesselsByUserId(
+    public ResponseEntity<List<VesselUsersDetails>> getVesselsByUserId(
             @PathVariable Integer id,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        List<VesselDetails> vessels = vesselService.getVesselsByUserId(id,currentUser);
+        List<VesselUsersDetails> vessels = vesselService.getVesselsByUserId(id,currentUser);
         return ResponseEntity.ok(vessels);
     }
 
 }
-

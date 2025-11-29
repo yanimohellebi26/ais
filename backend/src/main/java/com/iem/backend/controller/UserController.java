@@ -2,8 +2,10 @@ package com.iem.backend.controller;
 
 import com.iem.backend.dto.user.UpdateUserRequest;
 import com.iem.backend.dto.user.UpdateUserPasswordRequest;
+import com.iem.backend.dto.user.UserPublicDetails;
 import com.iem.backend.dto.user.UserResponse;
 import com.iem.backend.entity.CustomUserDetails;
+import com.iem.backend.exception.ApiExceptions;
 import com.iem.backend.service.UserService;
 
 import jakarta.validation.Valid;
@@ -56,4 +58,24 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+
+    @GetMapping("/role")
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseEntity<List<UserPublicDetails>> getAllUserByRole(
+            @RequestParam String role,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        // OWNER can see CAPTAIN
+        if(currentUser.getUser().getRole().getName().equals("OWNER") && role.equals("CAPTAIN")) {
+            return ResponseEntity.ok(userService.getUsersByRole(role.toUpperCase()));
+        }
+
+        //ADMIN ok
+        if (currentUser.getUser().getRole().getName().equals("ADMIN")) {
+            return ResponseEntity.ok(userService.getUsersByRole(role.toUpperCase()));
+        }
+
+        throw new ApiExceptions.ForbiddenException("Access denied");
+    }
+
 }
