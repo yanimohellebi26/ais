@@ -124,10 +124,10 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                         {/* Country - Dropdown */}
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">Country</span>
+                                <span className="label-text">Country </span>
                             </label>
                             <select
-                                className="select select-bordered select-sm"
+                                className="select select-bordered select-sm w-full"
                                 value={localFilters.country || ""}
                                 onChange={e => handleCountryChange(e.target.value)}
                                 disabled={loading}
@@ -147,7 +147,7 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                                 <span className="label-text">Vessel type</span>
                             </label>
                             <select
-                                className="select select-bordered select-sm"
+                                className="select select-bordered select-sm w-full"
                                 value={localFilters.vesselType || ""}
                                 onChange={e => handleChange("vesselType", e.target.value)}
                                 disabled={loading}
@@ -169,8 +169,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Min length"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.minLength || ""}
                                 onChange={e => handleChange("minLength", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
@@ -184,8 +185,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Max length"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.maxLength || ""}
                                 onChange={e => handleChange("maxLength", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
@@ -199,8 +201,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Min Width"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.minWidth || ""}
                                 onChange={e => handleChange("minWidth", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
@@ -214,8 +217,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Max Width"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.maxWidth || ""}
                                 onChange={e => handleChange("maxWidth", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
@@ -229,8 +233,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Min draft"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.minDraft || ""}
                                 onChange={e => handleChange("minDraft", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
@@ -244,8 +249,9 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                             <input
                                 type="number"
                                 step="0.1"
+                                min="0"
                                 placeholder="Max draft"
-                                className="input input-bordered input-sm"
+                                className="input input-bordered input-sm w-full"
                                 value={localFilters.maxDraft || ""}
                                 onChange={e => handleChange("maxDraft", e.target.value ? parseFloat(e.target.value) : undefined)}
                             />
