@@ -20,7 +20,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             SELECT * FROM latest_positions
             WHERE id IN :ids
             """,
-        countQuery = "SELECT COUNT(*) FROM latest_position WHERE id IN :ids",
+        countQuery = "SELECT COUNT(*) FROM latest_positions WHERE id IN :ids",
         nativeQuery = true
         )
     Page<PositionVessel> findLatestPositionVesselsByIdIn(@Param("ids") Collection<Integer> ids, Pageable pageable);
