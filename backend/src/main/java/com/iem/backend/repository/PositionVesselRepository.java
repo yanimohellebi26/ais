@@ -44,6 +44,25 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             @Param("maxLon") double maxLon,
             @Param("limit") int limit
     );
+    @Query(
+            value = """
+                SELECT DISTINCT ON (p.vessel_id) * FROM position_vessel p
+                    WHERE p.base_date_time BETWEEN :start AND :end
+                    AND p.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)::geography
+                    AND ST_Within(p.geom::geometry, ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326))
+                    LIMIT :limit
+            """,
+            nativeQuery = true
+    )
+    List<PositionVessel> findByDateAndBoundsDistinct(
+            @Param("start") java.sql.Timestamp start,
+            @Param("end") java.sql.Timestamp end,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("minLon") double minLon,
+            @Param("maxLon") double maxLon,
+            @Param("limit") int limit
+    );
 
     @Query(
             value = """
@@ -157,5 +176,29 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
             @Param("end") Timestamp end,
             @Param("targetVessel") Integer targetVessel
     );
+
+    @Query(value = """
+        SELECT DISTINCT ON (p.vessel_id) *
+        FROM position_vessel p
+        WHERE p.base_date_time BETWEEN :start AND :end
+          AND p.vessel_id <> :targetVessel
+          AND ST_DWithin(
+                p.geom::geography,
+                ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+                :radiusMeters
+          )
+        ORDER BY p.vessel_id, p.base_date_time DESC
+       """,
+            nativeQuery = true
+    )
+    List<PositionVessel> findLastPositionsAround(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("radiusMeters") double radiusMeters,
+            @Param("start") Timestamp start,
+            @Param("end") Timestamp end,
+            @Param("targetVessel") Integer targetVessel
+    );
+
 
 }

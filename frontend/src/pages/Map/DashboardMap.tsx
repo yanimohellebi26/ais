@@ -1,6 +1,6 @@
 import React from "react";
-import {Route, Routes} from "react-router-dom";
-import MapComponent from "./MapComponent";
+import { Route, Routes } from "react-router-dom";
+import MapComponent from "./components/MapComponent";
 
 const DashboardMap: React.FC = () => {
     return (

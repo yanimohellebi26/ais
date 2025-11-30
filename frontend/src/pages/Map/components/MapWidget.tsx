@@ -3,6 +3,7 @@ import { Map, Source, Layer } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
+import { MAP_STYLES, WIDGET_VIEW_STATE, VESSEL_COLORS } from "../constants/mapStyles";
 
 interface Props {
     vesselId: number;
@@ -41,13 +42,9 @@ const MapWidget: React.FC<Props> = ({ vesselId }) => {
         >
             <Map
                 ref={mapRef}
-                initialViewState={{
-                    longitude: 0,
-                    latitude: 0,
-                    zoom: 1,
-                }}
+                initialViewState={WIDGET_VIEW_STATE}
                 style={{ width: "100%", height: "100%" }}
-                mapStyle="https://demotiles.maplibre.org/style.json"
+                mapStyle={MAP_STYLES.STANDARD}
             >
                 {hasPositions && (
                     <Source id="vessel-source" type="geojson" data={geoJson}>
@@ -56,7 +53,7 @@ const MapWidget: React.FC<Props> = ({ vesselId }) => {
                             type="circle"
                             paint={{
                                 "circle-radius": 6,
-                                "circle-color": "#007BFF",
+                                "circle-color": VESSEL_COLORS.NORMAL,
                                 "circle-stroke-width": 2,
                                 "circle-stroke-color": "#FFFFFF",
                             }}

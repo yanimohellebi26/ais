@@ -150,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                                     </ul>
                                 )}
 
-                                {/* Tooltip fold */}
+                                {/* tooltips fold */}
                                 {folded && (
                                     <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-base-200 text-sm rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow">
                                         {item.label}

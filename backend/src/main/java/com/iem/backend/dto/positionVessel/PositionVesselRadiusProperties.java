@@ -8,6 +8,8 @@ import java.sql.Timestamp;
 @Data
 public class PositionVesselRadiusProperties {
     private Integer id;
+    String vesselName;
+    private Integer vesselId;
     private String mmsi;
     private Double sog;
     private Double cog;

@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MapFilterDrawerProps {
@@ -14,7 +14,7 @@ const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children }) => {
         ${collapsed ? "right-[-25rem]" : "right-0"} w-100`}
         >
             <div className="flex items-center justify-between p-4 border-b border-base-300 relative">
-                {!collapsed && <h2 className="text-lg font-semibold ">Options & Filters</h2>}
+                {!collapsed && <h2 className="text-lg font-semibold">Options & Filters</h2>}
 
                 <button
                     onClick={() => setCollapsed(!collapsed)}

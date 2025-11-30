@@ -1,52 +1,43 @@
-import React, { useState, useRef } from "react";
-import TitleH1 from "../../components/BaseComponents/TitleH1";
-import Breadcrumbs from "../../components/BaseComponents/Breadcrumbs";
-import Slider from "../../components/BaseComponents/Slider";
-import ToggleButton from "../../components/BaseComponents/ToggleButton";
-import {Map as MapIcon, Globe, Maximize, Minimize, Anchor} from "lucide-react";
+import React, { useRef } from "react";
+import { Map as MapIcon, Globe, Maximize, Minimize, Anchor } from "lucide-react";
 import { Map } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import VesselLayer from "./MapLayers/VesselLayer";
+import VesselLayer from "../layers/VesselLayer";
 import MapFilterDrawer from "./MapFilterDrawer";
-import DatePicker from "../../components/BaseComponents/DatePicker";
-import { DateRange } from "react-day-picker";
-import PortLayer from "./MapLayers/PortLayer";
-import SelectedVesselPanel from "./Filters/SelectedVesselPanel";
+import PortLayer from "../layers/PortLayer";
+import SelectedVesselPanel from "../filters/SelectedVesselPanel";
+import { useMapFilters } from "../hooks/useMapFilters";
+import {MAP_STYLES, DEFAULT_VIEW_STATE, MAP_CONFIG} from "../constants/mapStyles";
+import Breadcrumbs from "../../../components/BaseComponents/Breadcrumbs";
+import ToggleButton from "../../../components/BaseComponents/ToggleButton";
+import DatePicker from "../../../components/BaseComponents/DatePicker";
+import Slider from "../../../components/BaseComponents/Slider";
+import {DateRange} from "react-day-picker";
 
-const mapStyles = [
-    "https://demotiles.maplibre.org/globe.json",
-    "https://demotiles.maplibre.org/style.json",
-];
+const mapStyles = Object.values(MAP_STYLES);
 
 const MapComponent: React.FC = () => {
-    const [styleIndex, setStyleIndex] = useState(0);
-    const [limit, setLimit] = useState(500);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
-    const [showPorts, setShowPorts] = useState(true);
-
-    const [selectedVesselId, setSelectedVesselId] = useState<number | null>(null);
-    const [targetDate, setTargetDate] = useState<string | undefined>();
-    const [targetRadiusKm, setTargetRadiusKm] = useState<number | undefined>();
+    const {
+        styleIndex,
+        limit,
+        isFullscreen,
+        selectedRange,
+        showPorts,
+        selectedVesselId,
+        selectedPositionId,
+        targetDate,
+        targetRadiusKm,
+        setStyleIndex,
+        setLimit,
+        setIsFullscreen,
+        setSelectedRange,
+        setShowPorts,
+        handleVesselClick,
+        handleUpdateFilters,
+        handleReset
+    } = useMapFilters();
 
     const mapContainerRef = useRef<HTMLDivElement>(null);
-
-    const handleVesselClick = (id: number) => {
-        setSelectedVesselId(id);
-        setTargetDate(undefined);
-        setTargetRadiusKm(undefined);
-    };
-
-    const handleUpdateFilters = (date?: string, radiusKm?: number) => {
-        setTargetDate(date);
-        setTargetRadiusKm(radiusKm);
-    };
-
-    const handleReset = () => {
-        setSelectedVesselId(null);
-        setTargetDate(undefined);
-        setTargetRadiusKm(undefined);
-    };
 
     const switchMapStyle = () => {
         setStyleIndex((prev) => (prev + 1) % mapStyles.length);
@@ -66,9 +57,9 @@ const MapComponent: React.FC = () => {
     return (
         <>
             <Breadcrumbs />
-            <TitleH1>Interactive Sea Sight Map</TitleH1>
-            <MapFilterDrawer>
+            <h1>Interactive Sea Sight Map</h1>
 
+            <MapFilterDrawer>
                 {selectedVesselId && (
                     <SelectedVesselPanel
                         vesselId={selectedVesselId}
@@ -101,11 +92,8 @@ const MapComponent: React.FC = () => {
                 <DatePicker
                     mode="range"
                     selected={selectedRange}
-                    onSelect={(value) => {
-                        setSelectedRange(value as DateRange | undefined);
-                    }}
+                    onSelect={(value) => setSelectedRange(value as DateRange | undefined)}
                 />
-
             </MapFilterDrawer>
 
             <div className="flex gap-4 h-[80vh]">
@@ -114,12 +102,10 @@ const MapComponent: React.FC = () => {
                     className="flex-1 relative rounded-2xl shadow-sm bg-base-100 border-accent overflow-hidden"
                 >
                     <Map
-                        initialViewState={{
-                            longitude: -100,
-                            latitude: 36,
-                            zoom: 2.5,
-                        }}
+                        initialViewState={DEFAULT_VIEW_STATE}
                         style={{ width: "100%", height: "100%" }}
+                        minZoom={MAP_CONFIG.MIN_ZOOM}
+                        maxZoom={MAP_CONFIG.MAX_ZOOM}
                         mapStyle={mapStyles[styleIndex]}
                     >
                         <div className="flex flex-col p-4 gap-4">
@@ -137,6 +123,7 @@ const MapComponent: React.FC = () => {
                                 limit={limit}
                                 dateRange={selectedRange}
                                 targetVesselId={selectedVesselId ?? undefined}
+                                targetPositionId={selectedPositionId ?? undefined}
                                 targetDate={targetDate}
                                 targetRadiusKm={targetRadiusKm}
                                 onVesselClick={handleVesselClick}

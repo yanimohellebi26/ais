@@ -61,12 +61,19 @@ public class VesselService {
     }
 
     @Transactional
-    public VesselDetails relateUserToVessel(VesselRelateRequest dto) {
+    public VesselDetails relateUserToVessel(VesselRelateRequest dto, CustomUserDetails currentUser) {
         User user = userRepository.findById(dto.userId())
                 .orElseThrow(() -> new ApiExceptions.NotFoundException("User not found"));
 
         Vessel vessel = vesselRepository.findById(dto.vesselId())
                 .orElseThrow(()-> new ApiExceptions.NotFoundException("Vessel not found"));
+
+        // if not admin, check vessel access
+        if (!Objects.equals(currentUser.getUser().getRole().getName(), "ADMIN")) {
+            if(!checkUserAccessToVessel(currentUser.getUser(),dto.vesselId())) {
+                throw new ForbiddenException("Not allowed to access this vessel");
+            }
+        }
 
         String roleName = user.getRole().getName();
 

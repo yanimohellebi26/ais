@@ -1,5 +1,6 @@
 import Swal from "sweetalert2";
 import { CaptainDetails} from "../interfaces";
+import {toast} from "react-toastify";
 
 export const useCaptainModal = (
     captains: CaptainDetails[],
@@ -70,22 +71,28 @@ export const useCaptainModal = (
             return;
         }
 
-        await Swal.fire({
-            title: "Captain Assigned!",
-            text: `This vessel is now assigned to Captain ${captainName}.`,
-            icon: "success",
-        });
+        try {
+            await api(`/api/v1/vessels/related`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: selectedCaptain.id,
+                    vesselId: vessel?.id,
+                }),
+            });
 
-        await api(`/api/v1/vessels/related`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                userId: selectedCaptain.id,
-                vesselId: vessel?.id,
-            }),
-        });
+            await Swal.fire({
+                title: "Captain Assigned!",
+                text: `This vessel is now assigned to Captain ${captainName}.`,
+                icon: "success",
+            });
 
-        setCurrentCaptainVessel(selectedCaptain);
+            setCurrentCaptainVessel(selectedCaptain);
+
+        } catch (error:any) {
+            toast.error(error.message);
+        }
+
     };
 
     return { modalCaptain };

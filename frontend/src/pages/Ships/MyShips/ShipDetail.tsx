@@ -8,12 +8,14 @@ import Card from "../../../components/BaseComponents/Card";
 import { useCaptainModal } from "./ModalCaptain";
 import { useLoading } from "../../../context/LoadingContext";
 import ShipCards from "./components/ShipCards";
-import MapWidget from "../../Map/widget/MapWidget";
+import MapWidget from "../../Map/components/MapWidget";
 import {ArrowLeft, Plus, User} from "lucide-react";
+import {useCurrentUser} from "../../../hooks/useCurrentUser";
 
 const ShipDetail : React.FC = () =>{
     const location = useLocation();
     const navigate = useNavigate();
+    const { userData } = useCurrentUser();
 
     const {id} = useParams<{id:string}>();
 
@@ -21,7 +23,7 @@ const ShipDetail : React.FC = () =>{
     const {loading, setLoading} = useLoading();
 
     const vessel = location.state?.vessel as Vessel | undefined;
-    const captain = vessel?.users.find(u => u.role === "CAPTAIN") || null;
+    const captain = vessel?.users?.find(u => u.role === "CAPTAIN") || null;
 
     const [currentCaptainVessel, setCurrentCaptainVessel] = useState<UserPublicDetails | null>(captain);
     const [captains, setCaptains] = useState<CaptainDetails[]>([]);
@@ -34,6 +36,7 @@ const ShipDetail : React.FC = () =>{
     );
 
     const fetchCaptains = async () => {
+        if(userData?.role !== "ADMIN" && userData?.role !== "OWNER") return;
         setLoading(true);
         try {
             const data = await api(`/api/v1/users/role?role=CAPTAIN`);
@@ -103,37 +106,39 @@ const ShipDetail : React.FC = () =>{
                         </ul>
                     </div>
                 </Card>
-                <Card className="col-span-2 col-start-2 col-end-4">
-                    <div className="p-6 flex items-center gap-6">
-                        <figure className="">
-                            <User className="w-24 h-24 text-success border-4 bg-success/10 rounded-full"/>
-                        </figure>
-                        <div className="flex flex-col h-full">
-                            <h1 className="mb-2 font-bold text-xl">
-                                {currentCaptainVessel?.username || "Assign a Captain"}
-                            </h1>
+                {(userData?.role === "ADMIN" || userData?.role === "OWNER") && (
+                    <Card className="col-span-2 col-start-2 col-end-4">
+                        <div className="p-6 flex items-center gap-6">
+                            <figure className="">
+                                <User className="w-24 h-24 text-success border-4 bg-success/10 rounded-full"/>
+                            </figure>
+                            <div className="flex flex-col h-full">
+                                <h1 className="mb-2 font-bold text-xl">
+                                    {currentCaptainVessel?.username || "Assign a Captain"}
+                                </h1>
 
-                            <h2 className="mb-2 font-semibold text-sm">
-                                {currentCaptainVessel?.email || ""}
-                            </h2>
+                                <h2 className="mb-2 font-semibold text-sm">
+                                    {currentCaptainVessel?.email || ""}
+                                </h2>
 
-                            <p className="py-4">
-                                The current captain for this vessel is{" "}
-                                {currentCaptainVessel?.username || "not assigned"}
-                            </p>
-                            {currentCaptainVessel?(
-                                <button onClick={handleDelete} className="btn btn-error w-fit ml-auto mt-auto ">
-                                    Delete
-                                </button>
-                            ) : (<button onClick={modalCaptain} className="btn btn-primary w-fit ml-auto mt-auto ">
-                                    <Plus /> Add
-                                </button>
-                            )}
+                                <p className="py-4">
+                                    The current captain for this vessel is{" "}
+                                    {currentCaptainVessel?.username || "not assigned"}
+                                </p>
+                                {currentCaptainVessel?(
+                                    <button onClick={handleDelete} className="btn btn-error w-fit ml-auto mt-auto ">
+                                        Delete
+                                    </button>
+                                ) : (<button onClick={modalCaptain} className="btn btn-primary w-fit ml-auto mt-auto ">
+                                        <Plus /> Add
+                                    </button>
+                                )}
 
+                            </div>
                         </div>
-                    </div>
-                </Card>
-                <div></div>
+                    </Card>
+                )}
+
             </div>
 
         </>

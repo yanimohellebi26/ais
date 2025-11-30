@@ -10,7 +10,7 @@ const DashboardShips: React.FC = () => {
             <Route index element={<DashboardShipsList />} />
             <Route path="list" element={<DashboardShipsList />} />
             <Route path="my-ships" element={<DashboardShipsMyShips />} />
-            <Route path="my-ships/:id" element={<ShipDetail />} />
+            <Route path="details/:id" element={<ShipDetail />} />
         </Routes>
     );
 };

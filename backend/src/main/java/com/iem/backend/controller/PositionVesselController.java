@@ -48,13 +48,14 @@ public class PositionVesselController {
             @RequestParam double minLon,
             @RequestParam double maxLon,
             @RequestParam(defaultValue = "200") int limit,
+            @RequestParam(defaultValue = "true") boolean distinct,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         List<String> allowed = List.of("ADMIN","MARITIME_EXPERT","FINANCIAL_ANALYST");
         List<PositionVessel> positions;
 
         if (allowed.contains(currentUser.getUser().getRole().getName())) {
-            positions = positionVesselService.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
+            positions = positionVesselService.getPositionsByDateAndBounds(dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, distinct, limit);
         } else {
             positions = positionVesselService.getUserVesselsPositionsByDateAndBounds(currentUser.getUser().getId(),dateStart, Optional.ofNullable(dateEnd), minLat, maxLat, minLon, maxLon, limit);
         }

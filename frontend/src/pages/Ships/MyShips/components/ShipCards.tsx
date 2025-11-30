@@ -14,6 +14,7 @@ const ShipCards: React.FC<Props> = ({vessel}) => {
                 <div className="p-6 space-y-2">
                     <p><strong>MMSI:</strong> {vessel.mmsi}</p>
                     <p><strong>IMO:</strong> {vessel.imo}</p>
+                    <p><strong>Country:</strong> {vessel.country}</p>
                 </div>
             </Card>
 

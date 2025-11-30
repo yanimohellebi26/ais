@@ -70,10 +70,13 @@ public class VesselController {
     }
 
     @PostMapping("/related")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<VesselDetails> relateUserToVessel(@Valid @RequestBody VesselRelateRequest dto) {
+    @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
+    public ResponseEntity<VesselDetails> relateUserToVessel(
+            @Valid @RequestBody VesselRelateRequest dto,
+             @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
         return ResponseEntity.ok(
-                vesselService.relateUserToVessel(dto)
+                vesselService.relateUserToVessel(dto,currentUser)
         );
     }
 

@@ -41,10 +41,9 @@ export const menuItems: MenuItem[] = [
     { label: "Ships",
         icon: Ship,
         path: "/dashboard/ships",
-        roles: ["ROLE_CAPTAIN", "ROLE_OWNER", "ROLE_ADMIN"],
         children: [
             {label: "List ships", path:"/dashboard/ships/list", icon: List},
-            {label: "My ships", path:"/dashboard/ships/my-ships", icon: ShipWheel},
+            {label: "My ships", path:"/dashboard/ships/my-ships", roles: ["ROLE_CAPTAIN", "ROLE_OWNER", "ROLE_ADMIN"], icon: ShipWheel},
         ]
     },
     { label:"ETL",

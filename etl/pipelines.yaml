@@ -10,6 +10,8 @@ load-vessels:
     - func: remove_rows_with_empty
       kwargs:
         required: ["mmsi","base_date_time"]
+    - func: remove_rows_with_wrong_format
+      kwargs: {}
     - func: clean_vessel_duplication
       kwargs: {}
     - func: get_vessels_db
@@ -28,6 +30,8 @@ load-positions:
       kwargs:
         selected_map: ["mmsi","base_date_time","lon","lat","sog","cog","heading","status"]
     - func: normalize_ais
+      kwargs: {}
+    - func: remove_rows_with_wrong_format
       kwargs: {}
     - func: downsample_ais
       kwargs: {}

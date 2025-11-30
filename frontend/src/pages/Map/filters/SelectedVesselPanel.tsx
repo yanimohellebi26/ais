@@ -1,6 +1,10 @@
-import React, {useEffect, useState} from "react";
-import { Search, RefreshCcw, Calendar, Ship } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Search, RefreshCcw, Calendar, Ship, ArrowRight } from "lucide-react";
 import { toast } from "react-toastify";
+import { useApi } from "../../../hooks/useApi";
+import { Vessel } from "../../Ships/ShipsList/interfaces";
+import { useNavigate } from "react-router-dom";
+import { isValidDateFormat } from "../utils/dateValidation";
 
 interface SelectedVesselPanelProps {
     vesselId: number;
@@ -10,9 +14,31 @@ interface SelectedVesselPanelProps {
     onReset?: () => void;
 }
 
-const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, initialDate, initialRadiusKm, onSearch, onReset, }) => {
+const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({
+                                                                     vesselId,
+                                                                     initialDate,
+                                                                     initialRadiusKm,
+                                                                     onSearch,
+                                                                     onReset,
+                                                                 }) => {
+    const navigate = useNavigate();
+    const api = useApi();
+    const [vessel, setVessel] = useState<Vessel>();
     const [dateInput, setDateInput] = useState<string>(initialDate ?? "");
     const [radiusKm, setRadiusKm] = useState<number>(initialRadiusKm ?? 50);
+
+    useEffect(() => {
+        const fetchVessel = async () => {
+            if (!vesselId) return;
+            try {
+                const data = await api(`/api/v1/vessels/${vesselId}`);
+                setVessel(data);
+            } catch (err: any) {
+                toast.error(err.message || "Error while retrieving vessels");
+            }
+        };
+        fetchVessel();
+    }, [vesselId, api]);
 
     useEffect(() => {
         setDateInput(initialDate ?? "");
@@ -21,15 +47,6 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
     useEffect(() => {
         setRadiusKm(initialRadiusKm ?? 50);
     }, [initialRadiusKm]);
-
-    const isValidDateFormat = (value: string): boolean => {
-        if (!value.trim()) return true;
-
-        const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
-        const dateTime = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
-
-        return dateOnly.test(value) || dateTime.test(value);
-    };
 
     const handleSearch = () => {
         if (!isValidDateFormat(dateInput)) {
@@ -43,18 +60,27 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
         onReset?.();
     };
 
+    const navigateToVesselDetails = () => {
+        navigate(`/dashboard/ships/details/${vesselId}`, {
+            state: { vessel },
+        });
+    };
+
     return (
         <div className="p-5 border border-base-300 rounded-xl bg-base-200 shadow-inner">
             <h3 className="font-bold text-base mb-3 flex items-center gap-2">
-                <Ship className="w-4 h-4 text-primary"/>
+                <Ship className="w-4 h-4 text-primary" />
                 Selected vessel
                 <span className="badge badge-primary badge-sm">{vesselId}</span>
+                <button className="btn btn-ghost btn-xs" onClick={navigateToVesselDetails}>
+                    <ArrowRight className="w-4 h-4" />
+                </button>
             </h3>
 
             {/* Date Input */}
             <div className="form-control w-full">
                 <label className="label">
-                    <Calendar className="w-4 h-4 opacity-70"/>
+                    <Calendar className="w-4 h-4 opacity-70" />
                     <span className="label-text font-medium">Date (optional)</span>
                 </label>
                 <input
@@ -65,6 +91,7 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
                     className="input input-bordered input-sm w-full"
                 />
             </div>
+
             {/* Radius range */}
             <div className="form-control w-full mt-4">
                 <label className="label">
@@ -82,12 +109,13 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
                     Current value: <span className="font-semibold">{radiusKm} km</span>
                 </div>
             </div>
+
             <div className="mt-5 flex flex-col gap-2">
                 <button
                     className="btn btn-primary btn-sm w-full"
                     onClick={handleSearch}
                 >
-                    <Search className="w-4 h-4"/>
+                    <Search className="w-4 h-4" />
                     Search for nearby vessels
                 </button>
 
@@ -95,7 +123,7 @@ const SelectedVesselPanel: React.FC<SelectedVesselPanelProps> = ({ vesselId, ini
                     className="btn btn-outline btn-error btn-sm w-full"
                     onClick={handleReset}
                 >
-                    <RefreshCcw className="w-4 h-4"/>
+                    <RefreshCcw className="w-4 h-4" />
                     Reset
                 </button>
             </div>

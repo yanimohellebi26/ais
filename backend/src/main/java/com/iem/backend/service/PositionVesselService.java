@@ -39,7 +39,7 @@ public class PositionVesselService {
 
     public List<PositionVessel> getPositionsByDateAndBounds(
             LocalDate dateStart, Optional<LocalDate> dateEnd,
-            double minLat, double maxLat, double minLon, double maxLon, int limit
+            double minLat, double maxLat, double minLon, double maxLon, boolean distinct, int limit
     ) {
         validateBounds(minLat, maxLat, minLon, maxLon);
 
@@ -51,7 +51,12 @@ public class PositionVesselService {
         Timestamp start = Timestamp.valueOf(dateStart.atStartOfDay());
         Timestamp end = Timestamp.valueOf(finalDateEnd.atTime(23, 59, 59));
 
-        return positionVesselRepository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon, limit);
+        if(distinct) {
+            return positionVesselRepository.findByDateAndBoundsDistinct(start, end, minLat, maxLat, minLon, maxLon, limit);
+        } else {
+            return positionVesselRepository.findByDateAndBounds(start, end, minLat, maxLat, minLon, maxLon, limit);
+        }
+
     }
 
     public List<PositionVessel> getUserVesselsPositionsByDateAndBounds(
@@ -225,7 +230,7 @@ public class PositionVesselService {
         Timestamp startDate = Timestamp.from(targetTime.toInstant().minus(Duration.ofHours(WINDOW_HOURS)));
         Timestamp endDate = Timestamp.from(targetTime.toInstant().plus(Duration.ofHours(WINDOW_HOURS)));
 
-        return positionVesselRepository.findPositionsAround(
+        return positionVesselRepository.findLastPositionsAround(
                 targetLat,
                 targetLon,
                 radiusKm * 1000.0,

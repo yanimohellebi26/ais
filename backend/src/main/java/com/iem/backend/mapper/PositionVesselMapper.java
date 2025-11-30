@@ -12,11 +12,13 @@ public interface PositionVesselMapper {
     @Mapping(target = "status", source = "status.description")
     @Mapping(target = "mmsi", source="vessel.mmsi")
     @Mapping(target = "vesselId", source = "vessel.id")
+    @Mapping(target = "vesselName", source = "vessel.vesselName")
     PositionVesselProperties toProperties(PositionVessel positionVessel);
 
-    @Mapping(target = "id", source = "id")
+    @Mapping(target = "vesselId", source = "vessel.id")
     @Mapping(target = "status", source = "status.description")
     @Mapping(target = "mmsi", source="vessel.mmsi")
+    @Mapping(target = "vesselName", source = "vessel.vesselName")
     @Mapping(target = "distanceKm", ignore = true)
     PositionVesselRadiusProperties toRadiusProperties(PositionVessel positionVessel);
 }

@@ -100,7 +100,7 @@ const DashboardShipsMyShips: React.FC = () => {
 
                         <Button
                             onClick={() =>
-                                navigate(`${vessel.id}`, {
+                                navigate(`../details/${vessel.id}`, {
                                     state: { vessel },
                                 })
                             }
