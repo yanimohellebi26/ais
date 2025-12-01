@@ -20,3 +20,9 @@ export interface Pipeline {
     steps: PipelineStep[];
     description: string;
 }
+
+export interface FileInfo {
+    filename: string;
+    size_bytes: number;
+    columns: string[];
+}

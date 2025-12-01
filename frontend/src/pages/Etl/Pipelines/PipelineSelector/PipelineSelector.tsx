@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Pipeline } from "../interfaces";
-import { useEtlApi } from "../../../../hooks/useEtlApi";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import {FileInfo, Pipeline} from "../interfaces";
 import PipelineDropdown from "./PipelineDropdown";
 import PipelineDetails from "./PipelineDetails";
 import FileSelector from "./FileSelector";
 import PipelineOptions from "./PipelineOptions";
-
+import FileUploader from "./FileUploader";
+import {useEtlApi} from "../../../../hooks/useEtlApi";
+import {useNavigate} from "react-router-dom";
+import {toast} from "react-toastify";
 
 interface Props {
     pipelines: Pipeline[];
@@ -37,26 +37,49 @@ const PipelineSelector: React.FC<Props> = ({
     const api = useEtlApi();
     const navigate = useNavigate();
 
-    const [files, setFiles] = useState<string[]>([]);
+    const [files, setFiles] = useState<FileInfo[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
     const [continueOnError, setContinueOnError] = useState(false);
     const [useTimer, setUseTimer] = useState(true);
-    const [force,setForce] = useState(false);
+    const [force, setForce] = useState(false);
+
+    const fetchFiles = async () => {
+        try {
+            const response = await api("/files/", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+            });
+            setFiles(response);
+        } catch (error) {
+            toast.error("Error fetching available files, try again later");
+        }
+    };
 
     useEffect(() => {
-        const fetchFiles = async () => {
-            try {
-                const response = await api("/files/", {
-                    method: "GET",
-                    headers: { "Content-Type": "application/json" },
-                });
-                setFiles(response);
-            } catch (error) {
-                toast.error("Error fetching available files, try again later");
-            }
-        };
         fetchFiles();
     }, []);
+
+    const handleFileUploaded = () => {
+        toast.success("File uploaded successfully");
+        fetchFiles(); // Refresh the file list
+    };
+
+    // Extract required columns from the selected pipeline's extract step
+    const getRequiredColumns = (): string[] => {
+        if (!selectedPipeline) return [];
+
+        const extractStep = selectedPipeline.steps.find(
+            step => step.function_name === "extract_data_from_file"
+        );
+
+        const selectedMap = extractStep?.yaml_kwargs?.selected_map;
+
+        if (Array.isArray(selectedMap)) {
+            return selectedMap;
+        }
+
+        return [];
+    };
 
     return (
         <div className="rounded-2xl shadow-sm bg-base-100 p-4 border-accent space-y-4">
@@ -89,17 +112,25 @@ const PipelineSelector: React.FC<Props> = ({
                     </div>
 
                     {selectedPipeline && (
-                        <PipelineDetails pipeline={selectedPipeline} />
+                        <div className="flex-1">
+                            <FileUploader
+                                onFileUploaded={handleFileUploaded}
+                            />
+                        </div>
                     )}
                 </div>
 
                 {selectedPipeline && (
                     <>
+                        {/* Pipeline Details Section */}
+                        <PipelineDetails pipeline={selectedPipeline} />
+
                         <div className="flex flex-wrap items-baseline-last gap-6">
                             <div className="flex-1">
                                 <FileSelector
                                     files={files}
                                     selectedFiles={selectedFiles}
+                                    requiredColumns={getRequiredColumns()}
                                     onToggleFile={(file) =>
                                         setSelectedFiles((prev) =>
                                             prev.includes(file)

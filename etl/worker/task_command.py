@@ -14,7 +14,6 @@ def run_cli_command(self, command_name, kwargs, user=None):
     publisher = TaskPublisher(task_id)
     now = datetime.utcnow().isoformat()
 
-    # --- Initialisation de la tâche --- #
     TaskStore.set_meta(task_id, {
         "task_id": task_id,
         "command": command_name,
@@ -28,7 +27,6 @@ def run_cli_command(self, command_name, kwargs, user=None):
 
     TaskStore.append_log(task_id, "command", "queued", {"command": command_name})
 
-    # --- Start ---
     meta = TaskStore.get_meta(task_id)
     meta["status"] = "running"
     meta["started_at"] = datetime.utcnow().isoformat()
@@ -43,13 +41,11 @@ def run_cli_command(self, command_name, kwargs, user=None):
 
         normalized_kwargs = normalize_click_kwargs(command, kwargs)
 
-        # Exécution de la commande
         if hasattr(command, "callback"):
             command.callback(**normalized_kwargs, publisher=publisher)
         else:
             command(**normalized_kwargs, publisher=publisher)
 
-        # --- Success ---
         meta = TaskStore.get_meta(task_id)
         meta["status"] = "success"
         meta["ended_at"] = datetime.utcnow().isoformat()
