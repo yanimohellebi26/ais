@@ -1,3 +1,4 @@
+node_modules/
 # Dépendances
 node_modules/
 
@@ -45,3 +46,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+*.env

@@ -1,6 +1,41 @@
-version: "3.9"
-
 services:
+  db:
+    image: postgis/postgis:16-3.5
+    platform: linux/amd64
+    container_name: ais-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  flyway:
+    image: flyway/flyway
+    container_name: ais-flyway
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://db:5432/${POSTGRES_DB}
+      - FLYWAY_USER=${POSTGRES_USER}
+      - FLYWAY_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: -connectRetries=10 -url=jdbc:postgresql://db:5432/${POSTGRES_DB} -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD} migrate
+    restart: "no"
+    networks:
+      - ais-net
+
   backend:
     build:
       context: ./backend
@@ -9,48 +44,131 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
     networks:
       - ais-net
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_MODE: ${VITE_MODE}
+        VITE_ETL_API_URL: ${VITE_ETL_API_URL}
+        VITE_ETL_WS_URL: ${VITE_ETL_WS_URL}
     container_name: ais-frontend
     depends_on:
       - backend
     ports:
       - "80:80"
+    environment:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_MODE=${VITE_MODE}
+        - VITE_ETL_API_URL=${VITE_ETL_API_URL}
+        - VITE_ETL_WS_URL=${VITE_ETL_WS_URL}
     networks:
       - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:80/ || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  etl:
+  redis:
+    image: redis:7-alpine
+    container_name: ais-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ais-net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  etl-api:
     build:
       context: ./etl
-      dockerfile: Dockerfile
-    container_name: ais-etl
-    depends_on:
-      - db
-    networks:
-      - ais-net
-    # Décommentez pour exécuter l'ETL une seule fois puis quitter
-    # restart: "no"
-    # command: ["python","-m","etl.main"]
-
-  db:
-    image: postgres:16-alpine
-    container_name: ais-db
+      dockerfile: docker/Dockerfile-api
+    container_name: ais-etl-api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ais
-    ports:
-      - "5432:5432"
+      # Database
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # API
+      - AIS_BASE_URL=${AIS_BASE_URL}
+      - SUPER_API_KEY=${SUPER_API_KEY}
+      # Pipelines
+      - PIPELINES_FILE_YAML=/app/pipelines.yaml
+      - ENV_MODE=docker
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./etl/data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
     networks:
       - ais-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  etl-worker:
+    build:
+      context: ./etl
+      dockerfile: docker/Dockerfile-worker
+    container_name: ais-etl-worker
+    command: sh -c "celery -A worker.celery_app worker --loglevel=info --concurrency=$CELERY_CONCURRENCY"
+    environment:
+      # Database
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      # Redis
+      - REDIS_URL=redis://redis:6379/0
+      # API
+      - AIS_BASE_URL=${AIS_BASE_URL}
+      # Pipelines
+      - PIPELINES_FILE_YAML=/app/pipelines.yaml
+      - ENV_MODE=docker
+    volumes:
+      - ./etl/data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ais-net
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -58,20 +176,21 @@ services:
     depends_on:
       - db
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@local.dev
-      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_DEFAULT_EMAIL=${PG_ADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PG_ADMIN_PASSWORD}
     ports:
       - "5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - ais-net
+    restart: unless-stopped
 
 volumes:
-  # Données persistantes de PostgreSQL
   db_data:
-  # Données persistantes de pgAdmin
+    name: ais-db-data
   pgadmin_data:
+    name: ais-pgadmin-data
 
 networks:
   ais-net:

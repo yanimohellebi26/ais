@@ -1,0 +1,199 @@
+package com.iem.backend.exception;
+
+import com.iem.backend.dto.ApiError;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.Optional;
+
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Custom exception
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiError> handleApiException(ApiException ex, HttpServletRequest request) {
+        log.warn("API Exception [{}]: {} - {}", ex.getClass().getSimpleName(), ex.getStatus(), ex.getMessage());
+
+        ApiError error = new ApiError(
+                ex.getStatus(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
+    // ResponseStatusException handler
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
+        log.warn("ResponseStatusException [{}]: {}", ex.getStatusCode(), ex.getReason());
+
+        ApiError error = new ApiError(
+                (HttpStatus) ex.getStatusCode(),
+                ex.getReason(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(ex.getStatusCode()).body(error);
+    }
+
+    // DTOs validation
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        StringBuilder errors = new StringBuilder();
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            errors.append(error.getField()).append(": ").append(error.getDefaultMessage()).append("; ");
+        }
+        log.warn("Validation failed: {}", errors);
+
+        ApiError errorResponse = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                errors.toString(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    // Forbidden: user authenticated but lacks permissions
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AuthorizationDeniedException ex, HttpServletRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+
+        String message = Optional.ofNullable(ex.getMessage())
+                .filter(m -> !m.isBlank())
+                .orElse("Access denied: insufficient permissions.");
+
+
+        ApiError error = new ApiError(
+                HttpStatus.FORBIDDEN,
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+
+    // Unauthorized: user not logged in
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ApiError> handleAuthMissing(AuthenticationCredentialsNotFoundException ex, HttpServletRequest request) {
+        log.warn("Unauthorized access attempt: {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication required.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSize(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        log.warn("File upload rejected: payload too large");
+        ApiError error = new ApiError(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Maximum upload size exceeded",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        log.warn("Bad credentials: {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Bad credentials",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleNotReadable(HttpMessageNotReadableException ex,
+                                                      HttpServletRequest request) {
+        log.warn("Invalid or missing request body {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Invalid or missing request body",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoRessourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        log.warn("Ressource not found {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.NOT_FOUND,
+                "Ressource not found " + ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleNoRessourceFound(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        log.warn("Type mismatch {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Type mismatch " + ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> handleNoRessourceFound(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        log.warn("Bad request {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Bad request" + ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        log.warn("Missing request parameter {}", ex.getMessage());
+        ApiError error = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Bad request"+ ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // Fallback for unexpected exceptions
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleOtherExceptions(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled Exception", ex);
+        ApiError error = new ApiError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Internal server error",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+}

@@ -1,0 +1,104 @@
+DO $$
+DECLARE
+    is_partitioned BOOLEAN;
+    view_def TEXT;
+    year_start INT := 2014;
+    year_end   INT := 2025;
+    year INT;
+    partition_name TEXT;
+BEGIN
+    -- Check if table is already partitioned
+    SELECT relispartition INTO is_partitioned
+    FROM pg_class WHERE oid = 'position_vessel'::regclass;
+
+    IF is_partitioned THEN
+        RAISE NOTICE 'Table already partitioned, skipping migration.';
+        RETURN;
+    END IF;
+
+    -- Retrieve old view SELECT definition if it exists
+    SELECT definition INTO view_def
+    FROM pg_views
+    WHERE viewname = 'latest_positions'
+      AND schemaname = 'public';
+
+    IF view_def IS NOT NULL THEN
+        RAISE NOTICE 'Dropping dependent view latest_positions';
+        EXECUTE 'DROP VIEW public.latest_positions';
+    END IF;
+
+    -- Rename old table
+    EXECUTE 'ALTER TABLE position_vessel RENAME TO position_vessel_old';
+
+    -- Create the new partitioned table
+    EXECUTE $create$
+        CREATE TABLE position_vessel (
+            id BIGSERIAL,
+            vessel_id INTEGER NOT NULL REFERENCES vessel,
+            base_date_time TIMESTAMP NOT NULL,
+            sog DOUBLE PRECISION,
+            cog DOUBLE PRECISION,
+            heading SMALLINT,
+            status_id INTEGER REFERENCES vessel_status,
+            geom geography(Point, 4326) NOT NULL
+        ) PARTITION BY RANGE (base_date_time);
+    $create$;
+
+    -- Create all partitions 2014 - 2025 and indexes
+    FOR year IN year_start..year_end LOOP
+
+        partition_name := 'position_vessel_' || year;
+
+        IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = partition_name) THEN
+
+            RAISE NOTICE 'Creating partition %', partition_name;
+
+            EXECUTE format(
+                'CREATE TABLE %I PARTITION OF position_vessel
+                 FOR VALUES FROM (%L) TO (%L)',
+                partition_name,
+                year || '-01-01',
+                (year+1) || '-01-01'
+            );
+
+            -- Spatial and secondary indexes on each partition
+            EXECUTE format(
+                'CREATE INDEX IF NOT EXISTS idx_%I_geom ON %I USING GIST (geom)',
+                partition_name, partition_name
+            );
+
+            EXECUTE format(
+                'CREATE INDEX IF NOT EXISTS idx_%I_vid_time ON %I (vessel_id, base_date_time)',
+                partition_name, partition_name
+            );
+
+            EXECUTE format(
+                'CREATE INDEX IF NOT EXISTS idx_%I_mmsi_basedate_desc ON %I (vessel_id ASC, base_date_time DESC) INCLUDE (geom)',
+                partition_name, partition_name
+            );
+
+        ELSE
+            RAISE NOTICE 'Partition % exists, skipping', partition_name;
+        END IF;
+
+    END LOOP;
+
+    -- Copy data from the old table
+    EXECUTE '
+        INSERT INTO position_vessel (id, vessel_id, base_date_time, sog, cog, heading, status_id, geom)
+        SELECT id, vessel_id, base_date_time, sog, cog, heading, status_id, geom
+        FROM position_vessel_old
+    ';
+
+    RAISE NOTICE 'Data migrated from position_vessel_old';
+
+    -- Drop the table
+    EXECUTE 'DROP TABLE position_vessel_old';
+
+    -- Recreate the latest_positions view
+    IF view_def IS NOT NULL THEN
+        RAISE NOTICE 'Recreating view latest_positions';
+        EXECUTE 'CREATE OR REPLACE VIEW public.latest_positions AS ' || view_def;
+    END IF;
+
+END $$;

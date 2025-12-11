@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry
+
+WORKDIR /app
+ENV PYTHONPATH=/app
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock README.md ./
+
+# Install dependencies first (better caching)
+RUN poetry config virtualenvs.create false \
+    && poetry install --without dev --no-interaction --no-ansi --no-root
+
+# Copy application code
+COPY api/ ./api/
+COPY cli/ ./cli/
+COPY etl/ ./etl/
+COPY utils/ ./utils/
+COPY worker/ ./worker/
+COPY pipelines.yaml ./
+
+
+EXPOSE 8000
+
+# Default command (will be overridden in docker-compose)
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

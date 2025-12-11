@@ -1,72 +1,182 @@
 /* Import Tailwind base styles */
 @import "tailwindcss";
-
-/* Keep your custom root/theme variables */
-:root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+@plugin "daisyui" {
+  themes:
+          light --default,
+          night;
 }
 
-a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-}
-a:hover {
-    color: #535bf2;
+@theme{
+    --color-primary-focus: #0F172C;
 }
 
-body {
-    margin: 0;
+@plugin "daisyui/theme" {
+  name: "light";
+  --color-primary: #155DFC;
+  --color-primary-focus: #0F172C;
+}
+
+@plugin "daisyui/theme" {
+  name: "night";
+  --color-primary: #155DFC;
+  --color-primary-focus: #0F172C;
+}
+
+/* === SweetAlert2 + DaisyUI THEME OVERRIDE === */
+
+.swal2-container {
+    background-color: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+}
+
+.swal2-popup {
+    background-color: var(--color-base-100); /* Base background (light/night) */
+    color: var(--color-base-content);            /* Base content color */
+    border-radius: var(--radius-box, 1rem);
+    box-shadow: var(--shadow-2xl);
+    padding: 2rem;
+    transition: all 0.25s ease-in-out;
+}
+
+.swal2-show {
+    animation: swal2-show 0.25s ease-out;
+}
+@keyframes swal2-show {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.swal2-hide {
+    animation: swal2-hide 0.2s ease-in;
+}
+@keyframes swal2-hide {
+    from { transform: scale(1); opacity: 1; }
+    to { transform: scale(0.9); opacity: 0; }
+}
+
+/* === TITRE === */
+.swal2-title {
+    color: var(--color-base-content); /* Base content */
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* === CONTENU (html) === */
+.swal2-html-container {
+    color: var(--color-base-content);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* === ACTIONS (boutons) === */
+.swal2-actions {
+    margin-top: 1.5rem;
     display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
+    justify-content: center;
+    gap: 1rem;
 }
 
-h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
-}
-
-button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #1a1a1a;
+/* === CONFIRM BUTTON === */
+.swal2-confirm {
+    background-color: var(--color-primary); /* Primary */
+    color: var(--color-primary-content);           /* Primary content */
+    border: none;
+    border-radius: var(--radius-field);
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.25s;
+    transition: background-color 0.2s;
 }
-button:hover {
-    border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+.swal2-confirm:hover {
+    background-color: var(--color-primary);
+    filter: brightness(0.9);
 }
 
-@media (prefers-color-scheme: light) {
-    :root {
-        color: #213547;
-        background-color: #ffffff;
-    }
-    a:hover {
-        color: #747bff;
-    }
-    button {
-        background-color: #f9f9f9;
-    }
+/* === CANCEL BUTTON === */
+.swal2-cancel {
+    background-color: transparent;  /* Neutral */
+    color: var(--color-base-content);
+    border: 1px solid var(--color-base-content);
+    border-radius: var(--radius-field);
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.swal2-cancel:hover {
+    background-color: transparent;  /* Neutral */
+    filter: brightness(0.8);
+}
+
+/* === ICONES === */
+.swal2-icon {
+    margin: 1rem auto;
+    border-width: 0.25rem;
+}
+
+/* Success / Error / Info / Warning / Question */
+.swal2-success {
+    border-color: var(--color-success); /* success */
+    color: var(--color-success-content);
+}
+.swal2-error {
+    border-color: var(--color-error); /* error */
+    color: var(--color-error-content);
+}
+.swal2-warning {
+    border-color: var(--color-warning); /* warning */
+    color: var(--color-warning-content);
+}
+.swal2-info {
+    border-color: var(--color-info); /* info */
+    color: var(--color-info-content);
+}
+.swal2-question {
+    border-color: var(--color-secondary); /* accent */
+    color: var(--color-secondary-content);
+}
+
+/* === INPUTS / SELECT / TEXTAREA === */
+.swal2-input,
+.swal2-select,
+.swal2-textarea {
+    background-color: var(--color-base-200); /* secondary background */
+    color: var(--color-base-content);
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    padding: 0.5rem;
+    width: 100%;
+}
+.swal2-input:focus,
+.swal2-select:focus,
+.swal2-textarea:focus {
+    outline: 2px solid var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary) / 0.3;
+}
+
+/* === BARRE DE PROGRESSION (timer) === */
+.swal2-timer-progress-bar {
+    background-color: var(--color-primary);
+    height: 4px;
+}
+
+/* === MESSAGE DE VALIDATION === */
+.swal2-validation-message {
+    background-color: hsl(var(--color-info));
+    color: var(--color-info-content);
+    border-radius: var(--radius-field);
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+/* === FOOTER (optionnel) === */
+.swal2-footer {
+    margin-top: 1.5rem;
+    color: var(--color-base-200);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
