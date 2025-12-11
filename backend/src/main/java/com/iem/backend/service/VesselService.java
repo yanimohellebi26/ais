@@ -135,6 +135,10 @@ public class VesselService {
             specs.add(VesselSpecifications.hasVesselType(filter.vesselType()));
         }
 
+        if (filter.vesselGroup() != null) {
+            specs.add(VesselSpecifications.hasVesselGroup(filter.vesselGroup()));
+        }
+
         if (filter.mid() != null) {
             specs.add(VesselSpecifications.hasMid(filter.mid()));
         }
