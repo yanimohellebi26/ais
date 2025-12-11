@@ -63,53 +63,58 @@ const DashboardShipsMyShips: React.FC = () => {
                 </span>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredVessels.map((vessel) => (
-                    <Card
-                        key={vessel.id}
-                        className="
-                        p-6 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300 rounded-4xl overflow-hidden backdrop-blur-sm"
-                    >
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h2 className="font-semibold text-xl">{vessel.vesselName}</h2>
-                                <p className="text-sm text-base-content/60">{vessel.vesselTypeName}</p>
-                            </div>
-                            <span
-                                className={`badge badge-soft ${
-                                    vessel.locked
-                                        ? "badge-success "
-                                        : "badge-primary "
-                                }`}
-                            >
-                                {vessel.locked ? "Locked" : "Unlocked"}
-                            </span>
-                        </div>
+                {filteredVessels.map((vessel) => {
+                    //Check for captain
+                    const hasCaptain = vessel.users.some(user => user.role === "CAPTAIN");
+                    const captain = vessel.users.find(user => user.role === "CAPTAIN");
 
-                        <div className="h-36 w-full bg-base-300 rounded-lg mb-4 flex items-center justify-center text-base-content/50 text-sm">
-                            <img src="https://images.pexels.com/photos/3327981/pexels-photo-3327981.jpeg" alt="Ship" className="h-full w-full object-cover rounded-lg"/>
-                        </div>
-
-                        <div className="text-sm mb-4 space-y-1">
-                            <p><strong>MMSI:</strong> {vessel.mmsi}</p>
-                            <p><strong>IMO:</strong> {vessel.imo}</p>
-                            <p>
-                                <strong>Dimensions:</strong> {vessel.length}m × {vessel.width}m | Draft: {vessel.draft}m
-                            </p>
-                            <p><strong>Transceiver:</strong> {vessel.transceiverClass}</p>
-                        </div>
-
-                        <Button
-                            onClick={() =>
-                                navigate(`../details/${vessel.id}`, {
-                                    state: { vessel },
-                                })
-                            }
+                    return (
+                        <Card
+                            key={vessel.id}
+                            className="
+                            p-6 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300 rounded-4xl overflow-hidden backdrop-blur-sm"
                         >
-                            View Details
-                        </Button>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h2 className="font-semibold text-xl">{vessel.vesselName}</h2>
+                                    <p className="text-sm text-base-content/60">{vessel.vesselTypeName}</p>
+                                </div>
 
-                    </Card>
-                ))}
+                                <span className={`badge ${hasCaptain ? "badge-primary" : "badge-error"}`}>
+                                    {hasCaptain ? captain?.username : "No Captain"}
+                                </span>
+                            </div>
+
+                            <div className="h-36 w-full bg-base-300 rounded-lg mb-4 flex items-center justify-center text-base-content/50 text-sm">
+                                <img src="https://images.pexels.com/photos/3327981/pexels-photo-3327981.jpeg" alt="Ship" className="h-full w-full object-cover rounded-lg"/>
+                            </div>
+
+                            <div className="text-sm mb-4 space-y-1">
+                                <p><strong>MMSI:</strong> {vessel.mmsi || <span className="text-gray-400 italic">Unknown</span>}</p>
+                                <p><strong>IMO:</strong> {vessel.imo || <span className="text-gray-400 italic">Unknown</span>}</p>
+                                <p>
+                                    <strong>Dimensions:</strong> {
+                                    vessel.length && vessel.width && vessel.draft
+                                        ? `${vessel.length}m × ${vessel.width}m | Draft: ${vessel.draft}m`
+                                        : <span className="text-gray-400 italic">Unknown</span>
+                                }
+                                </p>
+                                <p><strong>Transceiver:</strong> {vessel.transceiverClass || <span className="text-gray-400 italic">Unknown</span>}</p>
+                            </div>
+
+                            <Button
+                                onClick={() =>
+                                    navigate(`../details/${vessel.id}`, {
+                                        state: { vessel },
+                                    })
+                                }
+                            >
+                                View Details
+                            </Button>
+
+                        </Card>
+                    );
+                })}
             </div>
         </>
     );

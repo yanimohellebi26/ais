@@ -10,12 +10,12 @@ import { useLoading } from "../../../context/LoadingContext";
 import ShipCards from "./components/ShipCards";
 import MapWidget from "../../Map/components/MapWidget";
 import {ArrowLeft, Plus, User} from "lucide-react";
-import {useCurrentUser} from "../../../hooks/useCurrentUser";
+import {useAuth} from "../../../context/AuthContext";
 
 const ShipDetail : React.FC = () =>{
     const location = useLocation();
     const navigate = useNavigate();
-    const { userData } = useCurrentUser();
+    const { user } = useAuth();
 
     const {id} = useParams<{id:string}>();
 
@@ -36,7 +36,7 @@ const ShipDetail : React.FC = () =>{
     );
 
     const fetchCaptains = async () => {
-        if(userData?.role !== "ADMIN" && userData?.role !== "OWNER") return;
+        if(user?.role !== "ROLE_ADMIN" && user?.role !== "ROLE_OWNER") return;
         setLoading(true);
         try {
             const data = await api(`/api/v1/users/role?role=CAPTAIN`);
@@ -106,7 +106,7 @@ const ShipDetail : React.FC = () =>{
                         </ul>
                     </div>
                 </Card>
-                {(userData?.role === "ADMIN" || userData?.role === "OWNER") && (
+                {(user?.role === "ROLE_ADMIN" || user?.role === "ROLE_OWNER") && (
                     <Card className="col-span-2 col-start-2 col-end-4">
                         <div className="p-6 flex items-center gap-6">
                             <figure className="">
