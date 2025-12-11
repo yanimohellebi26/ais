@@ -1,12 +1,16 @@
 import React, {useState} from "react";
 import {TasksHistoryParams} from "./interfaces";
 import LogsModal from "./LogsModal.tsx";
+import {toast} from "react-toastify";
+import {useEtlApi} from "../../../hooks/useEtlApi";
 
 interface Props {
     tasks: TasksHistoryParams[];
+    fetch: () => void;
 }
 
-const TasksHistory: React.FC<Props> = ({tasks}) => {
+const TasksHistory: React.FC<Props> = ({tasks, fetch}) => {
+    const api = useEtlApi();
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,6 +34,21 @@ const TasksHistory: React.FC<Props> = ({tasks}) => {
             minute: "2-digit",
         });
     }
+
+    const handleRevokeTask = async (taskId: string) => {
+        if(!taskId) return;
+        try {
+            const response = await api(`/tasks/${taskId}/revoke`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            toast.success("Pipeline revoked successfully");
+            fetch();
+        } catch (error) {
+            toast.error("Failed to revoke pipeline");
+        }
+    }
+
 
     function formatDuration(ms: number) {
         const totalSeconds = Math.floor(ms / 1000);
@@ -68,6 +87,7 @@ const TasksHistory: React.FC<Props> = ({tasks}) => {
                         <th>User</th>
                         <th>File</th>
                         <th></th>
+                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -93,6 +113,15 @@ const TasksHistory: React.FC<Props> = ({tasks}) => {
                             </td>
                             <td>{task.user}</td>
                             <td>{task.file ?? ""}</td>
+                            <td>
+                                {task.status === "running" && (
+                                    <button
+                                        className="btn btn-xs btn-error"
+                                        onClick={() => handleRevokeTask(task.task_id)}>
+                                        Revoked
+                                    </button>
+                                )}
+                            </td>
                             <td>
                                 <button
                                     className="btn btn-xs btn-outline btn-secondary"
