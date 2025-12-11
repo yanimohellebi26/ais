@@ -30,8 +30,8 @@ const TableShips: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState<VesselFilters>({});
-    const [sortColumn, setSortColumn] = useState<string>('mmsi');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortColumn, setSortColumn] = useState<string>('baseDateTime');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
 
