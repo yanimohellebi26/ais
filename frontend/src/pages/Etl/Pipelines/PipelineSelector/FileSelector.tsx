@@ -31,80 +31,84 @@ const FileSelector: React.FC<Props> = ({
                                            hideSelectedList = false,
                                            requiredColumns = [],
                                        }) => {
-    if (files.length === 0) return null;
-
     return (
         <div className="form-control w-full">
             <label className="label">
                 <span className="label-text">Select files</span>
             </label>
 
-            <div className="dropdown dropdown-bottom w-full">
-                <label tabIndex={0} className="btn btn-outline w-full justify-between">
-                  <span>
-                    {selectedFiles.length === 0
-                        ? "Choose files..."
-                        : `${selectedFiles.length} file(s) selected`}
-                  </span>
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+            {files.length === 0 ? (
+                <div className="p-3 text-center text-base-content/60 border rounded-lg">
+                    No file available
+                </div>
+            ) : (
+                <div className="dropdown dropdown-bottom w-full">
+                    <label tabIndex={0} className="btn btn-outline w-full justify-between">
+                        <span>
+                            {selectedFiles.length === 0
+                                ? "Choose files..."
+                                : `${selectedFiles.length} file(s) selected`}
+                        </span>
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                            />
+                        </svg>
+                    </label>
+
+                    <ul
+                        tabIndex={0}
+                        className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-full max-h-60 overflow-y-auto flex-nowrap"
                     >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                        />
-                    </svg>
-                </label>
+                        {files.map((fileInfo) => {
+                            const isValid = requiredColumns.length === 0 || hasRequiredColumns(fileInfo.columns, requiredColumns);
 
-                <ul
-                    tabIndex={0}
-                    className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-full max-h-60 overflow-y-auto flex-nowrap"
-                >
-                    {files.map((fileInfo) => {
-                        const isValid = requiredColumns.length === 0 || hasRequiredColumns(fileInfo.columns, requiredColumns);
-
-                        return (
-                            <li key={fileInfo.filename}>
-                                <label className="label cursor-pointer justify-start gap-2 hover:bg-base-200">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-sm"
-                                        checked={selectedFiles.includes(fileInfo.filename)}
-                                        onChange={() => onToggleFile(fileInfo.filename)}
-                                    />
-                                    <div className="flex flex-col flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="label-text font-medium">
-                                                {fileInfo.filename}
+                            return (
+                                <li key={fileInfo.filename}>
+                                    <label className="label cursor-pointer justify-start gap-2 hover:bg-base-200">
+                                        <input
+                                            type="checkbox"
+                                            className="checkbox checkbox-sm"
+                                            checked={selectedFiles.includes(fileInfo.filename)}
+                                            onChange={() => onToggleFile(fileInfo.filename)}
+                                        />
+                                        <div className="flex flex-col flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="label-text font-medium">
+                                                    {fileInfo.filename}
+                                                </span>
+                                                {requiredColumns.length > 0 && (
+                                                    isValid ? (
+                                                        <CheckCircle className="w-4 h-4 text-success" />
+                                                    ) : (
+                                                        <XCircle className="w-4 h-4 text-error" />
+                                                    )
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-base-content/70">
+                                                {fileInfo.columns.map((col, index) => (
+                                                    <span key={index}>{col} </span>
+                                                ))}
                                             </span>
-                                            {requiredColumns.length > 0 && (
-                                                isValid ? (
-                                                    <CheckCircle className="w-4 h-4 text-success" />
-                                                ) : (
-                                                    <XCircle className="w-4 h-4 text-error" />
-                                                )
-                                            )}
+                                            <span className="text-xs text-base-content/60">
+                                                {formatFileSize(fileInfo.size_bytes)}
+                                            </span>
                                         </div>
-                                        <span className="text-xs text-base-content/70">
-                                            {fileInfo.columns.map((col, index) => (
-                                                <span key={index}>{col} </span>
-                                            ))}
-                                        </span>
-                                        <span className="text-xs text-base-content/60">
-                                            {formatFileSize(fileInfo.size_bytes)}
-                                        </span>
-                                    </div>
-                                </label>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
+                                    </label>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
 
             {!hideSelectedList && selectedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
