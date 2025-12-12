@@ -35,5 +35,8 @@ public interface PortRepository extends JpaRepository<Port, Integer>{
         """,
         nativeQuery = true
     )
-    Port findNearestPort(double lon, double lat);
+    Port findNearestPort(
+        @Param("lon") double lon,
+        @Param("lat") double lat
+    );
 }
