@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useApi } from "../../../hooks/useApi";
 import { toast } from "react-toastify";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -49,13 +49,37 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                 });
                 setVesselTypes(response || []);
             } catch (e) {
-                toast.error("Failed to load countries");
+                toast.error("Failed to load vessel types");
             } finally {
                 setLoading(false);
             }
         }
         fetchVesselTypes();
     }, []);
+
+    // Group countries by name and collect all their MIDs
+    const groupedCountries = useMemo(() => {
+        const countryMap = new Map<string, { mids: number[], alpha2: string }>();
+
+        countries.forEach(country => {
+            if (!countryMap.has(country.name)) {
+                countryMap.set(country.name, { mids: [], alpha2: country.alpha2 });
+            }
+            countryMap.get(country.name)!.mids.push(country.mid);
+        });
+
+        return Array.from(countryMap.entries()).map(([name, data]) => ({
+            name,
+            alpha2: data.alpha2,
+            mids: data.mids.sort((a, b) => a - b)
+        }));
+    }, [countries]);
+
+    // Extract unique vessel groups
+    const vesselGroups = useMemo(() => {
+        const groups = Array.from(new Set(vesselTypes.map(v => v.vesselGroup)));
+        return groups.sort();
+    }, [vesselTypes]);
 
     // Debounce filter changes
     useEffect(() => {
@@ -74,20 +98,10 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
     };
 
     const handleCountryChange = (value: string) => {
-        if (value === "") {
-            setLocalFilters(prev => ({
-                ...prev,
-                country: undefined,
-                mid: undefined
-            }));
-        } else {
-            const selectedCountry = countries.find(c => c.alpha2 === value);
-            setLocalFilters(prev => ({
-                ...prev,
-                country: value,
-                mid: selectedCountry?.mid
-            }));
-        }
+        setLocalFilters(prev => ({
+            ...prev,
+            country: value === "" ? undefined : value
+        }));
     };
 
     const handleReset = () => {
@@ -124,7 +138,7 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                         {/* Country - Dropdown */}
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">Country </span>
+                                <span className="label-text">Country</span>
                             </label>
                             <select
                                 className="select select-bordered select-sm w-full"
@@ -133,29 +147,29 @@ const TableFilters: React.FC<Props> = ({ filters, onFiltersChange, onReset }) =>
                                 disabled={loading}
                             >
                                 <option value="">All countries</option>
-                                {countries.map(country => (
+                                {groupedCountries.map(country => (
                                     <option key={country.name} value={country.name}>
-                                        {country.name} ({country.alpha2})
+                                        {country.name} {country.alpha2} ({country.mids.join(', ')})
                                     </option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* VesselType - Dropdown */}
+                        {/* VesselGroup - Dropdown */}
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text">Vessel type</span>
+                                <span className="label-text">Vessel group</span>
                             </label>
                             <select
                                 className="select select-bordered select-sm w-full"
-                                value={localFilters.vesselType || ""}
-                                onChange={e => handleChange("vesselType", e.target.value)}
+                                value={localFilters.vesselGroup || ""}
+                                onChange={e => handleChange("vesselGroup", e.target.value)}
                                 disabled={loading}
                             >
-                                <option value="">All vessel types</option>
-                                {vesselTypes.map(vesselType => (
-                                    <option key={vesselType.code} value={vesselType.code}>
-                                        {vesselType.description} ({vesselType.code})
+                                <option value="">All vessel groups</option>
+                                {vesselGroups.map(group => (
+                                    <option key={group} value={group}>
+                                        {group}
                                     </option>
                                 ))}
                             </select>

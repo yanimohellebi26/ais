@@ -26,6 +26,7 @@ export interface VesselFilters {
     maxDraft?: number;
     search?: string;
     vesselType?: number;
+    vesselGroup?: string;
 }
 
 export interface Country {

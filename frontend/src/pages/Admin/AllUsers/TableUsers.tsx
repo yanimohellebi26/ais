@@ -170,8 +170,8 @@ const TableUsers: React.FC = () => {
         {id: "username", accessorKey: "username", header: "Username"},
         {id: "email", accessorKey: "email", header: "Email"},
         {id: "role", accessorKey: "role", header: "Role", cell: ({ row } : any) => row.original.role},
-        {id: "create_at", accessorKey: "created_at", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
-        {id: "last_update", accessorKey: "last_update", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
+        {id: "create_at", accessorKey: "createdAt", header: "Created At", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
+        {id: "last_update", accessorKey: "lastUpdate", header: "Last Update", cell: (info: any) => new Date(info.getValue()).toLocaleDateString()},
         {id: "actions", accessorKey: "actions", header: "Actions", cell: ({ row }: any) => (
             <div>
                 <Button className="btn btn-sm" onClick={() => handleModification(row.original)}>Edit</Button>

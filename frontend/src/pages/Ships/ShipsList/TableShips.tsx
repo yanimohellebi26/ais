@@ -30,8 +30,8 @@ const TableShips: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState<VesselFilters>({});
-    const [sortColumn, setSortColumn] = useState<string>('mmsi');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortColumn, setSortColumn] = useState<string>('baseDateTime');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
 
@@ -94,6 +94,7 @@ const TableShips: React.FC = () => {
                 // Add filters
                 if (filters.country) params.country = filters.country;
                 if (filters.vesselType) params.vesselType = filters.vesselType.toString();
+                if (filters.vesselGroup) params.vesselGroup = filters.vesselGroup.toString();
                 if (filters.minLength !== undefined) params.minLength = filters.minLength.toString();
                 if (filters.maxLength !== undefined) params.maxLength = filters.maxLength.toString();
                 if (filters.minWidth !== undefined) params.minWidth = filters.minWidth.toString();

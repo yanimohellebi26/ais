@@ -15,6 +15,11 @@ public class VesselSpecifications {
                 cb.equal(root.get("vesselType").get("id"), vesselType);
     }
 
+    public static Specification<Vessel> hasVesselGroup(String vesselGroup) {
+        return (root, query, cb) ->
+                cb.equal(root.get("vesselType").get("vesselGroup"), vesselGroup);
+    }
+
     public static Specification<Vessel> hasMid(Integer mid) {
         return (root, query, cb) ->
                 cb.equal(root.get("mid").get("mid"), mid);
