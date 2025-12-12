@@ -37,4 +37,8 @@ public class PortService {
         }
     }
 
+    public Port getNearestPort(double lon, double lat) {
+        return repository.findNearestPort(lon, lat);
+    }
+
 }
