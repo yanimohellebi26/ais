@@ -60,4 +60,22 @@ public class PortController {
                 )
         );
     }
+
+    @GetMapping("/nearest")
+    public ResponseEntity<GeoJsonFeatureCollection<PortProperties>> getNearestPort(
+        @RequestParam double lat,
+        @RequestParam double lon
+    ) {
+        Port port = portService.getNearestPort(lon, lat);
+        if (port == null) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok(
+                geoJsonService.toGeoJson(
+                        List.of(port), 
+                        Port::getId, 
+                        portMapper::toProperties,
+                        Port::getGeom
+                )
+        );
+    }
 }
