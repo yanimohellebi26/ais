@@ -25,4 +25,15 @@ public interface PortRepository extends JpaRepository<Port, Integer>{
             @Param("maxLon") double maxLon,
             @Param("limit") int limit
     );
+
+    @Query(
+        value = """
+            SELECT *
+            FROM port
+            ORDER BY ST_Distance(geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography)
+            LIMIT 1
+        """,
+        nativeQuery = true
+    )
+    Port findNearestPort(double lon, double lat);
 }
