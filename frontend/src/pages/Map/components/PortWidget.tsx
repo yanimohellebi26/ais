@@ -6,24 +6,30 @@ import { useApi } from "../../../hooks/useApi";
 import { MAP_STYLES, WIDGET_VIEW_STATE, VESSEL_COLORS, PORT_COLORS } from "../constants/mapStyles";
 
 interface props {
-    lat?: number;
-    lon?: number;
+    vesselId: number;
 }
 
-const PortWidget: React.FC<props> = ({ lat, lon }) => {
+const PortWidget: React.FC<props> = ({ vesselId }) => {
     const navigate = useNavigate();
     const mapRef = useRef<any>(null)
     const api = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
 
     useEffect(() => {
-        if (lat === undefined || lon === undefined) {
-            setGeoJson(null)
-            return;
-        }
+        if (!vesselId) return;
 
         const fetchNearestPort = async () => {
             try {
+                const position = await api(`/api/v1/positions/latest?ids=${vesselId}`);
+                const feature = position?.features?.[0];
+
+                if (!feature?.geometry?.coordinates?.length) {
+                    setGeoJson(null);
+                    return;
+                }
+
+                const [lon, lat] = feature.geometry.coordinates;
+
                 const data = await api(`/api/v1/ports/nearest?lat=${lat}&lon=${lon}`);
                 setGeoJson(data);
             } catch (err: any) {
@@ -33,7 +39,7 @@ const PortWidget: React.FC<props> = ({ lat, lon }) => {
         };
 
         fetchNearestPort();
-    }, [lat, lon, api]);
+    }, [vesselId, api]);
 
     useEffect(() => {
         if (!mapRef.current ||!geoJson?.features?.[0]) return;

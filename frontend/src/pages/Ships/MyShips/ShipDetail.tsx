@@ -11,6 +11,7 @@ import ShipCards from "./components/ShipCards";
 import MapWidget from "../../Map/components/MapWidget";
 import {ArrowLeft, Plus, User} from "lucide-react";
 import {useCurrentUser} from "../../../hooks/useCurrentUser";
+import PortWidget from "../../Map/components/PortWidget";
 
 const ShipDetail : React.FC = () =>{
     const location = useLocation();
@@ -88,24 +89,14 @@ const ShipDetail : React.FC = () =>{
             <div className="grid grid-cols-4 py-6 gap-4">
                 <ShipCards vessel={vessel} />
 
-                <Card className="col-span-2">
+                <Card className="col-span-2 h-96">
                     <MapWidget vesselId={vessel.id} />
                 </Card>
-                <Card className="col-span-2">
-                    <div className="p-6">
-                        <h2>Recent position</h2>
-                        <p>View the last activities of the vessel {vessel.vesselName}</p>
-                        <ul className="steps steps-vertical">
-                            <li data-content="?" className="step step-neutral">Step 1</li>
-                            <li data-content="!" className="step step-neutral">Step 2</li>
-                            <li data-content="✓" className="step step-neutral">Step 3</li>
-                            <li data-content="✕" className="step step-neutral">Step 4</li>
-                            <li data-content="★" className="step step-neutral">Step 5</li>
-                            <li data-content="" className="step step-neutral">Step 6</li>
-                            <li data-content="●" className="step step-neutral">Step 7</li>
-                        </ul>
-                    </div>
+
+                <Card className="col-span-2 h-96">
+                    <PortWidget vesselId={vessel.id} />
                 </Card>
+                
                 {(userData?.role === "ADMIN" || userData?.role === "OWNER") && (
                     <Card className="col-span-2 col-start-2 col-end-4">
                         <div className="p-6 flex items-center gap-6">
