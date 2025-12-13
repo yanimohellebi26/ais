@@ -18,6 +18,16 @@ export interface Vessel {
     users: UserPublicDetails[];
 }
 
+export interface Port {
+    portId: number;
+    name: string;
+    code: string;
+    country: string;
+    distance: number;
+    latitude: number;
+    longitude: number;
+}
+
 export interface UserPublicDetails {
     id: number;
     username: string;

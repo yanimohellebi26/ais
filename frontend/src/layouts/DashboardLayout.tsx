@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import Sidebar from "../components/Layouts/Sidebar";
 import { Menu } from "lucide-react";
-import { Outlet } from "react-router-dom"; // 🔹 Import Outlet
+import { Outlet } from "react-router-dom";
+import { useLastVisitedRoute } from "../hooks/useLastVisitedRoute";
 
 const DashboardLayout: React.FC = () => {
     const [sidebarFolded, setSidebarFolded] = useState(false);
+
+    // Start tracking last visited route
+    useLastVisitedRoute();
 
     return (
         <div className="drawer lg:drawer-open">
@@ -21,7 +25,7 @@ const DashboardLayout: React.FC = () => {
                             <Menu className="h-5 w-5" />
                         </label>
                     </div>
-                    <div className="flex-1 px-2 font-semibold text-lg">Sea Sight</div>
+                    <div className="flex-1 px-2 font-semibold text-lg">Sea Sight </div>
                 </div>
 
                 {/* Main content */}
