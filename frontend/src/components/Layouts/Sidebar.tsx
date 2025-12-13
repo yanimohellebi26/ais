@@ -7,6 +7,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
+import Logout from "../BaseComponents/Logout";
 
 interface SidebarProps {
     folded: boolean;
@@ -33,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
 
     return (
         <aside
-            className={`h-full bg-base-100 text-base-content shadow-sm transition-all duration-300 flex flex-col ${
+            className={`h-full bg-base-100 text-base-content shadow-sm transition-all duration-400 flex flex-col ${
                 folded ? "w-20" : "w-64"
             }`}
         >
@@ -44,10 +45,12 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                 }`}
             >
                 {!folded && (
-                    <Link to="/" className="flex items-center space-x-2">
-                        <Ship className="h-8 w-8 text-primary" />
-                        <span className="text-xl font-semibold">Sea Sight</span>
-                    </Link>
+                    <>
+                        <Link to="/" className="flex items-center space-x-2">
+                            <Ship className="h-8 w-8 text-primary" />
+                            <span className="text-xl font-semibold">Sea Sight</span>
+                        </Link>
+                    </>
                 )}
                 {folded && <Ship className="h-8 w-8 text-primary" />}
 
@@ -90,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                                 {hasChildren ? (
                                     <div
                                         onClick={handleClick}
-                                        className={`flex items-center gap-x-4 rounded-xl px-4 py-2 cursor-pointer transition-all duration-200 ${
+                                        className={`flex items-center gap-x-4 rounded-xl px-4 py-2 cursor-pointer transition-all duration-500 ${
                                             isActive
                                                 ? "bg-primary/10 text-primary font-semibold"
                                                 : "hover:bg-base-300 hover:text-base-content"
@@ -113,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                                 ) : (
                                     <Link
                                         to={item.path!}
-                                        className={`flex items-center gap-x-4 rounded-xl px-4 py-2 transition-all duration-200 ${
+                                        className={`flex items-center gap-x-4 rounded-xl px-4 py-2 ${
                                             isActive
                                                 ? "bg-primary/10 text-primary font-semibold"
                                                 : "hover:bg-base-300 hover:text-base-content"
@@ -135,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                                                 <li key={sub.path}>
                                                     <Link
                                                         to={sub.path!}
-                                                        className={`flex items-center gap-x-3 rounded-lg px-3 py-2 transition-all ${
+                                                        className={`flex items-center gap-x-3 rounded-lg px-3 py-2 ${
                                                             isSubActive
                                                                 ? "bg-primary/10 text-primary font-semibold"
                                                                 : "hover:bg-base-300 hover:text-base-content"
@@ -149,20 +152,15 @@ const Sidebar: React.FC<SidebarProps> = ({ folded, onToggleFold }) => {
                                         })}
                                     </ul>
                                 )}
-
-                                {/* tooltips fold */}
-                                {folded && (
-                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-base-200 text-sm rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow">
-                                        {item.label}
-                                    </div>
-                                )}
                             </li>
                         );
                     })}
                 </ul>
-
-
             </nav>
+
+            <div className="flex justify-center text-center p-2">
+                <Logout />
+            </div>
         </aside>
     );
 };

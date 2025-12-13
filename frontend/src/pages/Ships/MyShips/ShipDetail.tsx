@@ -15,12 +15,15 @@ import {useAuth} from "../../../context/AuthContext";
 const ShipDetail : React.FC = () =>{
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useAuth();
-
-    const {id} = useParams<{id:string}>();
-
-    const api = useApi();
     const {loading, setLoading} = useLoading();
+    const api = useApi();
+
+    if (!location.state) {
+        navigate("/dashboard/ships/my-ships");
+    }
+
+    const { user } = useAuth();
+    const {id} = useParams<{id:string}>();
 
     const vessel = location.state?.vessel as Vessel | undefined;
     const captain = vessel?.users?.find(u => u.role === "CAPTAIN") || null;
@@ -109,9 +112,7 @@ const ShipDetail : React.FC = () =>{
                 {(user?.role === "ROLE_ADMIN" || user?.role === "ROLE_OWNER") && (
                     <Card className="col-span-2 col-start-2 col-end-4">
                         <div className="p-6 flex items-center gap-6">
-                            <figure className="">
-                                <User className="w-24 h-24 text-success border-4 bg-success/10 rounded-full"/>
-                            </figure>
+                            <User className="w-24 h-24 text-success border-4 bg-success/10 rounded-full"/>
                             <div className="flex flex-col h-full">
                                 <h1 className="mb-2 font-bold text-xl">
                                     {currentCaptainVessel?.username || "Assign a Captain"}

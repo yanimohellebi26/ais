@@ -6,11 +6,11 @@ interface MapFilterDrawerProps {
 }
 
 const MapFilterDrawer: React.FC<MapFilterDrawerProps> = ({ children }) => {
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(true);
 
     return (
         <aside
-            className={`z-10 fixed top-10 h-[90vh] rounded-tl-2xl rounded-bl-2xl bg-base-100 shadow-lg transition-all duration-300 flex flex-col
+            className={`z-10 fixed top-15 h-[90vh] rounded-tl-2xl rounded-bl-2xl bg-base-100 shadow-lg transition-all duration-300 flex flex-col
         ${collapsed ? "right-[-25rem]" : "right-0"} w-100`}
         >
             <div className="flex items-center justify-between p-4 border-b border-base-300 relative">

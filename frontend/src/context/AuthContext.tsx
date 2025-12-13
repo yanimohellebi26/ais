@@ -7,11 +7,12 @@ import React, {
     useRef,
 } from "react";
 import { jwtDecode } from "jwt-decode";
+import { clearLastVisitedRoute } from "../hooks/useLastVisitedRoute";
 
 type User = {
     token: string | null;
     role: string | null;
-    id?:number | null ;
+    id?: number | null ;
 };
 
 type AuthContextType = {
@@ -103,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = (token: string) => {
         const role = extractRoleFromToken(token);
         if (!role) return;
-        const id=extractIdFromToken(token);
+        const id = extractIdFromToken(token);
         
 
         localStorage.setItem("token", token);
@@ -116,13 +117,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("token");
         setUser({ token: null, role: null });
 
+        // Clear last visited route
+        clearLastVisitedRoute();
+
         if (logoutTimerRef.current) {
             clearTimeout(logoutTimerRef.current);
             logoutTimerRef.current = null;
         }
     };
 
-    /** Check JWT at lauch*/
+    /** Check JWT at launch */
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
