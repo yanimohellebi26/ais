@@ -1,5 +1,6 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.ports.PortWithDistance;
 import com.iem.backend.entity.Port;
 import com.iem.backend.exception.ApiExceptions;
 import com.iem.backend.repository.PortRepository;
@@ -20,6 +21,10 @@ public class PortService {
         return repository.findAll();
     }
 
+    public Port getPortById(Integer id) {
+        return repository.findById(id).orElse(null);
+    }
+
     public List<Port> getPortByBounds(
             double minLat, double maxLat, double minLon, double maxLon, int limit
     ) {
@@ -37,8 +42,11 @@ public class PortService {
         }
     }
 
-    public Port getNearestPort(double lon, double lat) {
+    public PortWithDistance getNearestPort(double lon, double lat) {
         return repository.findNearestPort(lon, lat);
     }
 
+    public PortWithDistance getNearestPortFromVessel(Integer vesselId) {
+        return repository.findNearestPortFromVessel(vesselId);
+    }
 }

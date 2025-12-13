@@ -17,7 +17,7 @@ export const MAP_CONFIG = {
 export const WIDGET_VIEW_STATE = {
     longitude: 0,
     latitude: 0,
-    zoom: 1
+    zoom: 10
 } as const;
 
 export const CLUSTER_CONFIG = {
