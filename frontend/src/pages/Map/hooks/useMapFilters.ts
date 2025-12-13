@@ -16,7 +16,7 @@ export const useMapFilters = () => {
         setSelectedVesselId(vesselId);
         setSelectedPositionId(positionId);
         setTargetDate(undefined);
-        setTargetRadiusKm(undefined);
+        setTargetRadiusKm(50);
     };
 
     const handleUpdateFilters = (date?: string, radiusKm?: number) => {
