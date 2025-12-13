@@ -2,6 +2,7 @@ package com.iem.backend.controller;
 
 import com.iem.backend.common.geoJson.GeoJsonFeatureCollection;
 import com.iem.backend.dto.ports.PortProperties;
+import com.iem.backend.dto.ports.PortWithDistance;
 import com.iem.backend.entity.Port;
 import com.iem.backend.mapper.PortMapper;
 import com.iem.backend.service.GeoJsonService;
@@ -60,4 +61,41 @@ public class PortController {
                 )
         );
     }
+
+    @GetMapping("/nearest")
+    public ResponseEntity<GeoJsonFeatureCollection<PortWithDistance>> getNearestPort(
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon,
+            @RequestParam(required = false) Integer vesselId
+    ) {
+        PortWithDistance portWithDistance;
+
+        if(vesselId != null) {
+            portWithDistance = portService.getNearestPortFromVessel(vesselId);
+        } else {
+            if (lat == null || lon == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            portWithDistance = portService.getNearestPort(lon, lat);
+        }
+
+        if (portWithDistance == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Port port = portService.getPortById(portWithDistance.portId());
+        if (port == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(
+                geoJsonService.toGeoJson(
+                        List.of(port),
+                        Port::getId,
+                        p -> portWithDistance,
+                        Port::getGeom
+                )
+        );
+    }
+
 }

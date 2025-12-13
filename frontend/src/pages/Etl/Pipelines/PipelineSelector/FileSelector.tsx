@@ -19,7 +19,8 @@ const formatFileSize = (bytes: number): string => {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
-const hasRequiredColumns = (fileColumns: string[], requiredColumns: string[]): boolean => {
+const hasRequiredColumns = (fileColumns: string[] | undefined, requiredColumns: string[]): boolean => {
+    if (!Array.isArray(fileColumns) || fileColumns.length === 0) return false;
     return requiredColumns.every(reqCol => fileColumns.includes(reqCol));
 };
 
@@ -124,7 +125,7 @@ const FileSelector: React.FC<Props> = ({
                                                     )}
                                                 </div>
                                                 <span className={`text-xs text-base-content/70 ${!isValid ? 'opacity-70' : ''}`}>
-                                                {fileInfo.columns.map((col, index) => (
+                                                {(fileInfo.columns || []).map((col, index) => (
                                                     <span key={index}>{col} </span>
                                                 ))}
                                             </span>

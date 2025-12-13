@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Vessel, UserPublicDetails, CaptainDetails } from "../interfaces";
+import {Vessel, UserPublicDetails, CaptainDetails, Port} from "../interfaces";
 import { useApi } from "../../../hooks/useApi";
 import { toast } from "react-toastify";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -11,6 +11,7 @@ import ShipCards from "./components/ShipCards";
 import MapWidget from "../../Map/components/MapWidget";
 import {ArrowLeft, Plus, User} from "lucide-react";
 import {useAuth} from "../../../context/AuthContext";
+import PortCard from "./components/PortCard.tsx";
 
 const ShipDetail : React.FC = () =>{
     const location = useLocation();
@@ -27,6 +28,9 @@ const ShipDetail : React.FC = () =>{
 
     const [currentCaptainVessel, setCurrentCaptainVessel] = useState<UserPublicDetails | null>(captain);
     const [captains, setCaptains] = useState<CaptainDetails[]>([]);
+    const [nearestPort, setNearestPort] = useState<Port>();
+    const [nearestPortGeoJson, setNearestPortGeoJson] = useState<any>(null);
+
 
     const { modalCaptain } = useCaptainModal(
         captains,
@@ -41,15 +45,44 @@ const ShipDetail : React.FC = () =>{
         try {
             const data = await api(`/api/v1/users/role?role=CAPTAIN`);
             setCaptains(data);
-        } catch (err:any) {
+        } catch (err : any) {
             toast.error(err.message || "Error while retrieving captains");
         } finally {
             setLoading(false);
         }
     };
 
+    const fetchNearestPort = async () => {
+        if(!vessel?.id) return;
+        setLoading(true);
+        try {
+            const response = await api(`/api/v1/ports/nearest?vesselId=${vessel.id}`);
+
+            setNearestPortGeoJson(response);
+
+            const data = response.features[0] ?? null;
+            if (data) {
+                const port = {
+                    portId: data.properties.portId,
+                    name: data.properties.name,
+                    code: data.properties.code,
+                    country: data.properties.country,
+                    distance: data.properties.distance,
+                    latitude: data.geometry.coordinates[1],
+                    longitude: data.geometry.coordinates[0],
+                };
+                setNearestPort(port);
+            }
+        } catch (err : any) {
+            toast.error(err.message || "Error while retrieving port");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
         fetchCaptains();
+        fetchNearestPort();
     }, [id]);
 
     const handleDelete = async () => {
@@ -88,24 +121,15 @@ const ShipDetail : React.FC = () =>{
             <div className="grid grid-cols-4 py-6 gap-4">
                 <ShipCards vessel={vessel} />
 
-                <Card className="col-span-2">
-                    <MapWidget vesselId={vessel.id} />
+                <Card className="col-span-2 h-96">
+                    <MapWidget vesselId={vessel.id} portGeoJson={nearestPortGeoJson} />
+
                 </Card>
-                <Card className="col-span-2">
-                    <div className="p-6">
-                        <h2>Recent position</h2>
-                        <p>View the last activities of the vessel {vessel.vesselName}</p>
-                        <ul className="steps steps-vertical">
-                            <li data-content="?" className="step step-neutral">Step 1</li>
-                            <li data-content="!" className="step step-neutral">Step 2</li>
-                            <li data-content="✓" className="step step-neutral">Step 3</li>
-                            <li data-content="✕" className="step step-neutral">Step 4</li>
-                            <li data-content="★" className="step step-neutral">Step 5</li>
-                            <li data-content="" className="step step-neutral">Step 6</li>
-                            <li data-content="●" className="step step-neutral">Step 7</li>
-                        </ul>
-                    </div>
+
+                <Card className="col-span-2 h-96">
+                    <PortCard port={nearestPort} />
                 </Card>
+
                 {(user?.role === "ROLE_ADMIN" || user?.role === "ROLE_OWNER") && (
                     <Card className="col-span-2 col-start-2 col-end-4">
                         <div className="p-6 flex items-center gap-6">
