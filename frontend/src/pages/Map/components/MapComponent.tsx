@@ -57,7 +57,7 @@ const MapComponent: React.FC = () => {
     return (
         <>
             <Breadcrumbs />
-            <h1>Interactive Sea Sight Map</h1>
+            <h1 className="text-2xl font-semibold mr-4 pb-4" >Interactive Sea Sight Map</h1>
 
             <MapFilterDrawer>
                 {selectedVesselId && (
