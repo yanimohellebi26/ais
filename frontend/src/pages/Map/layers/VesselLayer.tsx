@@ -98,8 +98,13 @@ const VesselLayer: React.FC<Props> = ({
 
         const vesselId = features[0].properties?.vesselId;
         const positionId = features[0].properties?.id;
+
+        if (targetRadiusKm != null && vesselId === targetVesselId) {
+            return;
+        }
+        
         if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId));
-    }, [map, onVesselClick]);
+    }, [map, onVesselClick, targetRadiusKm, targetVesselId]);
 
     useEffect(() => {
         if (!map) return;
@@ -192,6 +197,8 @@ const VesselLayer: React.FC<Props> = ({
                         ],
                         "circle-color": [
                             "case",
+                            ["==", ["get", "id"], targetPositionId ?? -1],
+                            VESSEL_COLORS.CLICKED_POSITION,
                             ["==", ["get", "vesselId"], targetVesselId ?? -1],
                             VESSEL_COLORS.SELECTED,
                             VESSEL_COLORS.NORMAL
