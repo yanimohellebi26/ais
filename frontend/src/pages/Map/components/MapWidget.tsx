@@ -3,13 +3,14 @@ import { Map, Source, Layer } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
-import { MAP_STYLES, WIDGET_VIEW_STATE, VESSEL_COLORS } from "../constants/mapStyles";
+import {MAP_STYLES, WIDGET_VIEW_STATE, VESSEL_COLORS, PORT_COLORS} from "../constants/mapStyles";
 
 interface Props {
     vesselId: number;
+    portGeoJson?: any;
 }
 
-const MapWidget: React.FC<Props> = ({ vesselId }) => {
+const MapWidget: React.FC<Props> = ({ vesselId, portGeoJson }) => {
     const navigate = useNavigate();
     const mapRef = useRef<any>(null);
     const api = useApi();
@@ -30,7 +31,7 @@ const MapWidget: React.FC<Props> = ({ vesselId }) => {
     useEffect(() => {
         if (!mapRef.current || !geoJson?.features?.[0]) return;
         const [lng, lat] = geoJson.features[0].geometry.coordinates;
-        mapRef.current.flyTo({ center: [lng, lat], zoom: 4 });
+        mapRef.current.flyTo({ center: [lng, lat], zoom: WIDGET_VIEW_STATE.zoom });
     }, [geoJson]);
 
     const hasPositions = geoJson?.features?.length > 0;
@@ -58,6 +59,20 @@ const MapWidget: React.FC<Props> = ({ vesselId }) => {
                                 "circle-stroke-color": "#FFFFFF",
                             }}
                         />
+
+                    </Source>
+                )}
+                {portGeoJson && (
+                    <Source id="port-source" type="geojson" data={portGeoJson}>
+                        <Layer
+                            id="port-point"
+                            type="circle"
+                            paint={{
+                                "circle-radius": 6,
+                                "circle-color": PORT_COLORS.NORMAL,
+                                "circle-stroke-width": 2,
+                                "circle-stroke-color": "#FFFFFF",
+                        }} />
                     </Source>
                 )}
             </Map>

@@ -148,7 +148,7 @@ const AdminRequestProperty: React.FC = () => {
     return (
         <div className="space-y-6">
             <Breadcrumbs />
-            <h1>Requests property</h1>
+            <h1 className="text-2xl font-semibold mr-4" >Requests property</h1>
             {requests.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-base-200 bg-base-100 p-8 text-center text-base-content/70">
                     No waiting requests property.
