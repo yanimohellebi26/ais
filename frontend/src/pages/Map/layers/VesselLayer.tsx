@@ -98,11 +98,16 @@ const VesselLayer: React.FC<Props> = ({
 
         const vesselId = features[0].properties?.vesselId;
         const positionId = features[0].properties?.id;
+
+        if (targetRadiusKm != null && vesselId === targetVesselId) {
+            return;
+        }
+
         const date = features[0].properties?.baseDateTime;
         const formatedDate = date.replace("T", " ").split(".")[0];
 
         if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId), String(formatedDate));
-    }, [map, onVesselClick]);
+    }, [map, onVesselClick, targetRadiusKm, targetVesselId]);
 
     useEffect(() => {
         if (!map) return;
