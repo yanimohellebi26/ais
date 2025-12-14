@@ -16,7 +16,7 @@ interface Props {
     targetPositionId?: number;
     targetDate?: string;
     targetRadiusKm?: number;
-    onVesselClick?: (vesselId: number, positionId: number) => void;
+    onVesselClick?: (vesselId: number, positionId: number, date: string) => void;
     ids?: number[];
 }
 
@@ -98,12 +98,14 @@ const VesselLayer: React.FC<Props> = ({
 
         const vesselId = features[0].properties?.vesselId;
         const positionId = features[0].properties?.id;
+        const date = features[0].properties?.baseDateTime;
+        const formatedDate = date.split("T")[0];
 
         if (targetRadiusKm != null && vesselId === targetVesselId) {
             return;
         }
         
-        if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId));
+        if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId), String(formatedDate));
     }, [map, onVesselClick, targetRadiusKm, targetVesselId]);
 
     useEffect(() => {
