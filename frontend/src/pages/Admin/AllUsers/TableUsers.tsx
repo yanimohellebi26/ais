@@ -69,6 +69,7 @@ const TableUsers: React.FC = () => {
                         onChange={(e) => (newPassword = e.target.value)}
                     />
                     <select
+                        aria-label="Role"
                         className="select select-bordered w-full text-base-content bg-base-200"
                         defaultValue={newRole}
                         onChange={(e) => (newRole = e.target.value)}
