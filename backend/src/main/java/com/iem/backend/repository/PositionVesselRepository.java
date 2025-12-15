@@ -90,10 +90,13 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     @Query(
         value = """
-            SELECT *
-                FROM latest_positions pv
-                WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
-                LIMIT :limit;
+            SELECT * FROM latest_positions pv
+            WHERE pv.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND ST_Within(
+                pv.geom::geometry,
+                ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            )
+            LIMIT :limit;
         """,
         nativeQuery = true
     )
