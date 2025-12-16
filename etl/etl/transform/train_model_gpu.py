@@ -1,6 +1,6 @@
 """
 AIS Trajectory Prediction Model Training with Multi-GPU Support
-Optimized for ECO server (2x GPUs)
+Optimized for ECO server with L40S GPU
 """
 import os
 import math
@@ -30,24 +30,24 @@ DB_CONFIG = {
 
 # Hyperparameters optimized for ECO server (1x NVIDIA L40S, 46GB VRAM)
 SEQ_IN = 20
-BATCH_SIZE = 1024  # Optimized for 1x L40S avec 46GB VRAM (better than 2 GPUs)
+BATCH_SIZE = 1024  # Optimized for 1x L40S with 46GB VRAM
 EPOCHS = 50
 LR = 1e-4
-NUM_WORKERS = 16  # Optimized for serveur haute performance
+NUM_WORKERS = 16  # Optimized for high-performance server
 PIN_MEMORY = True
 
-# Configuration des splits
+# Dataset splits configuration
 TRAIN_RATIO = 0.70
 VAL_RATIO = 0.15
 TEST_RATIO = 0.15
 
-# Connexion DB
+# Database connection
 DATABASE_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=20)
 
 
 class AISTrajDataset(Dataset):
-    """Dataset optimisé avec cache et préprocessing vectorisé"""
+    """Optimized dataset with caching and vectorized preprocessing"""
     
     def __init__(self, df, seq_len=SEQ_IN, feat_mean=None, feat_std=None):
         self.seq_len = seq_len
@@ -55,49 +55,48 @@ class AISTrajDataset(Dataset):
         
         print(f"   Creating dataset from {len(df):,} points...")
         
-        # Grouper par trajectory_id (plus efficace que MMSI)
+        # Group by trajectory_id (more efficient than MMSI)
         for traj_id, g in df.groupby("trajectory_id"):
             g = g.sort_values("base_date_time")
             
             if len(g) < seq_len + 1:
                 continue
             
-            # Extraire features
+            # Extract features
             lat = g["LAT"].values
             lon = g["LON"].values
-            sog = g["SOG"].values / 30.0  # Normalisation
+            sog = g["SOG"].values / 30.0  # Normalization
             cog = np.deg2rad(g["COG"].values)
             
-            # Conversion en coordonnées locales (métriques)
+            # Convert to local metric coordinates
             lat0, lon0 = lat[0], lon[0]
             dx = (lat - lat0) * 111320.0
             dy = (lon - lon0) * 111320.0 * np.cos(np.deg2rad(lat0))
 
-            # Empiler features: [dx, dy, sog, sin(cog), cos(cog)]
+            # Stack features: [dx, dy, sog, sin(cog), cos(cog)]
             feats = np.stack([dx, dy, sog, np.sin(cog), np.cos(cog)], axis=1).astype(np.float32)
             
-            # Créer séquences avec fenêtre glissante
+            # Create sequences with sliding window
             for i in range(len(feats) - seq_len):
                 self.X.append(feats[i:i+seq_len])
                 self.Y.append(feats[i+1:i+seq_len+1])
         
-        # Conversion en numpy array
+        # Convert to numpy array
         X = np.array(self.X)
         Y = np.array(self.Y)
 
-        # Normalisation si stats fournies
+        # Normalize if stats provided
         if feat_mean is not None and feat_std is not None:
-            # ensure shapes
             mean = np.array(feat_mean).reshape(1, 1, -1)
             std = np.array(feat_std).reshape(1, 1, -1)
             X = (X - mean) / std
             Y = (Y - mean) / std
 
-        # Conversion en tensors
+        # Convert to tensors
         self.X = torch.from_numpy(X)
         self.Y = torch.from_numpy(Y)
         
-        print(f"   → {len(self)} séquences créées")
+        print(f"   Created {len(self)} sequences")
     
     def __len__(self):
         return len(self.X)
@@ -107,7 +106,7 @@ class AISTrajDataset(Dataset):
 
 
 class LSTMTransformer(nn.Module):
-    """Modèle hybride LSTM + Transformer optimisé"""
+    """Optimized hybrid LSTM + Transformer model"""
     
     def __init__(self, input_dim=5, hidden_dim=128, num_heads=8, num_layers=2, dropout=0.1):
         super().__init__()
@@ -115,11 +114,11 @@ class LSTMTransformer(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         
-        # Embedding des features
+        # Feature embedding
         self.embed = nn.Linear(input_dim, hidden_dim)
         self.embed_dropout = nn.Dropout(dropout)
         
-        # LSTM pour capturer les dépendances temporelles
+        # LSTM to capture temporal dependencies
         self.lstm = nn.LSTM(
             hidden_dim, 
             hidden_dim, 
@@ -127,18 +126,18 @@ class LSTMTransformer(nn.Module):
             dropout=dropout if num_layers > 1 else 0
         )
         
-        # Transformer Encoder pour l'attention
+        # Transformer Encoder for attention
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim,
             nhead=num_heads,
             dim_feedforward=hidden_dim * 4,
             dropout=dropout,
             batch_first=True,
-            norm_first=True  # Pre-LN pour meilleure stabilité
+            norm_first=True  # Pre-LN for better stability
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
-        # Couche de sortie
+        # Output layer
         self.fc_out = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -167,24 +166,24 @@ class LSTMTransformer(nn.Module):
 
 
 def load_processed_from_db(split=None):
-    """Charge les données prétraitées depuis PostgreSQL"""
+    """Load preprocessed data from PostgreSQL"""
     query = 'SELECT trajectory_id, mmsi, base_date_time, lat, lon, sog, cog, dataset_split FROM trajectory_processed'
     if split:
         query += f" WHERE dataset_split = '{split}'"
     query += ' ORDER BY trajectory_id, base_date_time'
     
-    print(f"   Chargement {split or 'all'} depuis trajectory_processed...")
+    print(f"   Loading {split or 'all'} from trajectory_processed...")
     df = pd.read_sql(query, engine)
     
-    # Renommer pour compatibilité
+    # Rename for compatibility
     df.columns = ['trajectory_id', 'MMSI', 'base_date_time', 'LAT', 'LON', 'SOG', 'COG', 'dataset_split']
     
-    print(f"   → {len(df):,} points, {df['trajectory_id'].nunique():,} trajectoires")
+    print(f"   Loaded {len(df):,} points, {df['trajectory_id'].nunique():,} trajectories")
     return df
 
 
 def compute_feature_stats(df, seq_len=SEQ_IN):
-    """Compute mean and std of the 5 features across a dataframe (per-trajectory local coords).
+    """Compute mean and std of the 5 features across a dataframe.
     Returns (mean, std) as numpy arrays of shape (5,)
     """
     feats_list = []
@@ -203,7 +202,7 @@ def compute_feature_stats(df, seq_len=SEQ_IN):
         feats_list.append(feats)
 
     if len(feats_list) == 0:
-        raise RuntimeError("Aucune trajectoire valide pour calculer les statistiques")
+        raise RuntimeError("No valid trajectories to compute statistics")
 
     all_feats = np.concatenate(feats_list, axis=0)
     mean = all_feats.mean(axis=0)
@@ -214,17 +213,16 @@ def compute_feature_stats(df, seq_len=SEQ_IN):
 
 
 def get_metrics(pred, true):
-    """Calcule toutes les métriques d'évaluation"""
-    # MSE et RMSE
+    """Calculate all evaluation metrics"""
+    # MSE and RMSE
     mse = ((pred - true) ** 2).mean().item()
     rmse = np.sqrt(mse)
     # MAE
     mae = torch.abs(pred - true).mean().item()
 
-    # Extraire lat/lon (indices 0 et 1 correspondent à dx, dy)
-    # On doit reconstruire les lat/lon absolues pour ADE/FDE
-    # Pour simplification, on calcule l'erreur en mètres directement
-    # ADE (Average Displacement Error) - moyenne sur toute la séquence
+    # Extract lat/lon (indices 0 and 1 correspond to dx, dy)
+    # Calculate error in meters directly
+    # ADE (Average Displacement Error) - average over entire sequence
     dx_err = pred[:, :, 0] - true[:, :, 0]
     dy_err = pred[:, :, 1] - true[:, :, 1]
     dist = torch.sqrt(dx_err**2 + dy_err**2)
@@ -233,10 +231,10 @@ def get_metrics(pred, true):
     # Median ADE
     medade = dist.median().item()
 
-    # FDE (Final Displacement Error) - erreur au dernier point
+    # FDE (Final Displacement Error) - error at last point
     fde = dist[:, -1].mean().item()
 
-    # % of predictions under thresholds
+    # Percentage of predictions under thresholds
     pct_under_10m = (dist < 10.0).float().mean().item() * 100.0
     pct_under_50m = (dist < 50.0).float().mean().item() * 100.0
 
@@ -253,7 +251,7 @@ def get_metrics(pred, true):
 
 
 def train_epoch(model, loader, optimizer, criterion, scaler, device):
-    """Training on one epoch avec mixed precision"""
+    """Training for one epoch with mixed precision"""
     model.train()
     total_loss = 0
     num_batches = len(loader)
@@ -261,14 +259,14 @@ def train_epoch(model, loader, optimizer, criterion, scaler, device):
     for batch_idx, (x, y) in enumerate(loader):
         x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
 
-        optimizer.zero_grad(set_to_none=True)  # Plus efficace que zero_grad()
+        optimizer.zero_grad(set_to_none=True)  # More efficient than zero_grad()
 
         # Safety checks for NaN/inf in inputs
         if torch.isnan(x).any() or torch.isnan(y).any() or torch.isinf(x).any() or torch.isinf(y).any():
-            print(f"      ⚠ Batch {batch_idx+1}/{num_batches} contient NaN/inf dans les données — batch ignoré")
+            print(f"      WARNING: Batch {batch_idx+1}/{num_batches} contains NaN/inf - skipping")
             continue
 
-        # Mixed precision training (explicit device type to avoid warnings)
+        # Mixed precision training
         amp_device = 'cuda' if device.type == 'cuda' else 'cpu'
         with autocast(device_type=amp_device):
             pred = model(x)
@@ -276,22 +274,20 @@ def train_epoch(model, loader, optimizer, criterion, scaler, device):
 
         # Detect non-finite loss and skip step if necessary
         if not torch.isfinite(loss):
-            # print some diagnostics
             with torch.no_grad():
                 pmin, pmax = float(pred.min().cpu()), float(pred.max().cpu())
                 ymin, ymax = float(y.min().cpu()), float(y.max().cpu())
-            print(f"      ⚠ Batch {batch_idx+1}/{num_batches} -> loss non fini (NaN/inf). pred range=({pmin:.3e},{pmax:.3e}), y range=({ymin:.3e},{ymax:.3e}) — réduction de l'échelle du scaler")
-            # Update scaler to adjust scaling and skip optimizer step
+            print(f"      WARNING: Batch {batch_idx+1}/{num_batches} loss is non-finite (pred:[{pmin:.3e},{pmax:.3e}], y:[{ymin:.3e},{ymax:.3e}]) - adjusting scaler")
             try:
                 scaler.update()
             except Exception:
                 pass
             continue
 
-        # Backward pass avec gradient scaling
+        # Backward pass with gradient scaling
         scaler.scale(loss).backward()
 
-        # Gradient clipping pour stabilité
+        # Gradient clipping for stability
         scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
@@ -300,7 +296,7 @@ def train_epoch(model, loader, optimizer, criterion, scaler, device):
 
         total_loss += loss.item() * x.size(0)
 
-        # Affichage progression
+        # Progress display
         if (batch_idx + 1) % 50 == 0:
             print(f"      Batch {batch_idx+1}/{num_batches} | Loss: {loss.item():.6f}")
     
@@ -308,7 +304,7 @@ def train_epoch(model, loader, optimizer, criterion, scaler, device):
 
 
 def validate(model, loader, criterion, device):
-    """Validation avec calcul des métriques"""
+    """Validation with metrics calculation"""
     model.eval()
     total_loss = 0
     all_preds = []
@@ -319,7 +315,7 @@ def validate(model, loader, criterion, device):
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
             # Safety checks
             if torch.isnan(x).any() or torch.isnan(y).any() or torch.isinf(x).any() or torch.isinf(y).any():
-                print("      ⚠ Batch de validation contenant NaN/inf — batch ignoré")
+                print("      WARNING: Validation batch contains NaN/inf - skipping")
                 continue
 
             amp_device = 'cuda' if device.type == 'cuda' else 'cpu'
@@ -328,7 +324,7 @@ def validate(model, loader, criterion, device):
                 loss = criterion(pred, y)
 
             if not torch.isfinite(loss):
-                print("      ⚠ Loss non fini (NaN/inf) pendant validation — batch ignoré")
+                print("      WARNING: Non-finite loss in validation - skipping batch")
                 continue
 
             total_loss += loss.item() * x.size(0)
@@ -336,7 +332,7 @@ def validate(model, loader, criterion, device):
             all_preds.append(pred.cpu())
             all_trues.append(y.cpu())
     
-    # Calculer métriques
+    # Calculate metrics
     all_preds = torch.cat(all_preds)
     all_trues = torch.cat(all_trues)
     
@@ -348,9 +344,9 @@ def validate(model, loader, criterion, device):
 
 
 def train_with_validation(model, train_loader, val_loader, device, epochs, save_dir='./models'):
-    """Complete training pipeline avec early stopping"""
+    """Complete training pipeline with early stopping"""
     
-    # Optimiseur avec weight decay pour régularisation
+    # Optimizer with weight decay for regularization
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
     
     # Learning rate scheduler
@@ -390,7 +386,7 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
     for epoch in range(epochs):
         epoch_start = time.time()
         
-        # Entraînement
+        # Training
         print(f"\n[Epoch {epoch+1}/{epochs}] Training...")
         train_loss = train_epoch(model, train_loader, optimizer, criterion, scaler, device)
         
@@ -398,23 +394,23 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
         print(f"[Epoch {epoch+1}/{epochs}] Validation...")
         val_metrics = validate(model, val_loader, criterion, device)
         
-        # Mise à jour scheduler
+        # Update scheduler
         scheduler.step(val_metrics['loss'])
         
-        # Enregistrer historique
+        # Record history
         history['train_loss'].append(train_loss)
         history['val_loss'].append(val_metrics['loss'])
         history['val_ade'].append(val_metrics['ade'])
         history['val_fde'].append(val_metrics['fde'])
         
-        # Affichage
+        # Display
         epoch_time = time.time() - epoch_start
         print(f"[Epoch {epoch+1}/{epochs}] ({epoch_time:.1f}s)")
         print(f"   Train Loss: {train_loss:.6f}")
         print(f"   Val Loss:   {val_metrics['loss']:.6f}")
         print(f"   Val MAE:    {val_metrics.get('mae', float('nan')):.6f}")
         print(f"   Val ADE:    {val_metrics['ade']:.2f} m")
-        print(f"   Val Median ADE: {val_metrics.get('medade', float('nan')):.2f} m")
+        print(f"   Val Med ADE: {val_metrics.get('medade', float('nan')):.2f} m")
         print(f"   Val FDE:    {val_metrics['fde']:.2f} m")
         print(f"   % <10m:     {val_metrics.get('pct_under_10m', 0.0):.2f}% | % <50m: {val_metrics.get('pct_under_50m', 0.0):.2f}%")
         print(f"   LR:         {optimizer.param_groups[0]['lr']:.2e}")
@@ -435,17 +431,17 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
                 'history': history
             }, best_model_path)
             
-            print(f"   OK Best model saved: {best_model_path}")
+            print(f"   Best model saved: {best_model_path}")
         else:
             patience_counter += 1
             print(f"   Patience: {patience_counter}/{patience}")
         
         # Early stopping
         if patience_counter >= patience:
-            print(f"\n⚠ Early stopping à l'epoch {epoch+1}")
+            print(f"\nEarly stopping at epoch {epoch+1}")
             break
         
-        # Checkpoint régulier
+        # Regular checkpoint
         if (epoch + 1) % 10 == 0:
             checkpoint_path = save_dir / f'checkpoint_epoch_{epoch+1}.pth'
             torch.save({
@@ -469,20 +465,20 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
 
 
 def evaluate_test(model, test_loader, device):
-    """Évaluation finale sur le test set"""
+    """Final evaluation on test set"""
     print("\n" + "="*70)
-    print("ÉVALUATION SUR TEST SET")
+    print("TEST SET EVALUATION")
     print("="*70)
     
     criterion = nn.MSELoss()
     metrics = validate(model, test_loader, criterion, device)
     
-    print(f"\nRésultats Test Set:")
+    print(f"\nTest Set Results:")
     print(f"   MSE:  {metrics['mse']:.6f}")
     print(f"   RMSE: {metrics['rmse']:.4f}")
     print(f"   MAE:  {metrics.get('mae', float('nan')):.6f}")
     print(f"   ADE:  {metrics['ade']:.2f} m")
-    print(f"   Median ADE: {metrics.get('medade', float('nan')):.2f} m")
+    print(f"   Med ADE: {metrics.get('medade', float('nan')):.2f} m")
     print(f"   FDE:  {metrics['fde']:.2f} m")
     print(f"   % <10m: {metrics.get('pct_under_10m', 0.0):.2f}% | % <50m: {metrics.get('pct_under_50m', 0.0):.2f}%")
     
@@ -501,61 +497,58 @@ def main():
     
     # GPU Configuration
     if not torch.cuda.is_available():
-        print("⚠ CUDA non disponible! Utilisation du CPU.")
+        print("WARNING: CUDA not available! Using CPU.")
         device = torch.device('cpu')
     else:
         if args.gpu_id >= 0:
-            # Utiliser un GPU spécifique
+            # Use specific GPU
             device = torch.device(f'cuda:{args.gpu_id}')
             torch.cuda.set_device(args.gpu_id)
             print(f"\n{'='*70}")
-            print(f"CONFIGURATION GPU")
+            print(f"GPU CONFIGURATION")
             print(f"{'='*70}")
-            print(f"GPU utilisé: GPU {args.gpu_id}")
-            print(f"   Nom: {torch.cuda.get_device_name(args.gpu_id)}")
+            print(f"Using GPU {args.gpu_id}: {torch.cuda.get_device_name(args.gpu_id)}")
             props = torch.cuda.get_device_properties(args.gpu_id)
-            print(f"   Mémoire: {props.total_memory / 1e9:.1f} GB")
-            print(f"   Compute capability: {props.major}.{props.minor}")
+            print(f"Memory: {props.total_memory / 1e9:.1f} GB")
             print(f"{'='*70}\n")
         else:
-            # Utiliser tous les GPUs disponibles
+            # Use all available GPUs
             device = torch.device('cuda')
             gpu_count = torch.cuda.device_count()
             print(f"\n{'='*70}")
-            print(f"CONFIGURATION GPU")
+            print(f"GPU CONFIGURATION")
             print(f"{'='*70}")
-            print(f"GPUs disponibles: {gpu_count}")
+            print(f"Available GPUs: {gpu_count}")
             for i in range(gpu_count):
-                print(f"   GPU {i}: {torch.cuda.get_device_name(i)}")
-                print(f"      Mémoire: {torch.cuda.get_device_properties(i).total_memory / 1e9:.1f} GB")
+                print(f"   GPU {i}: {torch.cuda.get_device_name(i)} ({torch.cuda.get_device_properties(i).total_memory / 1e9:.1f} GB)")
             print(f"{'='*70}\n")
     
-    # Chargement des données
+    # Load data
     print("\n" + "="*70)
-    print("CHARGEMENT DES DONNÉES")
+    print("DATA LOADING")
     print("="*70)
     
     df_train = load_processed_from_db('train')
     df_val = load_processed_from_db('val')
     df_test = load_processed_from_db('test')
 
-    # Compute feature normalization stats from train set and pass to datasets
-    print("\nCalcul des statistiques de normalisation à partir du train set...")
+    # Compute feature normalization stats from train set
+    print("\nComputing normalization statistics from train set...")
     feat_mean, feat_std = compute_feature_stats(df_train, seq_len=SEQ_IN)
     print(f"   Feature mean: {feat_mean}")
     print(f"   Feature std:  {feat_std}")
     
-    print(f"\nCréation des datasets...")
+    print(f"\nCreating datasets...")
     train_dataset = AISTrajDataset(df_train, seq_len=SEQ_IN, feat_mean=feat_mean, feat_std=feat_std)
     val_dataset = AISTrajDataset(df_val, seq_len=SEQ_IN, feat_mean=feat_mean, feat_std=feat_std)
     test_dataset = AISTrajDataset(df_test, seq_len=SEQ_IN, feat_mean=feat_mean, feat_std=feat_std)
     
-    print(f"\nRésumé datasets:")
-    print(f"   Train: {len(train_dataset):,} séquences")
-    print(f"   Val:   {len(val_dataset):,} séquences")
-    print(f"   Test:  {len(test_dataset):,} séquences")
+    print(f"\nDataset summary:")
+    print(f"   Train: {len(train_dataset):,} sequences")
+    print(f"   Val:   {len(val_dataset):,} sequences")
+    print(f"   Test:  {len(test_dataset):,} sequences")
     
-    # DataLoaders optimisés
+    # DataLoaders optimized
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -582,9 +575,9 @@ def main():
         pin_memory=PIN_MEMORY
     )
     
-    # Création du modèle
+    # Create model
     print("\n" + "="*70)
-    print("CRÉATION DU MODÈLE")
+    print("MODEL CREATION")
     print("="*70)
     
     model = LSTMTransformer(
@@ -595,24 +588,24 @@ def main():
         dropout=0.1
     )
     
-    # Compter les paramètres
+    # Count parameters
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
     print(f"Architecture: LSTMTransformer")
-    print(f"Paramètres totaux: {total_params:,}")
-    print(f"Paramètres entraînables: {trainable_params:,}")
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
     
-    # Multi-GPU si args.gpu_id == -1
+    # Multi-GPU if args.gpu_id == -1
     if torch.cuda.is_available() and args.gpu_id < 0 and torch.cuda.device_count() > 1:
-        print(f"\nOK Utilisation de {torch.cuda.device_count()} GPUs avec DataParallel")
+        print(f"\nUsing {torch.cuda.device_count()} GPUs with DataParallel")
         model = DataParallel(model)
     elif torch.cuda.is_available() and args.gpu_id >= 0:
-        print(f"\nOK Utilisation du GPU {args.gpu_id} uniquement (mode single-GPU optimisé)")
+        print(f"\nUsing GPU {args.gpu_id} only (optimized single-GPU mode)")
     
     model = model.to(device)
     
-    # Entraînement
+    # Training
     model, history = train_with_validation(
         model, 
         train_loader, 
@@ -622,13 +615,13 @@ def main():
         save_dir=args.save_dir
     )
     
-    # Évaluation finale
+    # Final evaluation
     test_metrics = evaluate_test(model, test_loader, device)
     
-    # Sauvegarde modèle final
+    # Save final model
     final_model_path = Path(args.save_dir) / f'ais_model_final_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pth'
     
-    # Si multi-GPU, sauvegarder le modèle sous-jacent
+    # If multi-GPU, save underlying model
     model_to_save = model.module if isinstance(model, DataParallel) else model
     
     torch.save({
@@ -643,9 +636,9 @@ def main():
         }
     }, final_model_path)
     
-    print(f"\nOK Modèle final sauvegardé: {final_model_path}")
+    print(f"\nFinal model saved: {final_model_path}")
     print("\n" + "="*70)
-    print("ENTRAÎNEMENT COMPLET TERMINÉ!")
+    print("TRAINING COMPLETE!")
     print("="*70)
 
 
