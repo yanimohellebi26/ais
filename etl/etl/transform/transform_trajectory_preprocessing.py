@@ -62,11 +62,6 @@ class TrajectoryConfig:
 
 CONFIG = TrajectoryConfig()
 
-
-# =============================================================================
-# UTILITY FUNCTIONS
-# =============================================================================
-
 def haversine_distance(lat1: np.ndarray, lon1: np.ndarray, lat2: np.ndarray, lon2: np.ndarray) -> np.ndarray:
     """
     Calculate distance in meters between two points using Haversine formula.
@@ -89,15 +84,6 @@ def latlon_to_local_meters(lon: np.ndarray, lat: np.ndarray, lon0: float = None,
     """
     Convert lat/lon to local metric coordinates (meters).
     Uses simple equirectangular projection centered on the provided reference point.
-    
-    Args:
-        lon: longitude array
-        lat: latitude array
-        lon0: reference longitude (default: mean of lon)
-        lat0: reference latitude (default: mean of lat)
-    
-    Returns:
-        x, y in meters
     """
     # Reference point (center of data if not provided)
     if lat0 is None:
@@ -124,15 +110,6 @@ def latlon_to_local_meters(lon: np.ndarray, lat: np.ndarray, lon0: float = None,
 def local_meters_to_latlon(x: np.ndarray, y: np.ndarray, lon0: float, lat0: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert local metric coordinates back to lat/lon.
-    
-    Args:
-        x: x coordinates in meters
-        y: y coordinates in meters  
-        lon0: reference longitude
-        lat0: reference latitude
-    
-    Returns:
-        lat, lon arrays in degrees
     """
     R = 6371000
     lat0_rad = np.radians(lat0)
@@ -155,21 +132,9 @@ def utm_to_latlon(x: np.ndarray, y: np.ndarray, zone: int = 31, northern: bool =
     # This function should not be called in the new implementation
     raise NotImplementedError("Use local_meters_to_latlon instead")
 
-
-# =============================================================================
-# LOADING FUNCTIONS
-# =============================================================================
-
 def load_raw_data_from_db(context: PipelineContext, limit: Optional[int] = None) -> PipelineContext:
     """
     Load raw data from database.
-    
-    Args:
-        context: PipelineContext
-        limit: Max number of rows to load (None = all)
-    
-    Returns:
-        PipelineContext with df filled
     """
     Logger.info("Loading data from database...")
     
@@ -200,21 +165,9 @@ def load_raw_data_from_db(context: PipelineContext, limit: Optional[int] = None)
     context.df = df
     return context
 
-
-# =============================================================================
-# CLEANING FUNCTIONS (aligned with clean_ais from model_.ipynb)
-# =============================================================================
-
 def clean_ais_data(context: PipelineContext) -> PipelineContext:
     """
     Initial AIS data cleaning.
-    Reproduces clean_ais() from model_.ipynb
-    
-    Args:
-        context: PipelineContext with df
-    
-    Returns:
-        PipelineContext with cleaned df
     """
     df = context.df.copy()
     before = len(df)
@@ -254,11 +207,6 @@ def clean_ais_data(context: PipelineContext) -> PipelineContext:
     context.df = df
     return context
 
-
-# =============================================================================
-# TRAJECTORY EXTRACTION (aligned with extract_trajectories from model_.ipynb)
-# =============================================================================
-
 def extract_trajectories_for_vessel(vessel_data):
     """Extract trajectories for a single vessel (for parallel processing)."""
     mmsi, g = vessel_data
@@ -293,20 +241,6 @@ def extract_trajectories_for_vessel(vessel_data):
 def extract_trajectories(context: PipelineContext, n_jobs: int = None) -> PipelineContext:
     """
     Extract individual trajectories from AIS positions with parallel processing.
-    Reproduces extract_trajectories() from model_.ipynb
-    
-    Criteria:
-    - New trajectory if gap > 600s (10 min)
-    - Minimum 24 points per trajectory
-    - Max duration 24h
-    - Mean SOG >= 1 knot
-    
-    Args:
-        context: PipelineContext with df
-        n_jobs: Number of parallel jobs (None = use all CPUs)
-    
-    Returns:
-        PipelineContext with 'trajectory_id' column added
     """
     df = context.df
     Logger.info(f"Extracting trajectories (max gap: {CONFIG.max_gap_seconds}s, min points: {CONFIG.min_points_per_traj})...")
@@ -345,13 +279,6 @@ def extract_trajectories(context: PipelineContext, n_jobs: int = None) -> Pipeli
 def filter_short_trajectories(context: PipelineContext, min_points: int = None) -> PipelineContext:
     """
     Filter trajectories that are too short.
-    
-    Args:
-        context: PipelineContext with df
-        min_points: Minimum number of points (default: CONFIG.min_points_per_traj)
-    
-    Returns:
-        PipelineContext with filtered trajectories
     """
     if min_points is None:
         min_points = CONFIG.min_points_per_traj
@@ -372,21 +299,9 @@ def filter_short_trajectories(context: PipelineContext, min_points: int = None) 
     context.df = df
     return context
 
-
-# =============================================================================
-# SPEED CORRECTION (aligned with correct_speed from model_.ipynb)
-# =============================================================================
-
 def correct_speed_trajectory(traj_df: pd.DataFrame) -> pd.DataFrame:
     """
     Fix aberrant speeds for a single trajectory.
-    Reproduces correct_speed() from model_.ipynb
-    
-    Args:
-        traj_df: DataFrame of a trajectory
-    
-    Returns:
-        DataFrame with corrected SOG
     """
     traj = traj_df.copy()
     sog = traj["sog"].values.copy()
@@ -409,12 +324,6 @@ def correct_speed_trajectory(traj_df: pd.DataFrame) -> pd.DataFrame:
 def correct_speed(context: PipelineContext) -> PipelineContext:
     """
     Apply speed correction to all trajectories.
-    
-    Args:
-        context: PipelineContext with df
-    
-    Returns:
-        PipelineContext with corrected speeds
     """
     df = context.df
     Logger.info(f"Speed correction (amax: {CONFIG.amax_knots} kn/s)...")
@@ -429,23 +338,9 @@ def correct_speed(context: PipelineContext) -> PipelineContext:
     Logger.info("Speed correction completed")
     return context
 
-
-# =============================================================================
-# POSITION CORRECTION (aligned with correct_position from model_.ipynb)
-# =============================================================================
-
 def correct_position_trajectory(traj_df: pd.DataFrame) -> pd.DataFrame:
     """
     Fix aberrant positions for a single trajectory.
-    Reproduces correct_position() from model_.ipynb
-    Uses local metric coordinates (equirectangular projection) for distance calculations.
-    Works worldwide without UTM zone limitations.
-    
-    Args:
-        traj_df: DataFrame of a trajectory
-    
-    Returns:
-        DataFrame with corrected positions
     """
     traj = traj_df.copy()
     lat = traj["lat"].values.copy()
@@ -499,12 +394,6 @@ def correct_position_trajectory(traj_df: pd.DataFrame) -> pd.DataFrame:
 def correct_position(context: PipelineContext) -> PipelineContext:
     """
     Apply position correction to all trajectories.
-    
-    Args:
-        context: PipelineContext with df
-    
-    Returns:
-        PipelineContext with corrected positions
     """
     df = context.df
     Logger.info("Position correction...")
@@ -519,11 +408,6 @@ def correct_position(context: PipelineContext) -> PipelineContext:
     Logger.info("Position correction completed")
     return context
 
-
-# =============================================================================
-# ITERATIVE CORRECTIONS (as model_.ipynb: 3 passes)
-# =============================================================================
-
 def process_single_trajectory_correction(traj_data):
     """Process corrections for a single trajectory (for parallel execution)."""
     traj_id, traj = traj_data
@@ -536,14 +420,6 @@ def process_single_trajectory_correction(traj_data):
 def apply_corrections(context: PipelineContext, n_jobs: int = None) -> PipelineContext:
     """
     Apply speed and position corrections iteratively with parallel processing.
-    Reproduces the loop from model_.ipynb: 3 iterations of correct_speed + correct_position
-    
-    Args:
-        context: PipelineContext with df
-        n_jobs: Number of parallel jobs (None = use all CPUs)
-    
-    Returns:
-        PipelineContext with corrections applied
     """
     Logger.info(f"Applying corrections ({CONFIG.correction_iterations} iterations)...")
     
@@ -567,22 +443,9 @@ def apply_corrections(context: PipelineContext, n_jobs: int = None) -> PipelineC
     Logger.info(f"Corrections completed: {total_trajs} trajectories processed")
     return context
 
-
-# =============================================================================
-# RESAMPLING (aligned with resample from model_.ipynb)
-# =============================================================================
-
 def resample_trajectory(traj_df: pd.DataFrame) -> pd.DataFrame:
     """
     Resample a trajectory to 1 minute.
-    Reproduces resample() from model_.ipynb
-    Uses local metric coordinates for SOG calculation.
-    
-    Args:
-        traj_df: DataFrame of a trajectory
-    
-    Returns:
-        Resampled DataFrame
     """
     traj = traj_df.copy()
     
@@ -650,13 +513,6 @@ def process_single_trajectory_resample(traj_data):
 def resample_trajectories(context: PipelineContext, n_jobs: int = None) -> PipelineContext:
     """
     Resample all trajectories with parallel processing.
-    
-    Args:
-        context: PipelineContext with df
-        n_jobs: Number of parallel jobs (None = use all CPUs)
-    
-    Returns:
-        PipelineContext with resampled trajectories
     """
     df = context.df
     Logger.info(f"Resampling to {CONFIG.resample_interval}...")
@@ -688,25 +544,10 @@ def resample_trajectories(context: PipelineContext, n_jobs: int = None) -> Pipel
     context.df = df_resampled
     return context
 
-
-# =============================================================================
-# DATASET SPLIT ASSIGNMENT
-# =============================================================================
-
 def assign_dataset_splits(context: PipelineContext, train_ratio: float = None, 
                           val_ratio: float = None, test_ratio: float = None) -> PipelineContext:
     """
     Assign each trajectory to a split (train/val/test).
-    Assignment is done per trajectory, not per point.
-    
-    Args:
-        context: PipelineContext with df
-        train_ratio: Ratio for train (default: CONFIG.train_ratio)
-        val_ratio: Ratio for validation (default: CONFIG.val_ratio)
-        test_ratio: Ratio for test (default: CONFIG.test_ratio)
-    
-    Returns:
-        PipelineContext with 'dataset_split' column added
     """
     if train_ratio is None:
         train_ratio = CONFIG.train_ratio
@@ -753,23 +594,10 @@ def assign_dataset_splits(context: PipelineContext, train_ratio: float = None,
     context.df = df
     return context
 
-
-# =============================================================================
-# DATABASE SAVE
-# =============================================================================
-
 def save_processed_to_db(context: PipelineContext, batch_size: int = 50000, 
                          truncate_first: bool = True) -> PipelineContext:
     """
     Save preprocessed data to trajectory_processed table.
-    
-    Args:
-        context: PipelineContext with df
-        batch_size: Batch size for insertion
-        truncate_first: If True, truncate table before insertion
-    
-    Returns:
-        PipelineContext unchanged
     """
     df = context.df
     Logger.info(f"Saving {len(df):,} points to trajectory_processed...")
@@ -822,21 +650,9 @@ def save_processed_to_db(context: PipelineContext, batch_size: int = 50000,
     
     return context
 
-
-# =============================================================================
-# FULL PIPELINE
-# =============================================================================
-
 def run_preprocessing_pipeline(context: PipelineContext, limit: Optional[int] = None) -> PipelineContext:
     """
     Execute the complete preprocessing pipeline.
-    
-    Args:
-        context: PipelineContext (can be empty)
-        limit: Data limit to load (None = all)
-    
-    Returns:
-        PipelineContext with preprocessed data
     """
     Logger.info("=" * 60)
     Logger.info("STARTING PREPROCESSING PIPELINE")
@@ -868,11 +684,6 @@ def run_preprocessing_pipeline(context: PipelineContext, limit: Optional[int] = 
     Logger.info("=" * 60)
     
     return context
-
-
-# =============================================================================
-# STANDALONE MAIN
-# =============================================================================
 
 def main():
     """Entry point for standalone execution."""
