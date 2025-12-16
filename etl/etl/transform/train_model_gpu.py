@@ -28,12 +28,12 @@ DB_CONFIG = {
     'password': 'ANjw/84H77C9h2'
 }
 
-# Hyperparamètres optimisés pour serveur ECO (1x NVIDIA L40S, 46GB VRAM)
+# Hyperparameters optimized for ECO server (1x NVIDIA L40S, 46GB VRAM)
 SEQ_IN = 20
-BATCH_SIZE = 1024  # Optimisé pour 1x L40S avec 46GB VRAM (meilleur que 2 GPUs)
+BATCH_SIZE = 1024  # Optimized for 1x L40S avec 46GB VRAM (better than 2 GPUs)
 EPOCHS = 50
 LR = 1e-4
-NUM_WORKERS = 16  # Optimisé pour serveur haute performance
+NUM_WORKERS = 16  # Optimized for serveur haute performance
 PIN_MEMORY = True
 
 # Configuration des splits
@@ -53,7 +53,7 @@ class AISTrajDataset(Dataset):
         self.seq_len = seq_len
         self.X, self.Y = [], []
         
-        print(f"   Création dataset à partir de {len(df):,} points...")
+        print(f"   Creating dataset from {len(df):,} points...")
         
         # Grouper par trajectory_id (plus efficace que MMSI)
         for traj_id, g in df.groupby("trajectory_id"):
@@ -253,7 +253,7 @@ def get_metrics(pred, true):
 
 
 def train_epoch(model, loader, optimizer, criterion, scaler, device):
-    """Entraînement sur une epoch avec mixed precision"""
+    """Training on one epoch avec mixed precision"""
     model.train()
     total_loss = 0
     num_batches = len(loader)
@@ -348,7 +348,7 @@ def validate(model, loader, criterion, device):
 
 
 def train_with_validation(model, train_loader, val_loader, device, epochs, save_dir='./models'):
-    """Pipeline d'entraînement complet avec early stopping"""
+    """Complete training pipeline avec early stopping"""
     
     # Optimiseur avec weight decay pour régularisation
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
@@ -369,11 +369,11 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
     patience = 5
     patience_counter = 0
     
-    # Créer dossier de sauvegarde
+    # Create save folder
     save_dir = Path(save_dir)
     save_dir.mkdir(exist_ok=True)
     
-    # Historique d'entraînement
+    # Training history
     history = {
         'train_loss': [],
         'val_loss': [],
@@ -382,7 +382,7 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
     }
     
     print("\n" + "="*70)
-    print("DÉBUT DE L'ENTRAÎNEMENT")
+    print("START TRAINING")
     print("="*70)
     
     start_time = time.time()
@@ -391,7 +391,7 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
         epoch_start = time.time()
         
         # Entraînement
-        print(f"\n[Epoch {epoch+1}/{epochs}] Entraînement...")
+        print(f"\n[Epoch {epoch+1}/{epochs}] Training...")
         train_loss = train_epoch(model, train_loader, optimizer, criterion, scaler, device)
         
         # Validation
@@ -419,7 +419,7 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
         print(f"   % <10m:     {val_metrics.get('pct_under_10m', 0.0):.2f}% | % <50m: {val_metrics.get('pct_under_50m', 0.0):.2f}%")
         print(f"   LR:         {optimizer.param_groups[0]['lr']:.2e}")
         
-        # Sauvegarde du meilleur modèle
+        # Save best model
         if val_metrics['loss'] < best_val_loss:
             best_val_loss = val_metrics['loss']
             patience_counter = 0
@@ -435,7 +435,7 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
                 'history': history
             }, best_model_path)
             
-            print(f"   ✓ Meilleur modèle sauvegardé: {best_model_path}")
+            print(f"   OK Best model saved: {best_model_path}")
         else:
             patience_counter += 1
             print(f"   Patience: {patience_counter}/{patience}")
@@ -458,10 +458,10 @@ def train_with_validation(model, train_loader, val_loader, device, epochs, save_
     total_time = time.time() - start_time
     
     print("\n" + "="*70)
-    print(f"ENTRAÎNEMENT TERMINÉ en {total_time/60:.1f} minutes")
+    print(f"TRAINING COMPLETED in {total_time/60:.1f} minutes")
     print("="*70)
     
-    # Charger le meilleur modèle
+    # Load best model
     best_checkpoint = torch.load(save_dir / 'best_model.pth')
     model.load_state_dict(best_checkpoint['model_state_dict'])
     
@@ -499,7 +499,7 @@ def main():
     parser.add_argument('--gpu-id', type=int, default=0, help='GPU ID to use (default: 0, use -1 for all GPUs)')
     args = parser.parse_args()
     
-    # Configuration GPU
+    # GPU Configuration
     if not torch.cuda.is_available():
         print("⚠ CUDA non disponible! Utilisation du CPU.")
         device = torch.device('cpu')
@@ -605,10 +605,10 @@ def main():
     
     # Multi-GPU si args.gpu_id == -1
     if torch.cuda.is_available() and args.gpu_id < 0 and torch.cuda.device_count() > 1:
-        print(f"\n✓ Utilisation de {torch.cuda.device_count()} GPUs avec DataParallel")
+        print(f"\nOK Utilisation de {torch.cuda.device_count()} GPUs avec DataParallel")
         model = DataParallel(model)
     elif torch.cuda.is_available() and args.gpu_id >= 0:
-        print(f"\n✓ Utilisation du GPU {args.gpu_id} uniquement (mode single-GPU optimisé)")
+        print(f"\nOK Utilisation du GPU {args.gpu_id} uniquement (mode single-GPU optimisé)")
     
     model = model.to(device)
     
@@ -643,7 +643,7 @@ def main():
         }
     }, final_model_path)
     
-    print(f"\n✓ Modèle final sauvegardé: {final_model_path}")
+    print(f"\nOK Modèle final sauvegardé: {final_model_path}")
     print("\n" + "="*70)
     print("ENTRAÎNEMENT COMPLET TERMINÉ!")
     print("="*70)
