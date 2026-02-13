@@ -179,7 +179,7 @@ public interface PositionVesselRepository extends JpaRepository<PositionVessel, 
 
     @Query(value = """
         SELECT DISTINCT ON (p.vessel_id) *
-        FROM position_vessel p
+        FROM latest_positions p
         WHERE p.base_date_time BETWEEN :start AND :end
           AND p.vessel_id <> :targetVessel
           AND ST_DWithin(

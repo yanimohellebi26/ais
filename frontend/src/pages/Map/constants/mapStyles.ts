@@ -28,6 +28,7 @@ export const CLUSTER_CONFIG = {
 
 export const VESSEL_COLORS = {
     SELECTED: "#FF0000",
+    CLICKED_POSITION: "#00FFFF",
     NORMAL: "#007BFF",
     RADIUS_CIRCLE: "#007BFF"
 } as const;

@@ -16,7 +16,7 @@ interface Props {
     targetPositionId?: number;
     targetDate?: string;
     targetRadiusKm?: number;
-    onVesselClick?: (vesselId: number, positionId: number) => void;
+    onVesselClick?: (vesselId: number, positionId: number, date: string) => void;
     ids?: number[];
 }
 
@@ -98,8 +98,16 @@ const VesselLayer: React.FC<Props> = ({
 
         const vesselId = features[0].properties?.vesselId;
         const positionId = features[0].properties?.id;
-        if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId));
-    }, [map, onVesselClick]);
+
+        if (targetRadiusKm != null && vesselId === targetVesselId) {
+            return;
+        }
+
+        const date = features[0].properties?.baseDateTime;
+        const formatedDate = date.replace("T", " ").split(".")[0];
+
+        if (vesselId != null) onVesselClick?.(Number(vesselId), Number(positionId), String(formatedDate));
+    }, [map, onVesselClick, targetRadiusKm, targetVesselId]);
 
     useEffect(() => {
         if (!map) return;
@@ -192,6 +200,8 @@ const VesselLayer: React.FC<Props> = ({
                         ],
                         "circle-color": [
                             "case",
+                            ["==", ["get", "id"], targetPositionId ?? -1],
+                            VESSEL_COLORS.CLICKED_POSITION,
                             ["==", ["get", "vesselId"], targetVesselId ?? -1],
                             VESSEL_COLORS.SELECTED,
                             VESSEL_COLORS.NORMAL

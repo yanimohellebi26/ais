@@ -12,11 +12,11 @@ export const useMapFilters = () => {
     const [targetDate, setTargetDate] = useState<string | undefined>();
     const [targetRadiusKm, setTargetRadiusKm] = useState<number | undefined>();
 
-    const handleVesselClick = (vesselId: number, positionId: number) => {
+    const handleVesselClick = (vesselId: number, positionId: number, targetDate: string) => {
         setSelectedVesselId(vesselId);
         setSelectedPositionId(positionId);
-        setTargetDate(undefined);
-        setTargetRadiusKm(undefined);
+        setTargetDate(targetDate);
+        setTargetRadiusKm(50);
     };
 
     const handleUpdateFilters = (date?: string, radiusKm?: number) => {
