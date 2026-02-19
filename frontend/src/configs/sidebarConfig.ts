@@ -11,7 +11,8 @@ import {
     Terminal,
     Orbit,
     History,
-    FileText
+    FileText,
+    TrendingUp
 } from "lucide-react";
 import React from "react";
 
@@ -45,6 +46,11 @@ export const menuItems: MenuItem[] = [
             {label: "List ships", path:"/dashboard/ships/list", icon: List},
             {label: "My ships", path:"/dashboard/ships/my-ships", roles: ["ROLE_CAPTAIN", "ROLE_OWNER", "ROLE_ADMIN"], icon: ShipWheel},
         ]
+    },
+    { label: "Analytics",
+        icon: TrendingUp,
+        path: "/dashboard/analytics",
+        roles: ["ROLE_ADMIN", "ROLE_FINANCIAL_ANALYST", "ROLE_MARITIME_EXPERT"]
     },
     { label:"ETL",
         icon: Workflow,

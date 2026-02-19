@@ -6,6 +6,7 @@ import DashboardShips from "../Ships/DashboardShips";
 import DashboardAdminPage from "../Admin/DashboardAdminPage";
 import DashboardEtl from "../Etl/DashboardEtl";
 import DashboardMap from "../Map/DashboardMap";
+import DashboardAnalytics from "../Analytics/DashboardAnalytics";
 
 const Dashboard: React.FC = () => {
     return (
@@ -16,6 +17,7 @@ const Dashboard: React.FC = () => {
                 <Route path="admin/*" element={<DashboardAdminPage />}/>
                 <Route path="etl/*" element={<DashboardEtl />}></Route>
                 <Route path="map/*" element={<DashboardMap />}></Route>
+                <Route path="analytics/*" element={<DashboardAnalytics />}></Route>
             </Route>
         </Routes>
     );
