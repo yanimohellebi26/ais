@@ -8,24 +8,15 @@ def refresh_latest_positions(context: PipelineContext, view_name: str = "latest_
     Refresh a materialized view outside a transaction so CONCURRENTLY works.
     """
     sql = f"REFRESH MATERIALIZED VIEW {'CONCURRENTLY ' if concurrently else ''}{view_name};"
-
-    connexion = engine.raw_connection()
     try:
-        try:
-            connexion.autocommit = True
-        except Exception:
-            pass
-        cursor = connexion.cursor()
-        cursor.execute(sql)
-        cursor.close()
+        engine.dispose()
+        
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connexion:
+            connexion.execute(text(sql))
+
         Logger.info(f"Refreshed materialized view {view_name} (concurrently={concurrently})")
     except Exception as e:
         Logger.error(f"Error refreshing materialized view {view_name}: {e}")
         raise
-    finally:
-        try:
-            connexion.close()
-        except Exception:
-            pass
 
     return context
