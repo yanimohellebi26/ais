@@ -44,6 +44,10 @@ load-positions:
       kwargs:
         handle_missing: "skip"
         batch_size: 100000
+    - func: refresh_latest_positions
+      kwargs:
+        view_name: "latest_positions"
+        concurrently: true
 
 load-ports:
   desc: "Load ports in database"
