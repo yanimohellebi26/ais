@@ -1,0 +1,87 @@
+============================================================
+  DIAGNOSTIC ENTRAINEMENT AIS
+============================================================
+
+[DIAG] Import numpy... OK (0.1s)
+[DIAG] Import pandas... OK (0.2s)
+[DIAG] Import torch... OK (1.8s)
+[DIAG] Import sklearn... OK (0.4s)
+[DIAG] Import pyproj... OK (0.1s)
+
+[DIAG] Device: cuda:0
+[DIAG] GPUs: 2
+[DIAG]   GPU 0: NVIDIA L40S, 44 GB
+[DIAG]   GPU 1: NVIDIA L40S, 44 GB
+
+[DIAG] Config debug:
+  BATCH_SIZE=64, NUM_WORKERS=0
+  HIDDEN_DIM=64, LIMIT_ROWS=50000
+
+[DIAG] Chargement CSV (50000 lignes max)... OK (0.0s, 50,000 lignes)
+[DIAG] Colonnes: ['MMSI', 'BaseDateTime', 'LAT', 'LON', 'SOG', 'COG', 'VesselType']
+[DIAG] dtypes:
+MMSI                     int64
+BaseDateTime    datetime64[ns]
+LAT                    float64
+LON                    float64
+SOG                    float64
+COG                    float64
+VesselType               int64
+dtype: object
+[DIAG] NaN par colonne:
+LAT    0
+LON    0
+SOG    0
+COG    0
+dtype: int64
+
+[DIAG] Nettoyage...
+  dropna -> 50,000
+  dedup -> 50,000
+  filtres -> 36,186
+  final -> 35,959 (71.9%)
+  Navires uniques: 43
+
+[DIAG] Extraction trajectoires...
+  53 trajectoires en 0.0s
+  traj[0]: 139 points, SOG=[0.3, 8.2]
+  traj[1]: 71 points, SOG=[0.2, 24.3]
+  traj[2]: 49 points, SOG=[0.1, 21.8]
+
+[DIAG] Resampling...
+  resample 1/53...
+  resample 11/53...
+  resample 21/53...
+  resample 31/53...
+  resample 41/53...
+  resample 51/53...
+  53 trajectoires apres resample (0.1s)
+
+[DIAG] Creation dataset...
+  20,549 samples crees (0.0s)
+  X shape: (20549, 20, 6), Y shape: (20549, 10, 6)
+  X range: [-257100.2188, 466450.4688]
+  Y range: [-261830.2031, 471076.1875]
+  X has NaN: False, Inf: False
+  Y has NaN: False, Inf: False
+  Scaler mean=[17984.38347704 -8446.76069141], scale=[99992.20277255 75611.54908945]
+  Apres scaling X: [-3.0509, 60.0000]
+  Apres scaling Y: [-3.0755, 60.0000]
+  NaN apres scaling: X=False, Y=False
+
+[DIAG] Test DataLoader num_workers=0...
+  Premier batch: x=torch.Size([64, 20, 6]), y=torch.Size([64, 10, 6]) (0.0s)
+  batch x range: [-2.9945, 60.0000]
+  batch y range: [-3.0237, 60.0000]
+  DataLoader OK (3 batches en 0.0s)
+
+[DIAG] Test DataLoader num_workers=2...
+  Premier batch workers=2: (0.2s)
+  DataLoader workers=2 OK (0.3s)
+
+[DIAG] Construction modele (petit)...
+  Params: 151,110
+
+[DIAG] Test DataParallel sur 2 GPUs...
+/home1/ym519512/ais_training/venv/lib64/python3.9/site-packages/torch/nn/modules/linear.py:125: UserWarning: Attempting to run cuBLAS, but there was no current CUDA context! Attempting to set the primary context... (Triggered internally at ../aten/src/ATen/cuda/CublasHandlePool.cpp:135.)
+  return F.linear(input, self.weight, self.bias)

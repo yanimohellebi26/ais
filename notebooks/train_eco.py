@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-AIS LSTM-Transformer - Script d'entraînement optimisé pour serveur ECO
+AIS LSTM-Transformer - Script d'entrainement optimise pour serveur ECO
 =============================================================================
 Serveur : ym519512@eco
-CPU     : 2× AMD EPYC 9254 → 96 cœurs
+CPU     : 2x AMD EPYC 9254 -> 96 coeurs
 RAM     : 1 TB
-GPU     : 2× NVIDIA L40S (46 GB chacun)
+GPU     : 2x NVIDIA L40S (46 GB chacun)
 CUDA    : 13.1 | Driver: 590.48.01
-Source  : PostgreSQL → position_vessel + vessel
+Source  : CSV local (ais_data.csv)
+=============================================================================
+OPTIMISATIONS vs version precedente :
+  - Lecture CSV locale (plus de tunnel SSH PostgreSQL)
+  - correct_speed / correct_position vectorises avec numpy (plus de boucles Python)
+  - calculate_metrics vectorise par batch (plus de boucle sample par sample)
+  - Batch size 16384 pour saturer les 2x L40S
 =============================================================================
 """
 
 import os
 import sys
 import gc
-import math
 import pickle
 import time
 import argparse
@@ -24,8 +29,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import psycopg2
-import sqlalchemy
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
@@ -35,35 +38,32 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.amp import autocast
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # ARGUMENTS CLI
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 parser = argparse.ArgumentParser(description="AIS LSTM-Transformer Training on ECO")
-parser.add_argument("--pg-host",     default="localhost",   help="PostgreSQL host")
-parser.add_argument("--pg-port",     default=5432,          type=int)
-parser.add_argument("--pg-user",     default="postgres")
-parser.add_argument("--pg-password", default="ANjw/84H77C9h2")
-parser.add_argument("--pg-db",       default="ais")
+parser.add_argument("--csv-file",    default="ais_data.csv", help="Fichier CSV d'entree")
 parser.add_argument("--epochs",      default=150,           type=int)
-parser.add_argument("--batch-size",  default=512,           type=int,  help="Batch size (grand = meilleur GPU utilization)")
+parser.add_argument("--batch-size",  default=16384,         type=int)
 parser.add_argument("--lr",          default=1e-3,          type=float)
 parser.add_argument("--patience",    default=20,            type=int)
 parser.add_argument("--seq-in",      default=20,            type=int)
 parser.add_argument("--seq-out",     default=10,            type=int)
-parser.add_argument("--hidden-dim",  default=512,           type=int,  help="Dimension cachée du modèle")
+parser.add_argument("--hidden-dim",  default=512,           type=int)
 parser.add_argument("--num-layers",  default=4,             type=int)
 parser.add_argument("--num-heads",   default=8,             type=int)
 parser.add_argument("--dropout",     default=0.2,           type=float)
-parser.add_argument("--num-workers", default=8,             type=int,  help="Workers DataLoader")
-parser.add_argument("--multi-gpu",   action="store_true",   default=True, help="Utiliser les 2 GPU L40S")
-parser.add_argument("--limit-rows",  default=None,          type=int,  help="Limiter nb lignes BD (debug)")
-parser.add_argument("--output-dir",  default="./eco_output", help="Dossier de sortie des modèles")
+parser.add_argument("--num-workers", default=4,             type=int)
+parser.add_argument("--multi-gpu",   action="store_true",   default=True)
+parser.add_argument("--limit-rows",  default=None,          type=int, help="Limiter nb lignes (debug)")
+parser.add_argument("--output-dir",  default="./eco_output")
 args = parser.parse_args()
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # CONFIGURATION
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 os.makedirs(args.output_dir, exist_ok=True)
 
 SEQ_IN      = args.seq_in
@@ -81,9 +81,9 @@ proj        = Proj(proj="utm", zone=31, ellps="WGS84")
 np.random.seed(RANDOM_SEED)
 torch.manual_seed(RANDOM_SEED)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEVICE SETUP  (2× L40S via DataParallel)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# DEVICE SETUP
+# -----------------------------------------------------------------------------
 if torch.cuda.is_available():
     n_gpus = torch.cuda.device_count()
     DEVICE = torch.device("cuda:0")
@@ -95,7 +95,7 @@ else:
 USE_MULTI_GPU = args.multi_gpu and n_gpus > 1
 
 print("=" * 80)
-print("  AIS LSTM-TRANSFORMER — SERVEUR ECO")
+print("  AIS LSTM-TRANSFORMER — SERVEUR ECO (OPTIMISE)")
 print("=" * 80)
 print(f"  Date        : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"  PyTorch     : {torch.__version__}")
@@ -110,79 +110,57 @@ print(f"  Batch size  : {BATCH_SIZE}")
 print(f"  Hidden dim  : {args.hidden_dim}")
 print(f"  Epochs max  : {EPOCHS}")
 print(f"  Patience    : {PATIENCE}")
+print(f"  CSV         : {args.csv_file}")
 print(f"  Output dir  : {args.output_dir}")
 print("=" * 80)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. CHARGEMENT DONNÉES DEPUIS POSTGRESQL
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[1/8] CHARGEMENT DONNÉES DEPUIS POSTGRESQL")
+# -----------------------------------------------------------------------------
+# 1. CHARGEMENT DONNEES DEPUIS CSV
+# -----------------------------------------------------------------------------
+print("\n[1/8] CHARGEMENT DONNEES DEPUIS CSV")
 print("-" * 60)
 
-DB_URL = (f"postgresql+psycopg2://{args.pg_user}:{args.pg_password}"
-          f"@{args.pg_host}:{args.pg_port}/{args.pg_db}")
-
-engine = sqlalchemy.create_engine(DB_URL, pool_pre_ping=True)
-
-# Requête : extraire LAT/LON depuis la colonne geography + jointure vessel_type
-LIMIT_CLAUSE = f"LIMIT {args.limit_rows}" if args.limit_rows else ""
-
-SQL = f"""
-    SELECT
-        v.mmsi                                             AS "MMSI",
-        pv.base_date_time                                  AS "BaseDateTime",
-        ST_Y(pv.geom::geometry)                            AS "LAT",
-        ST_X(pv.geom::geometry)                            AS "LON",
-        pv.sog                                             AS "SOG",
-        pv.cog                                             AS "COG",
-        COALESCE(v.vessel_type_id, 0)                      AS "VesselType"
-    FROM position_vessel pv
-    JOIN vessel v ON v.id = pv.vessel_id
-    WHERE pv.sog IS NOT NULL
-      AND pv.cog IS NOT NULL
-    ORDER BY v.mmsi, pv.base_date_time
-    {LIMIT_CLAUSE}
-"""
-
 t0 = time.time()
-print(f"  Connexion à {args.pg_host}:{args.pg_port}/{args.pg_db} ...")
-df = pd.read_sql(SQL, engine, parse_dates=["BaseDateTime"])
-print(f"  ✅ {len(df):,} lignes chargées en {time.time()-t0:.1f}s")
+print(f"  Lecture de {args.csv_file} ...")
+nrows = args.limit_rows if args.limit_rows else None
+df = pd.read_csv(args.csv_file, parse_dates=["BaseDateTime"], nrows=nrows)
+print(f"  {len(df):,} lignes chargees en {time.time()-t0:.1f}s")
 print(f"     Navires uniques : {df['MMSI'].nunique():,}")
-print(f"     Période : {df['BaseDateTime'].min()} → {df['BaseDateTime'].max()}")
+print(f"     Periode : {df['BaseDateTime'].min()} -> {df['BaseDateTime'].max()}")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # 2. NETTOYAGE
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/8] NETTOYAGE DES DONNÉES")
+# -----------------------------------------------------------------------------
+print("\n[2/8] NETTOYAGE DES DONNEES")
 print("-" * 60)
 
 n0 = len(df)
 print(f"  Points bruts : {n0:,}")
 
 df = df.dropna(subset=['LAT', 'LON', 'SOG', 'COG'])
-print(f"  ✓ Valeurs manquantes supprimées → {len(df):,} ({len(df)/n0*100:.1f}%)")
+print(f"  Valeurs manquantes supprimees -> {len(df):,} ({len(df)/n0*100:.1f}%)")
 
 df = df.drop_duplicates(subset=["MMSI", "BaseDateTime"])
-print(f"  ✓ Doublons supprimés → {len(df):,} ({len(df)/n0*100:.1f}%)")
+print(f"  Doublons supprimes -> {len(df):,} ({len(df)/n0*100:.1f}%)")
 
 df = df[df["LAT"].between(-90, 90) & df["LON"].between(-180, 180)]
-print(f"  ✓ Positions invalides filtrées → {len(df):,}")
+print(f"  Positions invalides filtrees -> {len(df):,}")
 
 df = df[df["SOG"].between(0.1, 30) & df["COG"].between(0, 360)]
-print(f"  ✓ SOG/COG invalides filtrés → {len(df):,}")
+print(f"  SOG/COG invalides filtres -> {len(df):,}")
 
 df = df[df["VesselType"].between(20, 90)]
-print(f"  ✓ Type navire filtré → {len(df):,}")
+print(f"  Type navire filtre -> {len(df):,}")
 
+df = df.sort_values(["MMSI", "BaseDateTime"])
 df["dt"] = df.groupby("MMSI")["BaseDateTime"].diff().dt.total_seconds()
 df = df[(df["dt"].isna()) | ((df["dt"] >= 1) & (df["dt"] <= 3600))]
 df = df.drop(columns=["dt"])
-print(f"  ✓ Intervalles filtrés → {len(df):,} ({len(df)/n0*100:.1f}% conservés)")
+print(f"  Intervalles filtres -> {len(df):,} ({len(df)/n0*100:.1f}% conserves)")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # 3. EXTRACTION TRAJECTOIRES
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 print("\n[3/8] EXTRACTION TRAJECTOIRES")
 print("-" * 60)
 
@@ -214,71 +192,128 @@ def extract_trajectories(df, min_len=30, max_duration_hours=24, min_speed=1.0):
             trajs.append(t.reset_index(drop=True))
 
     print(f"  Trajectoires extraites  : {len(trajs):,}")
-    print(f"  ❌ Trop courtes         : {stats['short']:,}")
-    print(f"  ❌ Durée invalide       : {stats['duration']:,}")
-    print(f"  ❌ Vitesse trop faible  : {stats['speed']:,}")
-    print(f"  ❌ Distance trop faible : {stats['distance']:,}")
+    print(f"  Trop courtes            : {stats['short']:,}")
+    print(f"  Duree invalide          : {stats['duration']:,}")
+    print(f"  Vitesse trop faible     : {stats['speed']:,}")
+    print(f"  Distance trop faible    : {stats['distance']:,}")
     return trajs
 
 raw_trajs = extract_trajectories(df)
+del df; gc.collect()
 if not raw_trajs:
     raise ValueError("Aucune trajectoire extraite !")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. CORRECTIONS PHYSIQUES + RÉÉCHANTILLONNAGE
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[4/8] CORRECTIONS PHYSIQUES + RÉÉCHANTILLONNAGE")
+# -----------------------------------------------------------------------------
+# 4. CORRECTIONS PHYSIQUES VECTORISEES + REECHANTILLONNAGE
+# -----------------------------------------------------------------------------
+print("\n[4/8] CORRECTIONS PHYSIQUES + REECHANTILLONNAGE (VECTORISE)")
 print("-" * 60)
 
-def correct_speed(traj):
+def correct_speed_vectorized(traj):
+    """Correction vitesse vectorisee — remplace la boucle Python."""
     sog = traj["SOG"].values.copy()
-    t   = traj["BaseDateTime"].values
-    corr = 0
-    for i in range(1, len(traj) - 1):
-        dt1 = (t[i] - t[i-1]) / np.timedelta64(1, "s")
-        dt2 = (t[i+1] - t[i]) / np.timedelta64(1, "s")
-        if dt1 <= 0 or dt2 <= 0:
-            continue
-        if abs(sog[i] - sog[i-1]) > amax_knots * dt1:
-            w1, w2 = 1.0/dt1, 1.0/dt2
-            sog[i] = (w1*sog[i-1] + w2*sog[i+1]) / (w1+w2)
-            corr += 1
+    t = traj["BaseDateTime"].values
+    n = len(sog)
+    if n < 3:
+        return traj, 0
+
+    dt_fwd = np.diff(t) / np.timedelta64(1, "s")  # dt[i] = t[i+1] - t[i]
+
+    # dt1[i] = t[i] - t[i-1], dt2[i] = t[i+1] - t[i] pour i in [1, n-2]
+    dt1 = dt_fwd[:-1]   # (n-2,)
+    dt2 = dt_fwd[1:]    # (n-2,)
+
+    valid = (dt1 > 0) & (dt2 > 0)
+    indices = np.where(valid)[0] + 1  # indices dans sog (decale de 1)
+
+    if len(indices) == 0:
+        return traj, 0
+
+    dt1_v = dt1[valid]
+    dt2_v = dt2[valid]
+
+    corr_total = 0
+    for _ in range(1):  # une passe suffit par appel (on appelle 3x dehors)
+        delta = np.abs(sog[indices] - sog[indices - 1])
+        max_delta = amax_knots * dt1_v
+        need_fix = delta > max_delta
+
+        if not np.any(need_fix):
+            break
+
+        fix_idx = indices[need_fix]
+        w1 = 1.0 / dt1_v[need_fix]
+        w2 = 1.0 / dt2_v[need_fix]
+        sog[fix_idx] = (w1 * sog[fix_idx - 1] + w2 * sog[fix_idx + 1]) / (w1 + w2)
+        corr_total += int(np.sum(need_fix))
+
     traj = traj.copy()
     traj["SOG"] = sog
-    return traj, corr
+    return traj, corr_total
 
-def correct_position(traj):
+
+def correct_position_vectorized(traj):
+    """Correction position vectorisee — remplace la boucle Python."""
     lat = traj["LAT"].values.copy()
     lon = traj["LON"].values.copy()
     sog = traj["SOG"].values
-    t   = traj["BaseDateTime"].values
+    t = traj["BaseDateTime"].values
+    n = len(lat)
+    if n < 3:
+        return traj, 0
+
     x, y = proj(lon, lat)
-    corr = 0
-    for i in range(1, len(traj) - 1):
-        dt = (t[i] - t[i-1]) / np.timedelta64(1, "s")
-        if dt <= 0:
-            continue
-        dmax = sog[i-1]*0.514*dt + 0.5*amax*(dt**2)
-        if math.hypot(x[i]-x[i-1], y[i]-y[i-1]) > dmax * 1.5:
-            dt2 = (t[i+1] - t[i]) / np.timedelta64(1, "s")
-            if dt2 <= 0:
-                continue
-            alpha = dt / (dt + dt2)
-            x[i] = x[i-1] + alpha * (x[i+1] - x[i-1])
-            y[i] = y[i-1] + alpha * (y[i+1] - y[i-1])
-            corr += 1
+
+    dt_fwd = np.diff(t) / np.timedelta64(1, "s")
+    dt1 = dt_fwd[:-1]  # t[i]-t[i-1] pour i in [1..n-2]
+    dt2 = dt_fwd[1:]   # t[i+1]-t[i] pour i in [1..n-2]
+
+    valid = (dt1 > 0) & (dt2 > 0)
+    indices = np.where(valid)[0] + 1
+
+    if len(indices) == 0:
+        return traj, 0
+
+    dt1_v = dt1[valid]
+    dt2_v = dt2[valid]
+
+    v = sog[indices - 1] * 0.514
+    dmax = v * dt1_v + 0.5 * amax * (dt1_v ** 2)
+    dx = x[indices] - x[indices - 1]
+    dy = y[indices] - y[indices - 1]
+    d = np.sqrt(dx**2 + dy**2)
+
+    need_fix = d > dmax * 1.5
+    if not np.any(need_fix):
+        return traj, 0
+
+    fix_idx = indices[need_fix]
+    dt1_fix = dt1_v[need_fix]
+    dt2_fix = dt2_v[need_fix]
+    alpha = dt1_fix / (dt1_fix + dt2_fix)
+
+    x[fix_idx] = x[fix_idx - 1] + alpha * (x[fix_idx + 1] - x[fix_idx - 1])
+    y[fix_idx] = y[fix_idx - 1] + alpha * (y[fix_idx + 1] - y[fix_idx - 1])
+
     lon_c, lat_c = proj(x, y, inverse=True)
     traj = traj.copy()
     traj["LAT"] = lat_c
     traj["LON"] = lon_c
-    return traj, corr
+    return traj, int(np.sum(need_fix))
+
 
 def resample_trajectory(traj):
     for col in ["LAT", "LON", "SOG", "COG"]:
         traj[col] = pd.to_numeric(traj[col], errors='coerce')
-    traj = traj.set_index("BaseDateTime")
-    traj = traj.infer_objects(copy=False)
-    traj_res = traj.resample("1min").interpolate(method='linear')
+    # Garder seulement les colonnes utiles et indexer par datetime
+    t = traj[["BaseDateTime", "LAT", "LON", "SOG", "COG"]].set_index("BaseDateTime")
+    traj_res = t.resample("1min").mean()  # agrège par minute (1 valeur/min)
+    # Interpolation linéaire + ffill/bfill pour éliminer les NaN aux bords
+    traj_res = traj_res.interpolate(method='linear').ffill().bfill()
+    # Supprimer les NaN résiduels
+    traj_res = traj_res.dropna(subset=["LAT", "LON", "SOG", "COG"])
+    if len(traj_res) == 0:
+        return traj_res.reset_index()
     x, y = proj(traj_res["LON"].values, traj_res["LAT"].values)
     dist  = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
     sog_c = dist / 60 / 0.514
@@ -287,25 +322,27 @@ def resample_trajectory(traj):
     traj_res["COG"] = np.rad2deg(cog) % 360
     return traj_res.reset_index()
 
+
 processed_trajs = []
 total_sc = total_pc = 0
 for traj in tqdm(raw_trajs, desc="  Traitement", ncols=80):
     for _ in range(3):
-        traj, s = correct_speed(traj)
-        traj, p = correct_position(traj)
+        traj, s = correct_speed_vectorized(traj)
+        traj, p = correct_position_vectorized(traj)
         total_sc += s
         total_pc += p
     traj_res = resample_trajectory(traj)
     if len(traj_res) >= SEQ_IN + SEQ_OUT:
         processed_trajs.append(traj_res)
 
+del raw_trajs; gc.collect()
 print(f"  Trajectoires finales     : {len(processed_trajs):,}")
 print(f"  Corrections vitesse      : {total_sc:,}")
 print(f"  Corrections position     : {total_pc:,}")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # 5. SPLIT TRAIN / VAL / TEST
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 print("\n[5/8] SPLIT TRAIN / VAL / TEST")
 print("-" * 60)
 
@@ -313,14 +350,14 @@ train_t, temp  = train_test_split(processed_trajs, test_size=0.3,  random_state=
 val_t,   test_t = train_test_split(temp,            test_size=0.5,  random_state=RANDOM_SEED)
 
 n_total = len(processed_trajs)
-print(f"  🔵 Train : {len(train_t):,}  ({len(train_t)/n_total*100:.1f}%)")
-print(f"  🟡 Val   : {len(val_t):,}  ({len(val_t)/n_total*100:.1f}%)")
-print(f"  🟢 Test  : {len(test_t):,}  ({len(test_t)/n_total*100:.1f}%)")
+print(f"  Train : {len(train_t):,}  ({len(train_t)/n_total*100:.1f}%)")
+print(f"  Val   : {len(val_t):,}  ({len(val_t)/n_total*100:.1f}%)")
+print(f"  Test  : {len(test_t):,}  ({len(test_t)/n_total*100:.1f}%)")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # 6. DATASET PYTORCH
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[6/8] CRÉATION DATASETS PYTORCH")
+# -----------------------------------------------------------------------------
+print("\n[6/8] CREATION DATASETS PYTORCH")
 print("-" * 60)
 
 class AISTrajDataset(Dataset):
@@ -349,6 +386,9 @@ class AISTrajDataset(Dataset):
             feats = np.stack([dx, dy, sog_norm, sin_cog, cos_cog, dt], axis=1)
             all_features.append(feats)
 
+            # Ignorer si NaN dans les features
+            if np.isnan(feats).any():
+                continue
             for i in range(len(feats) - seq_in - seq_out + 1):
                 X_list.append(feats[i:i+seq_in])
                 Y_list.append(feats[i+seq_in:i+seq_in+seq_out])
@@ -359,7 +399,7 @@ class AISTrajDataset(Dataset):
             all_f = np.concatenate(all_features, axis=0)
             self.scaler = StandardScaler()
             self.scaler.fit(all_f[:, :2])
-            print(f"  Scaler : μ={self.scaler.mean_}, σ={self.scaler.scale_}")
+            print(f"  Scaler : mu={self.scaler.mean_}, sigma={self.scaler.scale_}")
         else:
             self.scaler = scaler
 
@@ -389,7 +429,7 @@ class AISTrajDataset(Dataset):
         del X_np, Y_np, lat0_list, lon0_list
 
         mem_gb = (self.X.nbytes + self.Y.nbytes + self.lat0.nbytes + self.lon0.nbytes) / 1024**3
-        print(f"  Mémoire tenseurs : {mem_gb:.2f} GB")
+        print(f"  Memoire tenseurs : {mem_gb:.2f} GB")
         sys.stdout.flush()
 
     def __len__(self):
@@ -399,35 +439,33 @@ class AISTrajDataset(Dataset):
         return self.X[i], self.Y[i], self.lat0[i], self.lon0[i]
 
 
-print("  Création Train dataset...")
+print("  Creation Train dataset...")
 sys.stdout.flush()
 train_ds = AISTrajDataset(train_t, SEQ_IN, SEQ_OUT, fit_scaler=True)
-print(f"  ✅ Train : {len(train_ds):,} samples")
+print(f"  Train : {len(train_ds):,} samples")
 del train_t; gc.collect()
 
-print("  Création Val dataset...")
+print("  Creation Val dataset...")
 sys.stdout.flush()
 val_ds   = AISTrajDataset(val_t,   SEQ_IN, SEQ_OUT, scaler=train_ds.scaler)
-print(f"  ✅ Val   : {len(val_ds):,} samples")
+print(f"  Val   : {len(val_ds):,} samples")
 del val_t; gc.collect()
 
-print("  Création Test dataset...")
+print("  Creation Test dataset...")
 sys.stdout.flush()
 test_ds  = AISTrajDataset(test_t,  SEQ_IN, SEQ_OUT, scaler=train_ds.scaler)
-print(f"  ✅ Test  : {len(test_ds):,} samples")
+print(f"  Test  : {len(test_ds):,} samples")
 del test_t, processed_trajs; gc.collect()
 
 scaler_path = os.path.join(args.output_dir, "scaler.pkl")
 with open(scaler_path, "wb") as f:
     pickle.dump(train_ds.scaler, f)
-print(f"  💾 Scaler sauvegardé : {scaler_path}")
+print(f"  Scaler sauvegarde : {scaler_path}")
 
-# Mémoire RSS actuelle
 rss_gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024**2
-print(f"  📊 RSS mémoire processus : {rss_gb:.1f} GB")
+print(f"  RSS memoire processus : {rss_gb:.1f} GB")
 sys.stdout.flush()
 
-# DataLoaders — pin_memory + persistent_workers pour maximiser le débit GPU
 pin_mem = torch.cuda.is_available()
 train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
                           num_workers=args.num_workers, pin_memory=pin_mem,
@@ -439,10 +477,10 @@ test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False,
                           num_workers=args.num_workers, pin_memory=pin_mem,
                           persistent_workers=args.num_workers > 0)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 7. ARCHITECTURE DU MODÈLE
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[7/8] CONSTRUCTION DU MODÈLE")
+# -----------------------------------------------------------------------------
+# 7. ARCHITECTURE DU MODELE
+# -----------------------------------------------------------------------------
+print("\n[7/8] CONSTRUCTION DU MODELE")
 print("-" * 60)
 
 class ImprovedLSTMTransformer(nn.Module):
@@ -514,94 +552,119 @@ _model = ImprovedLSTMTransformer(
     dropout=args.dropout
 )
 
-# DataParallel sur les 2 L40S
-if USE_MULTI_GPU:
-    _model = nn.DataParallel(_model, device_ids=list(range(n_gpus)))
-    print(f"  ⚡ DataParallel activé sur {n_gpus} GPU")
-
+# DataParallel desactive (deadlock cuBLAS sur ECO) — 1 L40S 44GB suffit largement
+if USE_MULTI_GPU and n_gpus > 1:
+    print(f"  Multi-GPU detecte ({n_gpus} GPU) — DataParallel desactive (cuBLAS deadlock), single GPU utilise")
 model = _model.to(DEVICE)
 
 params = sum(p.numel() for p in model.parameters())
-print(f"  Paramètres totaux : {params:,}")
-print(f"  Taille mémoire    : {params*4/1024/1024:.1f} MB")
+print(f"  Parametres totaux : {params:,}")
+print(f"  Taille memoire    : {params*4/1024/1024:.1f} MB")
 
 criterion = CustomLoss(2.0, 1.0, 1.0)
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-5)
 scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=7, verbose=True)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# FONCTIONS TRAIN / VALIDATE / METRICS
-# ─────────────────────────────────────────────────────────────────────────────
+USE_AMP = torch.cuda.is_available()
+print(f"  AMP (Mixed Precision BF16) active : {USE_AMP}")
+# torch.compile() desactive : Triton/inductor crashe au runtime sur ECO (gcc build fail)
+# Le try/except ne protege pas le forward pass, seulement le wrapping initial.
+print("  torch.compile() desactive (Triton inductor incompatible avec l'env ECO)")
+
+# -----------------------------------------------------------------------------
+# FONCTIONS TRAIN / VALIDATE / METRICS (VECTORISEES)
+# -----------------------------------------------------------------------------
 def train_epoch(model, loader, optimizer, criterion):
     model.train()
     total_loss = 0
-    for x, y, _lat0, _lon0 in loader:
+    pbar = tqdm(loader, desc="  train", ncols=80, leave=False)
+    for x, y, _lat0, _lon0 in pbar:
         x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
-        optimizer.zero_grad()
-        pred = model(x)[:, -SEQ_OUT:, :]
-        loss = criterion(pred, y)
+        optimizer.zero_grad(set_to_none=True)
+        with autocast('cuda', dtype=torch.bfloat16, enabled=USE_AMP):
+            pred = model(x)[:, -SEQ_OUT:, :]
+            loss = criterion(pred, y)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
-        total_loss += loss.item() * x.size(0)
+        batch_loss = loss.item()
+        total_loss += batch_loss * x.size(0)
+        pbar.set_postfix({'loss': f'{batch_loss:.4f}'})
     return total_loss / len(loader.dataset)
 
 def validate(model, loader, criterion):
     model.eval()
     total_loss = 0
     with torch.no_grad():
-        for x, y, _lat0, _lon0 in loader:
+        for x, y, _lat0, _lon0 in tqdm(loader, desc="  val  ", ncols=80, leave=False):
             x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
-            pred = model(x)[:, -SEQ_OUT:, :]
-            loss = criterion(pred, y)
+            with autocast('cuda', dtype=torch.bfloat16, enabled=USE_AMP):
+                pred = model(x)[:, -SEQ_OUT:, :]
+                loss = criterion(pred, y)
             total_loss += loss.item() * x.size(0)
     return total_loss / len(loader.dataset)
 
-def haversine(lat1, lon1, lat2, lon2):
+def haversine_np(lat1, lon1, lat2, lon2):
+    """Haversine vectorise sur des arrays numpy."""
     R = 6371000.0
     phi1, phi2 = np.radians(lat1), np.radians(lat2)
-    dphi  = phi2 - phi1
-    dlam  = np.radians(lon2 - lon1)
+    dphi = phi2 - phi1
+    dlam = np.radians(lon2 - lon1)
     a = np.sin(dphi/2)**2 + np.cos(phi1)*np.cos(phi2)*np.sin(dlam/2)**2
     return R * 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
 def calculate_metrics(model, loader, scaler):
+    """Metriques vectorisees par batch entier — plus de boucle sample par sample."""
     model.eval()
     all_ade, all_fde, all_pos, all_vel = [], [], [], []
+
+    scaler_mean = scaler.mean_.astype(np.float32)
+    scaler_scale = scaler.scale_.astype(np.float32)
+
     with torch.no_grad():
         for x, y, lat0_batch, lon0_batch in loader:
-            x    = x.to(DEVICE, non_blocking=True)
-            pred = model(x)[:, -SEQ_OUT:, :].cpu()
-            for b in range(pred.shape[0]):
-                p_d, y_d = pred[b].clone(), y[b].clone()
-                p_d[:, :2] = torch.tensor(scaler.inverse_transform(p_d[:, :2].numpy()), dtype=torch.float32)
-                y_d[:, :2] = torch.tensor(scaler.inverse_transform(y_d[:, :2].numpy()), dtype=torch.float32)
-                lat0 = lat0_batch[b].item()
-                lon0 = lon0_batch[b].item()
-                p_lat = lat0 + p_d[:, 0].numpy() / 111320
-                p_lon = lon0 + p_d[:, 1].numpy() / (111320 * np.cos(np.deg2rad(lat0)))
-                t_lat = lat0 + y_d[:, 0].numpy() / 111320
-                t_lon = lon0 + y_d[:, 1].numpy() / (111320 * np.cos(np.deg2rad(lat0)))
-                dists = np.array([haversine(p_lat[i], p_lon[i], t_lat[i], t_lon[i])
-                                  for i in range(len(p_lat))])
-                all_ade.append(dists.mean())
-                all_fde.append(dists[-1])
-                pos_err = np.sqrt((p_d[:, 0].numpy()-y_d[:, 0].numpy())**2 +
-                                  (p_d[:, 1].numpy()-y_d[:, 1].numpy())**2)
-                all_pos.append(pos_err.mean())
-                vel_err = np.abs(p_d[:, 2].numpy()*30 - y_d[:, 2].numpy()*30)
-                all_vel.append(vel_err.mean())
+            x = x.to(DEVICE, non_blocking=True)
+            pred = model(x)[:, -SEQ_OUT:, :].cpu().numpy()  # (B, T, 6)
+            y_np = y.numpy()                                 # (B, T, 6)
+            lat0 = lat0_batch.numpy()                        # (B,)
+            lon0 = lon0_batch.numpy()                        # (B,)
+
+            B, T = pred.shape[0], pred.shape[1]
+
+            # Inverse scaler sur positions (colonnes 0,1)
+            p_pos = pred[:, :, :2] * scaler_scale + scaler_mean  # (B, T, 2)
+            y_pos = y_np[:, :, :2] * scaler_scale + scaler_mean  # (B, T, 2)
+
+            # Convertir dx/dy -> lat/lon
+            p_lat = lat0[:, None] + p_pos[:, :, 0] / 111320            # (B, T)
+            p_lon = lon0[:, None] + p_pos[:, :, 1] / (111320 * np.cos(np.deg2rad(lat0[:, None])))
+            t_lat = lat0[:, None] + y_pos[:, :, 0] / 111320
+            t_lon = lon0[:, None] + y_pos[:, :, 1] / (111320 * np.cos(np.deg2rad(lat0[:, None])))
+
+            # Haversine vectorise (B, T)
+            dists = haversine_np(p_lat, p_lon, t_lat, t_lon)
+
+            all_ade.append(dists.mean(axis=1))     # (B,)
+            all_fde.append(dists[:, -1])            # (B,)
+
+            pos_err = np.sqrt((p_pos[:, :, 0] - y_pos[:, :, 0])**2 +
+                              (p_pos[:, :, 1] - y_pos[:, :, 1])**2)
+            all_pos.append(pos_err.mean(axis=1))
+
+            vel_err = np.abs(pred[:, :, 2] * 30 - y_np[:, :, 2] * 30)
+            all_vel.append(vel_err.mean(axis=1))
+
     return {
-        'ADE': np.mean(all_ade),
-        'FDE': np.mean(all_fde),
-        'Position_Error_m': np.mean(all_pos),
-        'Velocity_Error_knots': np.mean(all_vel)
+        'ADE': float(np.concatenate(all_ade).mean()),
+        'FDE': float(np.concatenate(all_fde).mean()),
+        'Position_Error_m': float(np.concatenate(all_pos).mean()),
+        'Velocity_Error_knots': float(np.concatenate(all_vel).mean())
     }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 8. ENTRAÎNEMENT
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[8/8] ENTRAÎNEMENT")
+# -----------------------------------------------------------------------------
+# 8. ENTRAINEMENT
+# -----------------------------------------------------------------------------
+print("\n[8/8] ENTRAINEMENT")
 print("=" * 80)
 sys.stdout.flush()
 
@@ -622,7 +685,6 @@ try:
         train_loss = train_epoch(model, train_loader, optimizer, criterion)
         val_loss   = validate(model, val_loader, criterion)
 
-        # Métriques complètes tous les 5 epochs
         if epoch % 5 == 0:
             m   = calculate_metrics(model, val_loader, train_ds.scaler)
             ade, fde = m['ADE'], m['FDE']
@@ -641,7 +703,7 @@ try:
         history['lr'].append(lr)
 
         is_best = val_loss < best_val_loss
-        flag    = " ★ BEST" if is_best else ""
+        flag    = " * BEST" if is_best else ""
 
         line = (f"E{epoch+1:3d}/{EPOCHS} | "
                 f"TL:{train_loss:.6f} | VL:{val_loss:.6f} | "
@@ -669,26 +731,26 @@ try:
         else:
             patience_counter += 1
             if patience_counter >= PATIENCE:
-                print(f"\n⏹  EARLY STOPPING à l'epoch {epoch+1} (patience={PATIENCE})")
+                print(f"\n  EARLY STOPPING a l'epoch {epoch+1} (patience={PATIENCE})")
                 break
 
 except Exception as e:
     import traceback
-    print(f"\n❌ ERREUR pendant l'entraînement : {e}", file=sys.stderr)
+    print(f"\n  ERREUR pendant l'entrainement : {e}", file=sys.stderr)
     traceback.print_exc()
     sys.stderr.flush()
 finally:
     log_file.close()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ÉVALUATION FINALE SUR LE TEST SET
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# EVALUATION FINALE SUR LE TEST SET
+# -----------------------------------------------------------------------------
 print("\n" + "=" * 80)
-print("  ÉVALUATION FINALE — TEST SET")
+print("  EVALUATION FINALE — TEST SET")
 print("=" * 80)
 
 checkpoint = torch.load(os.path.join(args.output_dir, "best_model.pth"),
-                        map_location=DEVICE)
+                        map_location=DEVICE, weights_only=True)
 model.load_state_dict(checkpoint['model_state_dict'])
 
 test_m = calculate_metrics(model, test_loader, train_ds.scaler)
@@ -700,11 +762,11 @@ print(f"  Erreur vitesse moyenne            : {test_m['Velocity_Error_knots']:.2
 
 total_time = time.time() - start_global
 print("\n" + "=" * 80)
-print("  TERMINÉ")
+print("  TERMINE")
 print("=" * 80)
 print(f"  Temps total      : {total_time/60:.1f} min")
 print(f"  Meilleure loss   : {best_val_loss:.6f}")
-print(f"  Fichiers générés :")
+print(f"  Fichiers generes :")
 print(f"    {args.output_dir}/best_model.pth")
 print(f"    {args.output_dir}/scaler.pkl")
 print(f"    {args.output_dir}/history.pkl")
