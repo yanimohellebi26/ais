@@ -28,7 +28,7 @@ public class AuthConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-ui.html",
-            "/actuator/health"
+            "/actuator/*"
     };
 
     public AuthConfig(AuthEntryPointJwt unauthorizedHandler,
