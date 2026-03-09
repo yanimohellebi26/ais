@@ -63,6 +63,12 @@ load-ports:
       kwargs:
         handle_missing: "skip"
 
+load-protected-areas:
+  desc: "Load protected areas in database"
+  steps:
+    - func: decompress_WDPA_zip
+      kwargs: {}
+
 test:
   desc: "Test pipeline"
   steps:
