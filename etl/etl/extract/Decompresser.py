@@ -21,8 +21,8 @@ def decompress_WDPA_zip(context: PipelineContext) -> PipelineContext:
             if file_name.endswith('.zip'):
                 main_zip.extract(file_name, extract_to)
 
-    for file in extract_to.glob("*.zip"):
-        extract_to_sub = extract_to / file.stem
+    for i, file in enumerate(extract_to.glob("*.zip")):
+        extract_to_sub = extract_to / f"{i}"
         extract_to_sub.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(file, 'r') as sub_zip:
             sub_zip.extractall(extract_to_sub)
