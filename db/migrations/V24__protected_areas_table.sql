@@ -54,7 +54,8 @@ CREATE TYPE "own_type" AS ENUM (
 CREATE TYPE "cons_obj" AS ENUM (
   'Primary',
   'Secondary',
-  'Ancillary'
+  'Ancillary',
+  'Not Applicable',
 );
 
 CREATE TYPE "verif" AS ENUM (
@@ -86,7 +87,7 @@ CREATE TABLE protected_areas (
 );
 
 CREATE TABLE pa_plot (
-  SITE_PID integer,
+  SITE_PID text,
   SITE_ID integer,
   PRIMARY KEY (SITE_PID, SITE_ID),
   FOREIGN KEY (SITE_ID)
