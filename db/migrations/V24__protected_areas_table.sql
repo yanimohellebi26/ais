@@ -43,7 +43,7 @@ CREATE TYPE "cons_obj" AS ENUM (
   'Primary',
   'Secondary',
   'Ancillary',
-  'Not Applicable',
+  'Not Applicable'
 );
 
 CREATE TABLE protected_areas (

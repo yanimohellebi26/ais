@@ -2,6 +2,8 @@ from pathlib import Path
 import geopandas as gpd
 from utils.logger import Logger
 from etl.models.context import PipelineContext
+from etl.transform.transform_general_wdpa import transform_wdpa
+from etl.load.load_wdpa_db import load_wdpa_db
 
 def _find_partition_dirs(base_dir: Path) -> list[Path]:
     """
@@ -35,15 +37,14 @@ def _read_shp_from_partition(partition_dir: Path, shp_pattern: str) -> gpd.GeoDa
 
     return gpd.read_file(matches[0])
 
-def extract_and_process_wdpa(context: PipelineContext, shp_pattern: str, transform_func, load_func) -> PipelineContext:
+def _process_partition(context: PipelineContext, shp_pattern: str, batch_size: int) -> PipelineContext:
     """
     Iterate over the partitions numbered from the WDPA_Data folder and do extract -> transform -> load for each of them.
 
     Args:
         context         : shared PipelineContext between steps
         shp_pattern     : glob pattern to focus polygons or points (ex: "*_polygons_*.shp" or "*_points_*.shp")
-        transform_func  : transform method to apply
-        load_func       : load method to apply
+        batch_size      : number of features to insert in database at once during load step
     
     Returns: 
         context (cleared to None after transform)
@@ -69,9 +70,9 @@ def extract_and_process_wdpa(context: PipelineContext, shp_pattern: str, transfo
             Logger.info(f"Partition {partition_name} : {len(gdf):,} features read.")
             context.df = gdf
 
-            context = transform_func(context)
+            context = transform_wdpa(context)
 
-            context = load_func(context)
+            context = load_wdpa_db(context, batch_size)
 
         except Exception as e:
             Logger.error(f"Partition {partition_name} : error during processing -> {e}")
@@ -87,3 +88,17 @@ def extract_and_process_wdpa(context: PipelineContext, shp_pattern: str, transfo
         Logger.warning(f"Failed partitions : {failed_partitions}")
 
     return context
+
+def load_wdpa_polygons(context: PipelineContext, batch_size: int = 10_000) -> PipelineContext:
+    """
+    Load WDPA polygons into database by iterating over the partitions and applying extract -> transform -> load steps.
+    """
+
+    return _process_partition(context, shp_pattern="*polygons*.shp", batch_size=batch_size)
+
+def load_wdpa_points(context: PipelineContext, batch_size: int = 10_000) -> PipelineContext:
+    """
+    Load WDPA points into database by iterating over the partitions and applying extract -> transform -> load steps.
+    """
+
+    return _process_partition(context, shp_pattern="*points*.shp", batch_size=batch_size)
