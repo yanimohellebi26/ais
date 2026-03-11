@@ -79,9 +79,7 @@ CREATE TABLE protected_areas (
   NO_TK_AREA double precision,
   STATUS status,
   STATUS_YR integer,
-  OWN_TYPE own_type,
   CONS_OBJ cons_obj,
-  VERIF verif,
   ISO3 varchar(3),
   geometry geometry(Geometry, 4326) NOT NULL
 );
