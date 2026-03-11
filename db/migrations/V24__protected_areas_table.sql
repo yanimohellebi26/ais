@@ -39,29 +39,11 @@ CREATE TYPE "status" AS ENUM (
   'Not Reported'
 );
 
-CREATE TYPE "own_type" AS ENUM (
-  'State',
-  'Communal',
-  'Individual Landowners',
-  'For-profit organisations',
-  'Non-profit organisations',
-  'Joint ownership',
-  'Multiple ownership',
-  'Contested',
-  'Not Reported'
-);
-
 CREATE TYPE "cons_obj" AS ENUM (
   'Primary',
   'Secondary',
   'Ancillary',
   'Not Applicable',
-);
-
-CREATE TYPE "verif" AS ENUM (
-  'State Verified',
-  'Expert Verified',
-  'Not Reported'
 );
 
 CREATE TABLE protected_areas (
