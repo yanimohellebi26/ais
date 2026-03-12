@@ -66,8 +66,6 @@ load-ports:
 load-protected-areas:
   desc: "Load protected areas in database"
   steps:
-    - func: decompress_WDPA_zip
-      kwargs: {}
     - func: load_wdpa_polygons
       kwargs:
         batch_size: 100000

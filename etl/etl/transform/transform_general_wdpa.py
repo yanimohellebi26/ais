@@ -7,6 +7,8 @@ from etl.models.context import PipelineContext
 import geopandas as gpd
 import pandas as pd
 
+from sqlalchemy import text
+
 DB_COLUMNS = {
     "SITE_ID", "NAME", "DESIG_ENG", "DESIG_TYPE", "IUCN_CAT",
     "REALM", "REP_M_AREA", "GIS_M_AREA", "REP_AREA", "GIS_AREA",
@@ -32,13 +34,13 @@ def _fetch_enum_values() -> dict[str, set[str]]:
     """
 
     enum_type_names = tuple(COLUMN_ENUM_TYPE.values())
-    query = f"""
+    query = text(f"""
         SELECT t.typname, e.enumlabel
         FROM pg_type t
         JOIN pg_enum e ON t.oid = e.enumtypid
         WHERE t.typname IN {enum_type_names}
         ORDER BY t.typname, e.enumsortorder;
-    """
+    """)
 
     with engine.connect() as conn:
         rows = conn.execute(query).fetchall()

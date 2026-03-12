@@ -62,7 +62,7 @@ CREATE TABLE protected_areas (
   STATUS status,
   STATUS_YR integer,
   CONS_OBJ cons_obj,
-  ISO3 varchar(3),
+  ISO3 varchar(255),
   geometry geometry(Geometry, 4326) NOT NULL
 );
 

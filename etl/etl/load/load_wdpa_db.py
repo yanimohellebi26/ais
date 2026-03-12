@@ -8,6 +8,8 @@ import geopandas as gpd
 import pandas as pd
 import io
 
+from sqlalchemy import text
+
 PA_COLUMNS = [
     "SITE_ID", "NAME", "DESIG_ENG", "DESIG_TYPE", "IUCN_CAT",
     "REALM", "REP_M_AREA", "GIS_M_AREA", "REP_AREA", "GIS_AREA",
@@ -34,10 +36,10 @@ CREATE_TMP_WDPA = """
         STATUS      text,
         STATUS_YR   integer,
         CONS_OBJ    text,
-        ISO3        varchar(3),
+        ISO3        varchar(255),
         geometry_wkb text
     ) ON COMMIT DELETE ROWS;
-"""
+    """
 
 CREATE_TMP_PA_PLOT = """
     CREATE TEMP TABLE IF NOT EXISTS tmp_pa_plot_load (
@@ -53,7 +55,7 @@ UPSERT_PA_SQL = """
         NO_TAKE, NO_TK_AREA, STATUS, STATUS_YR,
         CONS_OBJ, ISO3, geometry
     )
-    SELECT
+    SELECT DISTINCT ON (SITE_ID)
         SITE_ID, NAME, DESIG_ENG,
         DESIG_TYPE::desig_type, IUCN_CAT::iucn_cat,
         REALM::realm, REP_M_AREA, GIS_M_AREA, REP_AREA, GIS_AREA,
@@ -133,7 +135,7 @@ def load_wdpa_db(context: PipelineContext, batch_size: int = 10_000) -> Pipeline
     total_rows = len(gdf)
     Logger.info(f"load_wdpa_db : {total_rows:,} features to load, batch {batch_size:,}...")
 
-    conn = engine.connect()
+    conn = engine.raw_connection()
 
     try:
         cur = conn.cursor()
