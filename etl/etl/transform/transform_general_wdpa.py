@@ -1,114 +1,124 @@
-from utils.db import engine
-from utils.logger import Logger
-from utils.timer import timer
-
-from etl.models.context import PipelineContext
-
-import geopandas as gpd
 import pandas as pd
 
-from sqlalchemy import text
+from etl.models.context import PipelineContext
+from utils.logger import Logger
 
-DB_COLUMNS = {
-    "SITE_ID", "NAME", "DESIG_ENG", "DESIG_TYPE", "IUCN_CAT",
-    "REALM", "REP_M_AREA", "GIS_M_AREA", "REP_AREA", "GIS_AREA",
-    "NO_TAKE", "NO_TK_AREA", "STATUS", "STATUS_YR",
-    "CONS_OBJ", "ISO3", "geometry",
-}
+"""
+def filter_marine_coastal(context: PipelineContext) -> PipelineContext:
+    df = context.df
+    before = len(df)
 
-COLUMN_ENUM_TYPE = {
-    "DESIG_TYPE": "desig_type",
-    "IUCN_CAT":   "iucn_cat",
-    "REALM":      "realm",
-    "NO_TAKE":    "no_take",
-    "STATUS":     "status",
-    "CONS_OBJ":   "cons_obj",
-}
+    df = df[df["REALM"].fillna("").str.contains("Marine|Coastal", case=False)]
 
-def _fetch_enum_values() -> dict[str, set[str]]:
-    """
-    Fetch the possible values for each enum column from the database and return them as a dict.
+    Logger.info(f"Filter REALM: {len(df)}/{before} kept")
 
-    Returns:
-        dict[db_column_name, set[enum_value]]
-    """
+    context.df = df
+    return context
+"""
+def clean_wdpa(context: PipelineContext) -> PipelineContext:
+    df = context.df
 
-    enum_type_names = tuple(COLUMN_ENUM_TYPE.values())
-    query = text(f"""
-        SELECT t.typname, e.enumlabel
-        FROM pg_type t
-        JOIN pg_enum e ON t.oid = e.enumtypid
-        WHERE t.typname IN {enum_type_names}
-        ORDER BY t.typname, e.enumsortorder;
-    """)
+    Logger.info("Cleaning WDPA dataset")
 
-    with engine.connect() as conn:
-        rows = conn.execute(query).fetchall()
+    for col in ["NAME", "DESIG_ENG", "DESIG_TYPE", "IUCN_CAT", "OWN_TYPE"]:
+        if col in df.columns:
+            Logger.info(f"-> Cleaning {col} column...")
+            df[col] = df[col].astype(str).str.strip()
+            Logger.success(f"Cleaned {col} column")
 
-    type_to_col = {v: k for k, v in COLUMN_ENUM_TYPE.items()}
-    enum_values: dict[str, set[str]] = {}
+    for col in ["REP_AREA", "GIS_AREA", "REP_M_AREA", "GIS_M_AREA", "NO_TK_AREA"]:
+        if col in df.columns:
+            Logger.info(f"-> Cleaning {col} column...")
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            Logger.success(f"Cleaned {col} column")
 
-    for type_name, label in rows:
-        col = type_to_col[type_name]
-        enum_values.setdefault(col, set()).add(label)
+    if "STATUS_YR" in df.columns:
+        Logger.info("-> Cleaning status_yr column...")
+        df["STATUS_YR"] = pd.to_numeric(df["STATUS_YR"], errors="coerce").astype("Int64")
+        Logger.success(f"Cleaned STATUS_YR column")
 
-    Logger.info(f"ENUM loaded : { {k: len(v) for k, v in enum_values.items()} }")
-    
-    return enum_values
+    if "geometry" in df.columns:
+        Logger.info("-> Cleaning geometry column...")
 
-@timer
-def transform_wdpa(context: PipelineContext) -> PipelineContext:
-    """
-    Transform the GeoDataFrame WDPA by applying the following steps:
-    - Suppress columns not in DB_COLUMNS
-    - Validate the ENUM values by dinamically fetching values from database
-    - convert to EPSG:4326 if necessary
-    """
+        invalid_mask = ~df["geometry"].is_valid
+        invalid_count = invalid_mask.sum()
 
-    gdf: gpd.GeoDataFrame = context.df
+        if invalid_count > 0:
+            Logger.warning(f"Found {invalid_count} invalid geometries. Attempting to fix with buffer(0)...")
+            df.loc[invalid_mask, "geometry"] = df.loc[invalid_mask, "geometry"].buffer(0)
+            Logger.success(f"Fixed {invalid_count} geometries")
 
-    if gdf is None or gdf.empty:
-        Logger.warning("transform_wdpa : empty GeoDataFrame, nothing to transform.")
+        Logger.success(f"Cleaned geometry column")
+
+    Logger.success("Cleaning finished")
+
+    context.df = df
+    return context
+
+def map_to_mcd(context: PipelineContext) -> PipelineContext:
+    df = context.df
+    if df.empty:
+        return context
+
+    Logger.info("Mapping WDPA -> MCD")
+
+    df = df.rename(columns={
+        "SITE_ID": "site_id",
+        "SITE_PID": "site_pid",
+        "NAME": "name",
+        "DESIG_ENG": "desig_eng",
+        "DESIG_TYPE": "desig_type",
+        "IUCN_CAT": "iucn_cat",
+        "ISO3": "iso3",
+        "STATUS": "status",
+        "STATUS_YR": "status_yr",
+        "OWN_TYPE": "own_type",
+        "NO_TAKE": "no_take",
+        "NO_TK_AREA": "no_tk_area",
+        "REP_AREA": "rep_area",
+        "GIS_AREA": "gis_area",
+        "REP_M_AREA": "rep_m_area",
+        "GIS_M_AREA": "gis_m_area",
+        "REALM": "realm"
+    })
+
+    if "desig_type" in df.columns:
+        df["site_type"] = df["desig_type"].apply(
+            lambda x: "OECM" if "OECM" in str(x).upper() else "PA"
+        )
+
+    context.df = df
+    return context
+
+def split_tables(context: PipelineContext):
+    if context.df.empty:
+        Logger.warning("Empty dataframe, no tables to split")
+        context.pa_infos = pd.DataFrame()
+        context.protected_area = pd.DataFrame()
         return context
     
-    Logger.info(f"transform_wdpa : {len(gdf):,} lines to transform.")
+    df = context.df
 
-    if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
-        Logger.info(f"transform_wdpa : converting CRS from {gdf.crs} to EPSG:4326.")
-        gdf = gdf.to_crs(epsg=4326)
+    Logger.info("Splitting tables")
 
-    elif gdf.crs is None:
-        Logger.warning("CRS undefined, we assume it's EPSG:4326.")
-        gdf = gdf.set_crs(epsg=4326)
+    pa_infos = df[[
+        "site_id", "name", "site_type", "iso3",
+        "status", "status_yr"
+    ]].drop_duplicates(subset=["site_id"])
 
-    cols_to_keep = [c for c in gdf.columns if c in DB_COLUMNS]
-    cols_ignored = [c for c in gdf.columns if c not in DB_COLUMNS]
-    if cols_ignored:
-        Logger.warning(f"transform_wdpa : {len(cols_ignored)} columns will be ignored : {cols_ignored}")
-    gdf = gdf[cols_to_keep].copy()
+    protected_area = df[[
+        "site_pid", "site_id",
+        "desig_eng", "desig_type", "iucn_cat",
+        "realm", "no_take",
+        "no_tk_area", "rep_area", "gis_area",
+        "rep_m_area", "gis_m_area",
+        "own_type", "geometry"
+    ]]
 
-    enum_values = _fetch_enum_values()
+    context.pa_infos = pa_infos
+    context.protected_area = protected_area
 
-    for col, valid_set in enum_values.items():
-        if col not in gdf.columns:
-            continue
+    Logger.info(f"pa_infos: {len(pa_infos):,}")
+    Logger.info(f"protected_area: {len(protected_area):,}")
 
-        mask_invalid = ~gdf[col].isin(valid_set) & gdf[col].notna()
-        n_invalid = mask_invalid.sum()
-
-        if n_invalid > 0:
-            Logger.warning(f"Column '{col}' : {n_invalid} invalid value(s) found -> NULL.")
-
-        gdf.loc[mask_invalid, col] = None
-
-    gdf["SITE_ID"]   = pd.to_numeric(gdf["SITE_ID"],    errors="coerce").astype("Int32")
-    gdf["STATUS_YR"] = pd.to_numeric(gdf["STATUS_YR"],  errors="coerce").astype("Int32")
-
-    n_null_geom = gdf["geometry"].isna().sum()
-    if n_null_geom:
-        Logger.warning(f"transform_wdpa : {n_null_geom} null geometry removed.")
-        gdf = gdf.dropna(subset=["geometry"])
-
-    Logger.info(f"transform_wdpa : {len(gdf):,} lines after transformation.")
-    context.df = gdf
     return context

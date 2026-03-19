@@ -1,5 +1,3 @@
-import os
-import pandas as pd
 import zipfile
 from pathlib import Path
 
