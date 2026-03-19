@@ -68,10 +68,10 @@ load-protected-areas:
   steps:
     - func: load_wdpa_polygons
       kwargs:
-        batch_size: 100000
+        batch_size: 10000
     - func: load_wdpa_points
       kwargs:
-        batch_size: 100000
+        batch_size: 10000
 
 test:
   desc: "Test pipeline"
