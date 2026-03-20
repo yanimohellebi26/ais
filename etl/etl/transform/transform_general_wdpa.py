@@ -40,6 +40,8 @@ def clean_wdpa(context: PipelineContext) -> PipelineContext:
     if "geometry" in df.columns:
         Logger.info("-> Cleaning geometry column...")
 
+        df["geometry"] = df["geometry"].simplify(tolerance=0.001, preserve_topology=True)
+
         invalid_mask = ~df["geometry"].is_valid
         invalid_count = invalid_mask.sum()
 
