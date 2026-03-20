@@ -1,0 +1,84 @@
+import React, { useCallback } from "react";
+import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
+import { useProtectedArea } from "../hooks/useProtectedArea";
+import { useMapHover } from "../hooks/useMapHover";
+import ProtectedAreaTooltip from "../tooltips/ProtectedAreaTooltip";
+
+const IUCN_COLORS = [
+    'match', ['get', 'iucn_cat'],
+    'Ia', '#8B0000',
+    'Ib', '#B22222',
+    'II', '#D32F2F',
+    'III', '#FF4500',
+    'IV', '#FF9800',
+    'V', '#87CEEB',
+    'VI', '#000080',
+    'Not Applicable', '#A9A9A9',
+    'Not Assigned', '#808080',
+    'Not Reported', '#D3D3D3',
+    '#555555'
+];
+
+const ProtectedAreaLayer: React.FC = () => {
+    const { current: map } = useMap();
+    const geoJson = useProtectedArea(map);
+
+    const { tooltipData } = useMapHover<any>(
+        map,
+        "pa-fill", // On écoute le hover sur le remplissage des polygones
+        "pa-source",
+        useCallback((props: any) => props, [])
+    );
+
+    if (!geoJson) return null;
+
+    return (
+        <>
+            <Source id="pa-source" type="geojson" data={geoJson}>
+
+                <Layer
+                    id="pa-fill"
+                    type="fill"
+                    filter={['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']]}
+                    paint={{
+                        "fill-color": IUCN_COLORS,
+                        "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.5, 0.3]
+                    }}
+                />
+
+                <Layer
+                    id="pa-outline"
+                    type="line"
+                    filter={['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']]}
+                    paint={{
+                        "line-color": IUCN_COLORS,
+                        "line-width": 1,
+                        "line-opacity": 0.8
+                    }}
+                />
+
+                <Layer
+                    id="pa-points"
+                    type="circle"
+                    filter={['==', ['geometry-type'], 'Point']}
+                    paint={{
+                        "circle-radius": 6,
+                        "circle-color": IUCN_COLORS,
+                        "circle-stroke-width": 1,
+                        "circle-stroke-color": "#ffffff"
+                    }}
+                />
+            </Source>
+
+            {tooltipData && (
+                <ProtectedAreaTooltip 
+                    data={tooltipData.data} 
+                    x={tooltipData.x} 
+                    y={tooltipData.y} 
+                />
+            )}
+        </>
+    );
+};
+
+export default ProtectedAreaLayer;
