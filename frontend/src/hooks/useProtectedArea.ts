@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { MapLibreEvent } from "maplibre-gl";
-import { useApi } from "../../../hooks/useApi";
+import { useApi } from "./useApi";
 
 
 export const useProtectedArea = (map: any) => {
