@@ -1,16 +1,31 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Props {
     data: any;
     x: number;
     y: number;
+    placement?: "top" | "bottom";
 }
 
-const ProtectedAreaTooltip: React.FC<Props> = ({ data, x, y }) => {
+const ProtectedAreaTooltip: React.FC<Props> = ({ data, x, y, placement = "top"}) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [size, setSize] = useState({ width: 0, height: 0 });
+
+    useEffect(() => {
+        if (ref.current) {
+            setSize({ width: ref.current.offsetWidth, height: ref.current.offsetHeight });
+        }
+    }, [data]);
+
+    const OFFSET = 12;
+
+    const { left, top } = placement === "bottom" ? { left: x - size.width - OFFSET, top: y + OFFSET }
+                                                 : { left: x, top: y - size.height - OFFSET };
     return (
         <div 
+            ref={ref}
             className="fixed z-[100] p-3 bg-base-100 border border-accent rounded-lg shadow-xl pointer-events-none text-xs min-w-[200px]"
-            style={{ left: x + 10, top: y + 10 }}
+            style={{ left: left, top: top }}
         >
             <div className="font-bold text-sm mb-1 border-b border-base-300 pb-1">{data.name} <span className="text-secondary">({data.iso3})</span></div>
             <div className="grid grid-cols-2 gap-x-2 gap-y-1">
