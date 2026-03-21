@@ -4,20 +4,26 @@ import { useProtectedArea } from "../../../hooks/useProtectedArea";
 import { useMapHover } from "../hooks/useMapHover";
 import ProtectedAreaTooltip from "../tooltips/ProtectedAreaTooltip";
 
+const IUCN_COLOR_MAP: Record<string, string> = {
+    'Ia':             '#8B0000',
+    'Ib':             '#B22222',
+    'II':             '#D32F2F',
+    'III':            '#FF4500',
+    'IV':             '#FF9800',
+    'V':              '#87CEEB',
+    'VI':             '#000080',
+    'Not Applicable': '#A9A9A9',
+    'Not Assigned':   '#808080',
+    'Not Reported':   '#D3D3D3',
+};
+
 const IUCN_COLORS = [
     'match', ['get', 'iucn_cat'],
-    'Ia', '#8B0000',
-    'Ib', '#B22222',
-    'II', '#D32F2F',
-    'III', '#FF4500',
-    'IV', '#FF9800',
-    'V', '#87CEEB',
-    'VI', '#000080',
-    'Not Applicable', '#A9A9A9',
-    'Not Assigned', '#808080',
-    'Not Reported', '#D3D3D3',
+    ...Object.entries(IUCN_COLOR_MAP).flat(),
     '#555555'
 ];
+
+const getIucnColor = (iucn_cat: string) => IUCN_COLOR_MAP[iucn_cat] ?? '#555555';
 
 const ProtectedAreaLayer: React.FC = () => {
     const { current: map } = useMap();
@@ -83,6 +89,7 @@ const ProtectedAreaLayer: React.FC = () => {
                     x={tooltipData.x} 
                     y={tooltipData.y}
                     placement="top"
+                    color={getIucnColor(tooltipData.data.iucn_cat)}
                 />
             )}
 
@@ -92,6 +99,7 @@ const ProtectedAreaLayer: React.FC = () => {
                     x={pointTooltip.x} 
                     y={pointTooltip.y} 
                     placement="bottom"
+                    color={getIucnColor(pointTooltip.data.iucn_cat)}
                 />
             )}
         </>
