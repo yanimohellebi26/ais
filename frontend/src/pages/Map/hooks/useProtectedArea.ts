@@ -18,7 +18,7 @@ export const useProtectedArea = (map: any) => {
                 method: "GET",
                 responseType: "json"
             });
-            setGeoJson(data);
+            setGeoJson(typeof data === "string" ? JSON.parse(data) : data);
         } catch (error) {
             console.error("Error fetching protected area data:", error);
         }
