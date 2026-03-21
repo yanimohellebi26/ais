@@ -45,7 +45,7 @@ public interface TrafficDensityRepository extends JpaRepository<PositionVessel, 
             ORDER BY p.vessel_id, p.base_date_time DESC
         ),
         snapped AS (
-            SELECT ST_SnapToGrid(p.geom::geometry, :gridSize) AS cell
+            SELECT ST_SnapToGrid(geom::geometry, :gridSize) AS cell
             FROM latest_position_vessel
         )
         SELECT
