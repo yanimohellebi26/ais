@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
-import { useProtectedArea } from "../hooks/useProtectedArea";
+import { useProtectedArea } from "../../../hooks/useProtectedArea";
 import { useMapHover } from "../hooks/useMapHover";
 import ProtectedAreaTooltip from "../tooltips/ProtectedAreaTooltip";
 
@@ -25,7 +25,14 @@ const ProtectedAreaLayer: React.FC = () => {
 
     const { tooltipData } = useMapHover<any>(
         map,
-        "pa-fill", // On écoute le hover sur le remplissage des polygones
+        "pa-fill",
+        "pa-source",
+        useCallback((props: any) => props, [])
+    );
+
+    const { tooltipData: pointTooltip } = useMapHover<any>(
+        map,
+        "pa-points",
         "pa-source",
         useCallback((props: any) => props, [])
     );
@@ -74,7 +81,17 @@ const ProtectedAreaLayer: React.FC = () => {
                 <ProtectedAreaTooltip 
                     data={tooltipData.data} 
                     x={tooltipData.x} 
-                    y={tooltipData.y} 
+                    y={tooltipData.y}
+                    placement="top"
+                />
+            )}
+
+            {pointTooltip && (
+                <ProtectedAreaTooltip 
+                    data={pointTooltip.data} 
+                    x={pointTooltip.x} 
+                    y={pointTooltip.y} 
+                    placement="bottom"
                 />
             )}
         </>
