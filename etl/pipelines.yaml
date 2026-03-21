@@ -63,6 +63,14 @@ load-ports:
       kwargs:
         handle_missing: "skip"
 
+load-trajectories:
+  desc: "Calculate and insert vessel trajectories from positions"
+  steps:
+    - func: compute_trajectories_db
+      kwargs: {}
+
+
+
 test:
   desc: "Test pipeline"
   steps:
