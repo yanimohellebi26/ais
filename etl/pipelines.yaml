@@ -63,9 +63,13 @@ load-ports:
       kwargs:
         handle_missing: "skip"
 
-load-protected-areas:
-  desc: "Load protected areas in database"
+update-protected-areas:
+  desc: "Update protected areas in database"
   steps:
+    - func: decompress_WDPA_zip
+      kwargs: {}
+    - func: truncate_table_wdpa
+      kwargs: {}
     - func: extract_and_filter_wdpa
       kwargs: {}
     - func: clean_wdpa
@@ -80,6 +84,7 @@ load-protected-areas:
     - func: load_protected_area
       kwargs:
         batch_size: 5000
+    # ajouter la suppression des fichiers extraits
 
 test:
   desc: "Test pipeline"

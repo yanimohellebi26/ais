@@ -3,6 +3,10 @@ import pandas as pd
 from etl.models.context import PipelineContext
 from utils.logger import Logger
 
+from utils.db import engine
+from sqlalchemy import text
+
+
 """
 def filter_marine_coastal(context: PipelineContext) -> PipelineContext:
     df = context.df
@@ -122,5 +126,23 @@ def split_tables(context: PipelineContext):
 
     Logger.info(f"pa_infos: {len(pa_infos):,}")
     Logger.info(f"protected_area: {len(protected_area):,}")
+
+    return context
+
+def truncate_table_wdpa(context: PipelineContext) -> PipelineContext:
+    Logger.info("Truncating WDPA tables in the database...")
+    
+    with engine.begin() as conn:
+        try: 
+            sql = "TRUNCATE TABLE protected_area, pa_infos CASCADE"
+
+            conn.execute(text(sql))
+
+            Logger.success("WDPA tables truncated successfully.")
+
+        except Exception as e:
+            conn.rollback()
+            Logger.error(f"Error protected_area: {e}")
+            raise
 
     return context
