@@ -10,18 +10,6 @@ import os
 import shutil
 
 
-"""
-def filter_marine_coastal(context: PipelineContext) -> PipelineContext:
-    df = context.df
-    before = len(df)
-
-    df = df[df["REALM"].fillna("").str.contains("Marine|Coastal", case=False)]
-
-    Logger.info(f"Filter REALM: {len(df)}/{before} kept")
-
-    context.df = df
-    return context
-"""
 def clean_wdpa(context: PipelineContext) -> PipelineContext:
     df = context.df
 
