@@ -6,6 +6,10 @@ from utils.logger import Logger
 def compute_trajectories_db(context: PipelineContext, **kwargs):
     """
     compute daily trajectories and add in base.
+    min 5 point
+    min 1 mille nautique
+    mean => 45 noeuds
+    duration > 5h
     """
 
     query = """
@@ -19,6 +23,7 @@ def compute_trajectories_db(context: PipelineContext, **kwargs):
                 ST_MakeLine(geom::geometry ORDER BY base_date_time) as geom 
             FROM position_vessel
             GROUP BY vessel_id, DATE(base_date_time)
+            HAVING count(geom) >= 5
         )
         INSERT INTO trajectories (
             id, vessel_id, start_time, end_time, 
@@ -35,7 +40,10 @@ def compute_trajectories_db(context: PipelineContext, **kwargs):
             (ST_Length(geom::geography) / 1852.0) / NULLIF(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600.0, 0) AS avg_speed,
             geom
         FROM daily_positions
-        WHERE point_count > 1;
+        WHERE 
+            (ST_Length(geom::geography) / 1852.0) > 1
+            AND ((ST_Length(geom::geography) / 1852.0) / NULLIF(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600.0, 0)) < 45
+            AND (EXTRACT(EPOCH FROM (end_time - start_time)) / 60.0) > 300;
     """
 
     try:
