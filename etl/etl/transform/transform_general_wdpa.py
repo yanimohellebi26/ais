@@ -6,6 +6,9 @@ from utils.logger import Logger
 from utils.db import engine
 from sqlalchemy import text
 
+import os
+import shutil
+
 
 """
 def filter_marine_coastal(context: PipelineContext) -> PipelineContext:
@@ -146,3 +149,22 @@ def truncate_table_wdpa(context: PipelineContext) -> PipelineContext:
             raise
 
     return context
+
+def cleanup_wdpa_files(context: PipelineContext) -> PipelineContext:
+    path = "/data/downloads/WDPA_DATA"
+
+    Logger.info(f"Suppression du dossier temporaire {path} ...")
+
+    try: 
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            Logger.success(f"Le dossier {path} a été supprimé")
+
+        else: 
+            Logger.warning(f"Le dossier {path} n'existe pas")
+
+    except Exception as e:
+        Logger.error(f"Erreur lors de la suppression du dossier : {e}")
+
+    return context
+

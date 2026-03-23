@@ -84,7 +84,8 @@ update-protected-areas:
     - func: load_protected_area
       kwargs:
         batch_size: 5000
-    # ajouter la suppression des fichiers extraits
+    - func: cleanup_wdpa_files
+      kwargs: {}
 
 test:
   desc: "Test pipeline"
