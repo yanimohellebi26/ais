@@ -7,7 +7,7 @@ from utils.logger import Logger
 
 
 def extract_and_filter_wdpa(context: PipelineContext) -> PipelineContext:
-    base_path = Path("data/downloads/WDPA_DATA")
+    base_path = Path("data/downloads/WDPA_Data")
     gdfs = []
     
     total_rows_before = 0
@@ -58,38 +58,3 @@ def extract_and_filter_wdpa(context: PipelineContext) -> PipelineContext:
 
     context.df = gdf_final
     return context
-
-"""
-def extract_wdpa_shapefiles(context: PipelineContext) -> PipelineContext:
-    base_path = Path("/data/downloads/WDPA_DATA")
-
-    gdfs = []
-
-    for sub in ["0", "1", "2"]:
-        folder = base_path / sub
-
-        poly_files = list(folder.glob("*polygons*.shp"))
-        point_files = list(folder.glob("*points*.shp"))
-
-        for shp in poly_files + point_files:
-            Logger.info(f"Loading {shp}")
-            gdf = gpd.read_file(shp)
-            rows_before = len(gdf)
-
-            if gdf.crs != "EPSG:4326":
-                gdf = gdf.to_crs(4326)
-
-            gdfs.append(gdf)
-
-    if not gdfs:
-        Logger.warning("No shapefiles found")
-        context.df = pd.DataFrame()
-        return context
-
-    gdf_final = pd.concat(gdfs, ignore_index=True)
-
-    Logger.info(f"Loaded {len(gdf_final):,} rows from WDPA")
-
-    context.df = gdf_final
-    return context
-    """

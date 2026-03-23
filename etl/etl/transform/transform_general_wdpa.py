@@ -151,7 +151,7 @@ def truncate_table_wdpa(context: PipelineContext) -> PipelineContext:
     return context
 
 def cleanup_wdpa_files(context: PipelineContext) -> PipelineContext:
-    path = "/data/downloads/WDPA_DATA"
+    path = "/data/downloads/WDPA_Data"
 
     Logger.info(f"Suppression du dossier temporaire {path} ...")
 
