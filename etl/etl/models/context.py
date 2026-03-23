@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 import pandas as pd
 
@@ -15,5 +15,8 @@ class PipelineContext:
         df_db (Optional[pd.DataFrame]): DataFrame containing the current vessels from the database.
     """
     file: Optional[str] = None
-    df: Optional[pd.DataFrame] = None
-    df_db: Optional[pd.DataFrame] = None
+    df: Optional[pd.DataFrame] = field(default_factory=pd.DataFrame)
+    df_db: Optional[pd.DataFrame] = field(default_factory=pd.DataFrame)
+
+    pa_infos: Optional[pd.DataFrame] = field(default_factory=pd.DataFrame)
+    protected_area: Optional[pd.DataFrame] = field(default_factory=pd.DataFrame)

@@ -20,7 +20,7 @@ export const MapTooltip: React.FC<MapTooltipProps> = ({
     return (
         <div
             style={{
-                position: "absolute",
+                position: "fixed",
                 left: x + 10,
                 top: y + 10,
                 pointerEvents: "none",

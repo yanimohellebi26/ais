@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Map as MapIcon, Globe, Maximize, Minimize, Anchor } from "lucide-react";
+import { Map as MapIcon, Globe, Maximize, Minimize, Anchor, LandPlot } from "lucide-react";
 import { Map } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import VesselLayer from "../layers/VesselLayer";
@@ -13,6 +13,7 @@ import ToggleButton from "../../../components/BaseComponents/ToggleButton";
 import DatePicker from "../../../components/BaseComponents/DatePicker";
 import Slider from "../../../components/BaseComponents/Slider";
 import {DateRange} from "react-day-picker";
+import ProtectedAreaLayer from "../layers/ProtectedAreaLayer";
 
 const mapStyles = Object.values(MAP_STYLES);
 
@@ -23,6 +24,7 @@ const MapComponent: React.FC = () => {
         isFullscreen,
         selectedRange,
         showPorts,
+        showPA,
         selectedVesselId,
         selectedPositionId,
         targetDate,
@@ -32,6 +34,7 @@ const MapComponent: React.FC = () => {
         setIsFullscreen,
         setSelectedRange,
         setShowPorts,
+        setShowPA,
         handleVesselClick,
         handleUpdateFilters,
         handleReset
@@ -80,6 +83,15 @@ const MapComponent: React.FC = () => {
                     <span className="text-base-content/80">Toggle ports</span>
                 </div>
 
+                <div className="flex items-center gap-4">
+                    <ToggleButton
+                        onIcon={<LandPlot className="text-success" />}
+                        offIcon={<LandPlot className="text-error" />}
+                        onToggle={() => setShowPA((prev) => !prev)}
+                        isOn={showPA}
+                    />
+                    <span className="text-base-content/80">Toggle Protected Area</span>
+                </div>
                 <Slider
                     label="Limit Positions"
                     min={400}
@@ -129,6 +141,7 @@ const MapComponent: React.FC = () => {
                                 onVesselClick={handleVesselClick}
                             />
                             {showPorts && <PortLayer />}
+                            {showPA && <ProtectedAreaLayer />}
                         </div>
                     </Map>
                 </div>
