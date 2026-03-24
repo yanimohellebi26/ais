@@ -41,8 +41,20 @@ const FileUploader: React.FC<Props> = ({ onFileUploaded }) => {
 
     const handleUpload = async () => {
         if (!selectedFile) return;
-
+        
         setUploading(true);
+
+        const allowedExtensions = [".csv", ".zip"];
+
+        const isValid = allowedExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
+
+        if (!isValid) {
+            toast.error("Unsupported file format")
+            setSelectedFile(null);
+            setUploading(false);
+            return;
+        }
+
         try {
             const formData = new FormData();
             formData.append("file", selectedFile);
@@ -94,7 +106,7 @@ const FileUploader: React.FC<Props> = ({ onFileUploaded }) => {
                                 Drag and drop your file here
                             </p>
                             <p className="text-xs text-base-content/50">
-                                Supported formats: CSV
+                                Supported formats: CSV, ZIP
                             </p>
                         </div>
                         <label className="btn btn-sm btn-primary cursor-pointer flex-shrink-0">
@@ -103,7 +115,7 @@ const FileUploader: React.FC<Props> = ({ onFileUploaded }) => {
                                 type="file"
                                 className="hidden"
                                 onChange={handleFileSelect}
-                                accept=".csv,.xlsx,.xls"
+                                accept=".csv,.zip"
                             />
                         </label>
                     </div>

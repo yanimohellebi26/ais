@@ -66,12 +66,14 @@ async def get_files(auth=Depends(verify_api_key)):
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), auth=Depends(verify_api_key)):
     """
-    Upload a CSV file into the downloads directory.
-    Only allows files with .csv extension.
+    Upload a CSV or ZIP file into the downloads directory.
+    Accept files with .csv, .zip
     """
+    allowed_extensions = (".csv", ".zip")
+
     try:
-        if not file.filename.lower().endswith(".csv"):
-            raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+        if not file.filename.lower().endswith(allowed_extensions):
+            raise HTTPException(status_code=400, detail="Only CSV or ZIP files are allowed")
 
         if not os.path.exists(DOWNLOADS_DIR):
             os.makedirs(DOWNLOADS_DIR, exist_ok=True)
