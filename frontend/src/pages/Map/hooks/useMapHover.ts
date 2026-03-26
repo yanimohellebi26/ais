@@ -44,18 +44,24 @@ export const useMapHover = <T>(
 
                 hoverRef.current = featureId;
 
+                const canvas = map.getCanvas();
+                const rect = canvas.getBoundingClientRect();
+
                 // Update tooltip
                 setTooltipData({
                     data: parseFeature(feature.properties),
-                    x: e.point.x,
-                    y: e.point.y
+                    x: rect.left + e.point.x,
+                    y: rect.top + e.point.y
                 });
             } else {
                 // Update position only
+                const canvas = map.getCanvas();
+                const rect = canvas.getBoundingClientRect();
+
                 setTooltipData((prev) => prev ? {
                     ...prev,
-                    x: e.point.x,
-                    y: e.point.y
+                    x: rect.left + e.point.x,
+                    y: rect.top + e.point.y
                 } : null);
             }
         } else {

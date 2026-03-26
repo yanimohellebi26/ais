@@ -28,6 +28,7 @@ celery = "^5.5.3"
 redis = "^7.0.0"
 python-multipart = "^0.0.20"
 psycopg2-binary = "^2.9.11"
+geopandas = "^1.1.2"
 
 [tool.poetry.group.arm64.dependencies]
 pg8000 = ">=1.31.5,<2.0.0"
