@@ -1,8 +1,6 @@
 import geopandas as gpd
 from etl.models.context import PipelineContext
 from utils.logger import Logger
-from utils.db import engine
-from sqlalchemy import text
 
 def transform_countries_raw(context: PipelineContext) -> PipelineContext:
     df = context.df
