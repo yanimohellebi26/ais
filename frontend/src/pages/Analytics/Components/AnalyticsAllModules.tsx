@@ -4,6 +4,7 @@ import {AnalyticsFilters} from "./interfaces";
 import TableFilters from "./TableFilters";
 import BaseModule from "../../../components/BaseComponents/BaseModule";
 import { useNavigate } from "react-router-dom";
+import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
@@ -29,6 +30,8 @@ const AnalyticsAllModules: React.FC = () => {
                     title="Traffic Density"
                     onClick={() => navigate("traffic-density")}
                 >
+                    <TrafficDensityWidget />
+
                     <p className="text-sm text-gray-500">
                         Visualize vessel density with a heatmap
                     </p>

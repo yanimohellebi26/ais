@@ -9,8 +9,9 @@ interface Props {
 }
 
 const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
-    const mapObj = useMap()?.current;
-    const geoJson = mapObj ? useTrafficDensity({ map: mapObj, gridSize, dateRange }) : null;
+    const { current: map } = useMap();
+    if (!map) return null;
+    const geoJson = useTrafficDensity({ map, gridSize, dateRange });
 
     if (!geoJson || geoJson.features.length == 0) return null;
 
@@ -66,16 +67,41 @@ const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
                     id="traffic-points"
                     type="circle"
                     minzoom={7}
-                    maxzoom={22}
                     paint={{
-                        "circle-radius":[
+                        "circle-radius": [
                             "interpolate",
                             ["linear"],
                             ["zoom"],
-                            7, 2,
-                            16, 10
+                            7,
+                            [
+                                "interpolate",
+                                ["linear"],
+                                ["get", "density"],
+                                0, 1,
+                                50, 4,
+                                200, 8
+                            ],
+                            16,
+                            [
+                                "interpolate",
+                                ["linear"],
+                                ["get", "density"],
+                                0, 5,
+                                50, 10,
+                                200, 20
+                            ]
                         ],
-                        "circle-color": "rgba(255,0,0,0.6)",
+                        "circle-color": [
+                            "interpolate",
+                            ["linear"],
+                            ["get", "density"],
+                            0, "rgba(33,102,172,0)",
+                            10, "rgb(103,169,207)",
+                            50, "rgb(209,229,240)",
+                            100, "rgb(253,219,199)",
+                            200, "rgb(239,138,98)",
+                            500, "rgb(178,24,43)"
+                        ],
                         "circle-stroke-color": "#fff",
                         "circle-stroke-width": 1,
                         "circle-opacity":[
