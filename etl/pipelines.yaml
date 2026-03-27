@@ -72,6 +72,8 @@ load-trajectories:
 update-countries:
   desc: "Update the countries with their geometries"
   steps:
+    - func: extract_countries_zip
+      kwargs: {}
     - func: transform_countries_raw
       kwargs: {}
     - func: update_country_geometries
