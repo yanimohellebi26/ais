@@ -5,8 +5,11 @@ from etl.models.context import PipelineContext
 from utils.logger import Logger
 
 def extract_countries_zip(context: PipelineContext) -> PipelineContext:
-    zip_path = "data/downloads/countries.zip"
-    extract_dir = "countries"
+    zip_path = "data/downloads/" + context.file
+    if not zip_path:
+        raise ValueError("No file provided in context")
+    
+    extract_dir = "data/downloads/countries"
     
     Logger.info(f"Extracting {zip_path} to {extract_dir}/...")
 
@@ -20,7 +23,7 @@ def extract_countries_zip(context: PipelineContext) -> PipelineContext:
         shp_file = next((f for f in os.listdir(extract_dir) if f.endswith('.shp')), None)
         
         if not shp_file:
-            raise FileNotFoundError("Aucun fichier .shp trouvé dans le dossier dézippé.")
+            raise FileNotFoundError("No .shp file found.")
 
         shp_path = os.path.join(extract_dir, shp_file)
         Logger.info(f"Loading shapefile: {shp_path}")
@@ -29,10 +32,10 @@ def extract_countries_zip(context: PipelineContext) -> PipelineContext:
 
         context.df = gdf
         
-        Logger.success(f"Extraction réussie : {len(gdf)} entités chargées.")
+        Logger.success(f"Extraction successful : {len(gdf)} loaded entities.")
 
     except Exception as e:
-        Logger.error(f"Erreur lors de l'extraction : {e}")
+        Logger.error(f"Extraction error : {e}")
         raise
 
     return context

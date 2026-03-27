@@ -6,30 +6,48 @@ from sqlalchemy import text
 def update_country_geometries(context: PipelineContext) -> PipelineContext:
     df = context.df
     
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("CREATE TEMP TABLE tmp_country_geom (code VARCHAR(3), geom GEOMETRY)"))
+    if df.empty:
+        Logger.warning("No file found.")
+        return context
 
-            df.to_postgis(
+    try:
+        Logger.info("Converting geometries to WKT and filtering...")
+        df_update = df.copy()
+        
+        df_update = df_update[df_update["code_alpha_3"] != "-99"]
+        df_update['wkt_geom'] = df_update['geometry'].apply(lambda g: g.wkt)
+        df_to_upload = df_update[['code_alpha_3', 'wkt_geom']]
+
+        with engine.begin() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS tmp_country_geom"))
+            conn.execute(text("""
+                CREATE TEMP TABLE tmp_country_geom (
+                    code_alpha_3 VARCHAR(3), 
+                    wkt_text TEXT
+                )
+            """))
+
+            df_to_upload.rename(columns={'wkt_geom': 'wkt_text'}).to_sql(
                 name="tmp_country_geom",
                 con=conn,
-                if_exists="replace",
+                if_exists="append",
                 index=False,
-                dtype={'geometry': 'Geometry'}
+                method="multi",
+                chunksize=1000
             )
 
             query = """
                 UPDATE country
-                SET geom = t.geometry
+                SET geom = ST_GeomFromText(t.wkt_text, 4326)
                 FROM tmp_country_geom t
                 WHERE country.code_alpha_3 = t.code_alpha_3;
             """
             result = conn.execute(text(query))
             
-            Logger.success(f"Mise à jour réussie : {result.rowcount} pays ont maintenant une géométrie.")
+            Logger.success(f"Update successful : {result.rowcount} updated countries.")
 
     except Exception as e:
-        Logger.error(f"Erreur lors de l'update des géométries : {e}")
+        Logger.error(f"Error loading : {e}")
         raise
 
     return context
