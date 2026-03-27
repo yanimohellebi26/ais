@@ -6,6 +6,7 @@ from cli.commands.generate_vessel_type import generate_vessel_type_cmd
 from cli.commands.hello import hello_cmd
 from cli.commands.load_csv import load_csv_cmd
 from cli.commands.run_pipeline import run_pipeline_cmd
+from cli.commands.extract import extract_wdpa_cmd
 
 
 @click.group()
@@ -20,3 +21,4 @@ cli.add_command(download_cmd)
 cli.add_command(run_pipeline_cmd)
 cli.add_command(clean_cmd)
 cli.add_command(load_csv_cmd)
+cli.add_command(extract_wdpa_cmd)
