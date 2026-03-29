@@ -69,6 +69,18 @@ load-trajectories:
     - func: compute_trajectories_db
       kwargs: {}
 
+update-countries:
+  desc: "Update the countries with their geometries"
+  steps:
+    - func: extract_countries_zip
+      kwargs: {}
+    - func: transform_countries_raw
+      kwargs: {}
+    - func: update_country_geometries
+      kwargs: {}
+    - func: cleanup_countries_files
+      kwargs: {}
+
 update-protected-areas:
   desc: "Update protected areas in database"
   steps:

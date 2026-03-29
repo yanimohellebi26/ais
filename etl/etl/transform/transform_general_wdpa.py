@@ -141,18 +141,18 @@ def truncate_table_wdpa(context: PipelineContext) -> PipelineContext:
 def cleanup_wdpa_files(context: PipelineContext) -> PipelineContext:
     path = "data/downloads/WDPA_Data"
 
-    Logger.info(f"Suppression du dossier temporaire {path} ...")
+    Logger.info(f"deleting temp folder {path} ...")
 
     try: 
         if os.path.exists(path):
             shutil.rmtree(path)
-            Logger.success(f"Le dossier {path} a été supprimé")
+            Logger.success(f"Folder {path} deleted")
 
         else: 
-            Logger.warning(f"Le dossier {path} n'existe pas")
+            Logger.warning(f"Folder {path} not found")
 
     except Exception as e:
-        Logger.error(f"Erreur lors de la suppression du dossier : {e}")
+        Logger.error(f"Error deleting : {e}")
 
     return context
 
