@@ -49,8 +49,8 @@ export const useTrafficDensity = ({ map, gridSize = 0.1, filters }: Props) => {
             params.set("gridSize", gridSize.toString());
 
             if (filters) {
-                if (filters.dateFrom) params.set("dateStart", filters.dateFrom);
-                if (filters.dateTo) params.set("dateEnd", filters.dateTo);
+                if (filters.dateFrom) params.set("startDate", filters.dateFrom);
+                if (filters.dateTo) params.set("endDate", filters.dateTo);
                 if (filters.vesselType) params.set("vesselType", filters.vesselType.toString());
                 if (filters.vesselGroup) params.set("vesselGroup", filters.vesselGroup);
                 if (filters.country) params.set("country", filters.country);
