@@ -2,19 +2,17 @@ import React, {  useState } from "react";
 import { Map } from "@vis.gl/react-maplibre";
 import TrafficDensityLayer from "../layers/TrafficDensityLayer";
 import {MAP_STYLES, MAP_CONFIG, DEFAULT_VIEW_STATE} from "../constants/mapStyles";
-import { DateRange } from "react-day-picker";
 import MapFilterDrawer from "./MapFilterDrawer";
-import DatePicker from "../../../components/BaseComponents/DatePicker";
+import {AnalyticsFilters} from "../../Analytics/Components/interfaces";
 
 
 interface Props {
-    dateRange?: DateRange;
+    filters?: AnalyticsFilters;
     gridSize?: number;
 }
 
-const TrafficDensityMap: React.FC<Props> = () => {
+const TrafficDensityMap: React.FC<Props> = ({ filters }) => {
 
-    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
     const [gridSize, setGridSize] = useState<number>(0.1);
 
     return (
@@ -37,11 +35,6 @@ const TrafficDensityMap: React.FC<Props> = () => {
                         Current value: <span className="font-semibold">{gridSize.toFixed(2)}°</span>
                     </div>
                 </div>
-                <DatePicker
-                    mode="range"
-                    selected={selectedRange}
-                    onSelect={(value) => setSelectedRange(value as DateRange | undefined)}
-                />
             </MapFilterDrawer>
             <Map
                 initialViewState={DEFAULT_VIEW_STATE}
@@ -50,7 +43,7 @@ const TrafficDensityMap: React.FC<Props> = () => {
                 maxZoom={MAP_CONFIG.MAX_ZOOM}
                 style={{ width: "100%", height: "100%" }}
             >
-                <TrafficDensityLayer dateRange={selectedRange} gridSize={gridSize} />
+                <TrafficDensityLayer filters={filters} gridSize={gridSize} />
             </Map>
         </div>
     );

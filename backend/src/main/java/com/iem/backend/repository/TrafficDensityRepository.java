@@ -17,7 +17,14 @@ public interface TrafficDensityRepository extends JpaRepository<PositionVessel, 
             SELECT
                 ST_SnapToGrid(lp.geom::geometry, :gridSize) AS cell
             FROM latest_positions lp
+            JOIN vessel v ON lp.vessel_id = v.id
+            JOIN vessel_type vt ON v.vessel_type_id = vt.id
+            JOIN mid m ON v.mid_code = m.mid
+            JOIN country c ON m.country_id = c.id
             WHERE lp.geom::geometry && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+            AND (:vesselType IS NULL OR vt.id = :vesselType)
+            AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
+            AND (:country IS NULL OR c.name = :country)
         )
         SELECT
             ST_Y(cell) + (:gridSize / 2) AS lat,
@@ -32,7 +39,10 @@ public interface TrafficDensityRepository extends JpaRepository<PositionVessel, 
             @Param("maxLat") double maxLat,
             @Param("minLon") double minLon,
             @Param("maxLon") double maxLon,
-            @Param("gridSize") double gridSize
+            @Param("gridSize") double gridSize,
+            @Param("vesselType") Integer vesselType,
+            @Param("vesselGroup") String vesselGroup,
+            @Param("country") String country
     );
 
     @Query(value = """
@@ -40,8 +50,15 @@ public interface TrafficDensityRepository extends JpaRepository<PositionVessel, 
             SELECT DISTINCT ON (p.vessel_id)
                 p.vessel_id, p.geom, p.base_date_time
             FROM position_vessel p
+            JOIN vessel v ON p.vessel_id = v.id
+            JOIN vessel_type vt ON v.vessel_type_id = vt.id
+            JOIN mid m ON v.mid_code = m.mid
+            JOIN country c ON m.country_id = c.id
             WHERE p.base_date_time BETWEEN :dateStart AND :dateEnd
                 AND p.geom::geometry && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+                AND (:vesselType IS NULL OR vt.id = :vesselType)
+                AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
+                AND (:country IS NULL OR c.name = :country)
             ORDER BY p.vessel_id, p.base_date_time DESC
         ),
         snapped AS (
@@ -63,6 +80,9 @@ public interface TrafficDensityRepository extends JpaRepository<PositionVessel, 
             @Param("maxLon") double maxLon,
             @Param("dateStart") Timestamp dateStart,
             @Param("dateEnd") Timestamp dateEnd,
-            @Param("gridSize") double gridSize
+            @Param("gridSize") double gridSize,
+            @Param("vesselType") Integer vesselType,
+            @Param("vesselGroup") String vesselGroup,
+            @Param("country") String country
     );
 }

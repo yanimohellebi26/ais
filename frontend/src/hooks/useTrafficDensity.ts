@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import { debounce } from "lodash";
 import { useApi } from "./useApi";
-import { DateRange } from "react-day-picker";
-import { format } from "date-fns";
 import { toast } from "react-toastify";
+import { AnalyticsFilters } from "../pages/Analytics/Components/interfaces";
 
 interface Props {
     map: any;
     gridSize?: number;
-    dateRange?: DateRange;
+    filters?: AnalyticsFilters;
 }
 
-export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
+export const useTrafficDensity = ({ map, gridSize = 0.1, filters }: Props) => {
     const apiFetch = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
     const [stats, setStats] = useState<{ min: number; max: number } | null>(null);
@@ -49,9 +48,12 @@ export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
             params.set("maxLon", maxLon.toString());
             params.set("gridSize", gridSize.toString());
 
-            if (dateRange?.from && dateRange?.to) {
-                params.set("dateStart", format(dateRange.from, "yyyy-MM-dd"));
-                params.set("dateEnd", format(dateRange.to, "yyyy-MM-dd"));
+            if (filters) {
+                if (filters.dateFrom) params.set("dateStart", filters.dateFrom);
+                if (filters.dateTo) params.set("dateEnd", filters.dateTo);
+                if (filters.vesselType) params.set("vesselType", filters.vesselType.toString());
+                if (filters.vesselGroup) params.set("vesselGroup", filters.vesselGroup);
+                if (filters.country) params.set("country", filters.country);
             }
 
             const url = `/api/v1/analytics/traffic-density?${params.toString()}`;
@@ -59,7 +61,7 @@ export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
             try {
                 const data = await apiFetch<any>(url);
                 if(!data || (data.features && data.features.length === 0)){
-                    toast.error("No data available");
+                    toast.error("No data available for heatmap");
                     setGeoJson(null);
                     return;
                 }
@@ -93,7 +95,7 @@ export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
             map.off("zoomend", debouncedFetch);
             debouncedFetch.cancel();
         };
-    },[map, apiFetch, gridSize, dateRange]);
+    },[map, apiFetch, gridSize, filters]);
 
     return { geoJson, stats };
 };

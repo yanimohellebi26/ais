@@ -1,20 +1,21 @@
 import React from "react";
 import { Source, Layer, useMap } from "@vis.gl/react-maplibre";
 import { useTrafficDensity } from "../../../hooks/useTrafficDensity";
-import { DateRange } from "react-day-picker";
 import { useMapHover } from "../hooks/useMapHover";
 import { useCallback } from "react";
 import TrafficDensityTooltip from "../tooltips/TrafficDensityTooltip";
+import {AnalyticsFilters} from "../../Analytics/Components/interfaces";
 
 interface Props {
-    dateRange?: DateRange;
     gridSize?: number;
+    filters?: AnalyticsFilters;
 }
 
-const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
+const TrafficDensityLayer: React.FC<Props> = ({ gridSize, filters }) => {
     const { current: map } = useMap();
     if (!map) return null;
-    const { geoJson, stats } = useTrafficDensity({ map, gridSize, dateRange });
+
+    const { geoJson, stats } = useTrafficDensity({ map, gridSize, filters });
 
     const { tooltipData } = useMapHover<any>(
         map,

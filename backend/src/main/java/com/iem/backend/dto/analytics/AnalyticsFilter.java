@@ -1,10 +1,10 @@
 package com.iem.backend.dto.analytics;
 
-import java.sql.Timestamp;
+import java.time.LocalDate;
 
 public record AnalyticsFilter(
-        Timestamp startDate,
-        Timestamp endDate,
+        LocalDate startDate,
+        LocalDate endDate,
         Integer vesselType,
         String vesselGroup,
         String country,

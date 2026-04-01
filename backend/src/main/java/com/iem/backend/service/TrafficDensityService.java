@@ -1,5 +1,6 @@
 package com.iem.backend.service;
 
+import com.iem.backend.dto.analytics.AnalyticsFilter;
 import com.iem.backend.dto.analytics.TrafficDensity;
 import com.iem.backend.repository.projection.TrafficDensityProjection;
 import com.iem.backend.entity.CustomUserDetails;
@@ -28,7 +29,7 @@ public class TrafficDensityService {
 
     public List<TrafficDensity> getTrafficDensity(
             CustomUserDetails currentUser, double minLat, double maxLat, double minLon, double maxLon,
-            Optional<LocalDate> dateStartOpt, Optional<LocalDate> dateEndOpt, double gridSize
+            double gridSize, AnalyticsFilter filters
     ){
         User user = currentUser.getUser();
         Role userRole = user.getRole();
@@ -43,12 +44,21 @@ public class TrafficDensityService {
 
         List<TrafficDensityProjection> results;
 
-        if(dateStartOpt.isEmpty() && dateEndOpt.isEmpty()){
+        LocalDate startDate = filters.startDate();
+        LocalDate endDate = filters.endDate();
+
+        if(startDate == null && endDate == null){
             //No Date, latest positions
-            results = trafficDensityRepository.findTrafficDensityLatest(minLat, maxLat, minLon, maxLon, gridSize);
+            results = trafficDensityRepository.findTrafficDensityLatest(
+                    minLat, maxLat, minLon, maxLon,
+                    gridSize,
+                    filters.vesselType(),
+                    filters.vesselGroup(),
+                    filters.country()
+            );
         } else {
-            LocalDate dateStart =  dateStartOpt.orElse(LocalDate.now());
-            LocalDate dateEnd =  dateEndOpt.orElse(dateStart);
+            LocalDate dateStart = startDate != null ? startDate : LocalDate.now();
+            LocalDate dateEnd = endDate != null ? endDate : dateStart;
 
             if (dateEnd.isBefore(dateStart)) {
                 throw new BadRequestException("End date must be after or equal to start date");
@@ -57,7 +67,14 @@ public class TrafficDensityService {
             Timestamp start = Timestamp.valueOf(dateStart.atStartOfDay());
             Timestamp end = Timestamp.valueOf(dateEnd.atTime(23, 59, 59));
 
-            results = trafficDensityRepository.findTrafficDensityByDate(minLat, maxLat, minLon, maxLon, start, end, gridSize);
+            results = trafficDensityRepository.findTrafficDensityByDate(
+                    minLat, maxLat, minLon, maxLon,
+                    start, end,
+                    gridSize,
+                    filters.vesselType(),
+                    filters.vesselGroup(),
+                    filters.country()
+            );
         }
 
         if (results.isEmpty()) {

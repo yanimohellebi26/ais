@@ -2,16 +2,16 @@ import TrafficDensityLayer from "../layers/TrafficDensityLayer";
 import React from "react";
 import { Map } from "@vis.gl/react-maplibre";
 import {MAP_STYLES, DEFAULT_VIEW_STATE_PREVIEW} from "../constants/mapStyles";
-import {DateRange} from "react-day-picker";
+import { AnalyticsFilters } from "../../Analytics/Components/interfaces";
 
 interface Props {
     gridSize?: number;
-    dateRange?: DateRange;
+    filters?: AnalyticsFilters;
     width?: number | string;
     height?: number | string;
 }
 
-const TrafficDensityWidget: React.FC<Props> = ({ gridSize = 0.1, dateRange, width = "100%", height = 150 }) => {
+const TrafficDensityWidget: React.FC<Props> = ({ gridSize = 0.1, filters, width = "100%", height = 150 }) => {
 
     return (
         <div style={{ width, height, borderRadius: "0.5rem", overflow: "hidden" }}>
@@ -21,7 +21,7 @@ const TrafficDensityWidget: React.FC<Props> = ({ gridSize = 0.1, dateRange, widt
                 interactive={false}
                 style={{ width: "100%", height: "100%" }}
             >
-                <TrafficDensityLayer gridSize={gridSize} dateRange={dateRange} />
+                <TrafficDensityLayer gridSize={gridSize} filters={filters} />
             </Map>
         </div>
     );
