@@ -36,3 +36,9 @@ export const VESSEL_COLORS = {
 export const PORT_COLORS = {
     NORMAL: "#b81b6f"
 } as const;
+
+export const DEFAULT_VIEW_STATE_PREVIEW = {
+    longitude: -100,
+    latitude: 36,
+    zoom: 1.5
+} as const;
