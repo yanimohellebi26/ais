@@ -14,11 +14,17 @@ interface Props {
 export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
     const apiFetch = useApi();
     const [geoJson, setGeoJson] = useState<any | null>(null);
+    const [stats, setStats] = useState<{ min: number; max: number } | null>(null);
 
     useEffect(() => {
         if (!map) return;
 
         let lastCenter: [number, number] | null = null;
+
+        const getPercentile = (arr: number[], p: number) => {
+            const index = Math.floor((p / 100) * arr.length);
+            return arr[index];
+        };
 
         const fetchDensity = async () => {
             const bounds = map.getBounds();
@@ -57,6 +63,18 @@ export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
                     setGeoJson(null);
                     return;
                 }
+                const densities = data.features
+                    .map((f: any) => f.properties.density)
+                    .sort((a: number, b: number) => a - b);
+
+                const min = getPercentile(densities, 5);
+                const max = getPercentile(densities, 95);
+
+                setStats({
+                    min,
+                    max: Math.max(min + 1, max)
+                });
+
                 setGeoJson(data);
             } catch (err){
                 toast.error("Failed to fetch positions.");
@@ -77,5 +95,5 @@ export const useTrafficDensity = ({map, gridSize = 0.1, dateRange}: Props) => {
         };
     },[map, apiFetch, gridSize, dateRange]);
 
-    return geoJson;
+    return { geoJson, stats };
 };

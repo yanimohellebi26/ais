@@ -14,7 +14,7 @@ interface Props {
 const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
     const { current: map } = useMap();
     if (!map) return null;
-    const geoJson = useTrafficDensity({ map, gridSize, dateRange });
+    const { geoJson, stats } = useTrafficDensity({ map, gridSize, dateRange });
 
     const { tooltipData } = useMapHover<any>(
         map,
@@ -27,7 +27,21 @@ const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
         }), [])
     );
 
-    if (!geoJson || geoJson.features.length == 0) return null;
+    if (!geoJson || !stats || geoJson.features.length == 0) return null;
+
+    const normalizedDensity: any = [
+        "/",
+        [
+            "-",
+            [
+                "max",
+                stats.min,
+                ["min", ["get", "density"], stats.max]
+            ],
+            stats.min
+        ],
+        Math.max(1, stats.max - stats.min)
+    ];
 
     return (
         <>
@@ -39,9 +53,9 @@ const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
                         "heatmap-weight": [
                             "interpolate",
                             ["linear"],
-                            ["get", "density"],
+                            normalizedDensity,
                             0, 0,
-                            100, 1
+                            1, 1
                         ],
                         "heatmap-radius": [
                             "interpolate",
@@ -90,31 +104,31 @@ const TrafficDensityLayer: React.FC<Props> = ({ dateRange, gridSize }) => {
                             [
                                 "interpolate",
                                 ["linear"],
-                                ["get", "density"],
-                                0, 1,
-                                50, 4,
-                                200, 8
+                                normalizedDensity,
+                                0, 2,
+                                0.5, 10,
+                                1, 30
                             ],
                             16,
                             [
                                 "interpolate",
                                 ["linear"],
-                                ["get", "density"],
+                                normalizedDensity,
                                 0, 5,
-                                50, 10,
-                                200, 20
+                                0.5, 20,
+                                1, 50
                             ]
                         ],
                         "circle-color": [
                             "interpolate",
                             ["linear"],
-                            ["get", "density"],
+                            normalizedDensity,
                             0, "rgba(33,102,172,0)",
-                            10, "rgb(103,169,207)",
-                            50, "rgb(209,229,240)",
-                            100, "rgb(253,219,199)",
-                            200, "rgb(239,138,98)",
-                            500, "rgb(178,24,43)"
+                            0.2, "rgb(103,169,207)",
+                            0.4, "rgb(209,229,240)",
+                            0.6, "rgb(253,219,199)",
+                            0.8, "rgb(239,138,98)",
+                            1, "rgb(178,24,43)"
                         ],
                         "circle-stroke-color": "#fff",
                         "circle-stroke-width": 1,
