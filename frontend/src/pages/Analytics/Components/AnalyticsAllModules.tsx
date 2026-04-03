@@ -2,10 +2,17 @@ import React, {useState} from "react";
 import Breadcrumbs from "../../../components/BaseComponents/Breadcrumbs";
 import {AnalyticsFilters} from "./interfaces";
 import TableFilters from "./TableFilters";
+import BaseModule from "../../../components/BaseComponents/BaseModule";
+import { useNavigate, useLocation } from "react-router-dom";
+import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
-    const [filters, setFilters] = useState<AnalyticsFilters>({})
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const initialFilters = (location.state as any)?.filters || {};
+    const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters)
 
     return (
         <>
@@ -21,7 +28,16 @@ const AnalyticsAllModules: React.FC = () => {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {/* les modules ici */}
+                <BaseModule
+                    title="Traffic Density"
+                    onClick={() => navigate("traffic-density", { state: { filters } })}
+                >
+                    <TrafficDensityWidget filters={filters} />
+
+                    <p className="text-sm text-gray-500">
+                        Visualize vessel density with a heatmap
+                    </p>
+                </BaseModule>
             </div>
 
         </>

@@ -146,7 +146,7 @@ services:
       context: ./etl
       dockerfile: docker/Dockerfile-worker
     container_name: ais-etl-worker
-    command: sh -c "celery -A worker.celery_app worker --loglevel=info --concurrency=$CELERY_CONCURRENCY"
+    command: celery -A worker.celery_app worker --loglevel=info --concurrency=${CELERY_CONCURRENCY}
     environment:
       # Database
       - POSTGRES_USER=${POSTGRES_USER}

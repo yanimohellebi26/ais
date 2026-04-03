@@ -63,6 +63,48 @@ load-ports:
       kwargs:
         handle_missing: "skip"
 
+load-trajectories:
+  desc: "Calculate and insert vessel trajectories from positions"
+  steps:
+    - func: compute_trajectories_db
+      kwargs: {}
+
+update-countries:
+  desc: "Update the countries with their geometries"
+  steps:
+    - func: extract_countries_zip
+      kwargs: {}
+    - func: transform_countries_raw
+      kwargs: {}
+    - func: update_country_geometries
+      kwargs: {}
+    - func: cleanup_countries_files
+      kwargs: {}
+
+update-protected-areas:
+  desc: "Update protected areas in database"
+  steps:
+    - func: decompress_WDPA_zip
+      kwargs: {}
+    - func: truncate_table_wdpa
+      kwargs: {}
+    - func: extract_and_filter_wdpa
+      kwargs: {}
+    - func: clean_wdpa
+      kwargs: {}
+    - func: map_to_mcd
+      kwargs: {}
+    - func: split_tables
+      kwargs: {}
+    - func: load_pa_infos
+      kwargs: 
+        batch_size: 5000
+    - func: load_protected_area
+      kwargs:
+        batch_size: 5000
+    - func: cleanup_wdpa_files
+      kwargs: {}
+
 test:
   desc: "Test pipeline"
   steps:

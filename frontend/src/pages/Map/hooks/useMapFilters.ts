@@ -7,6 +7,7 @@ export const useMapFilters = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
     const [showPorts, setShowPorts] = useState(true);
+    const [showPA, setShowPA] = useState(false);
     const [selectedVesselId, setSelectedVesselId] = useState<number | null>(null);
     const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null);
     const [targetDate, setTargetDate] = useState<string | undefined>();
@@ -38,6 +39,7 @@ export const useMapFilters = () => {
         isFullscreen,
         selectedRange,
         showPorts,
+        showPA,
         selectedVesselId,
         selectedPositionId,
         targetDate,
@@ -48,6 +50,7 @@ export const useMapFilters = () => {
         setIsFullscreen,
         setSelectedRange,
         setShowPorts,
+        setShowPA,
         // Handlers
         handleVesselClick,
         handleUpdateFilters,
