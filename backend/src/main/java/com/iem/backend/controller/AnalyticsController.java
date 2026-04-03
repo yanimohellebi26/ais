@@ -2,8 +2,10 @@ package com.iem.backend.controller;
 
 import com.iem.backend.common.geoJson.GeoJsonFeatureCollection;
 import com.iem.backend.dto.analytics.AnalyticsFilter;
+import com.iem.backend.dto.analytics.CountryPresenceDetails;
 import com.iem.backend.dto.analytics.TrafficDensity;
 import com.iem.backend.entity.CustomUserDetails;
+import com.iem.backend.service.AnalyticsService;
 import com.iem.backend.service.GeoJsonService;
 import com.iem.backend.service.TrafficDensityService;
 import org.locationtech.jts.geom.Coordinate;
@@ -20,12 +22,14 @@ import java.util.List;
 public class AnalyticsController {
 
     private final TrafficDensityService trafficDensityService;
+    private final AnalyticsService analyticsService;
     private final GeoJsonService geoJsonService;
 
     private static final GeometryFactory GF = new GeometryFactory();
 
-    public AnalyticsController(TrafficDensityService trafficDensityService, GeoJsonService geoJsonService) {
+    public AnalyticsController(TrafficDensityService trafficDensityService,AnalyticsService analyticsService ,GeoJsonService geoJsonService) {
         this.trafficDensityService = trafficDensityService;
+        this.analyticsService = analyticsService;
         this.geoJsonService = geoJsonService;
     }
 
@@ -56,5 +60,14 @@ public class AnalyticsController {
                 td -> td,
                 td -> GF.createPoint(new Coordinate(td.lon(), td.lat()))
         ));
+    }
+
+    @PostMapping("/country-presence")
+    public ResponseEntity<List<CountryPresenceDetails>> getCountryPresence(
+            @RequestBody AnalyticsFilter filter,
+            @RequestParam(defaultValue = "10") int topN,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.ok(analyticsService.getCountryPresence(currentUser, filter, topN));
     }
 }
