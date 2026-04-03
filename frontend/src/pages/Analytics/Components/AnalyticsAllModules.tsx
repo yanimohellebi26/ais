@@ -5,6 +5,7 @@ import TableFilters from "./TableFilters";
 import BaseModule from "../../../components/BaseComponents/BaseModule";
 import { useNavigate, useLocation } from "react-router-dom";
 import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
+import CountryPresenceWidget from "../../Map/components/CountryPresenceWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
@@ -36,6 +37,15 @@ const AnalyticsAllModules: React.FC = () => {
 
                     <p className="text-sm text-gray-500">
                         Visualize vessel density with a heatmap
+                    </p>
+                </BaseModule>
+                <BaseModule
+                    title="Country Presence"
+                    onClick={() => navigate("country-presence", { state: { filters } })}
+                >
+                    <CountryPresenceWidget filters={filters} />
+                    <p className="text-sm text-gray-500">
+                        Top countries by number of vessels detected
                     </p>
                 </BaseModule>
             </div>
