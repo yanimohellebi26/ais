@@ -4,7 +4,14 @@ import { toast } from "react-toastify";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useLoading } from "../../../context/LoadingContext";
 import {AnalyticsFilters} from "./interfaces"
-
+import DatePicker from "../../../components/BaseComponents/DatePicker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { Map as MapLibreMap, Source, Layer } from "@vis.gl/react-maplibre";
+import { MapMouseEvent } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { MAP_STYLES, DEFAULT_VIEW_STATE_PREVIEW } from "../../Map/constants/mapStyles";
+import { createRadiusCircle } from "../../Map/utils/mapGeometry";
 
 interface Props {
     filters: AnalyticsFilters;
@@ -18,9 +25,7 @@ const TableFilters: React.FC<Props> = ({
                                                onReset
                                            }) => {
 
-    const [localFilters, setLocalFilters] =
-        useState<AnalyticsFilters>(filters);
-
+    const [localFilters, setLocalFilters] = useState<AnalyticsFilters>(filters);
     const [isExpanded, setIsExpanded] = useState(true);
     const [countries, setCountries] = useState<any[]>([]);
     const [vesselTypes, setVesselTypes] = useState<any[]>([]);
@@ -118,6 +123,57 @@ const TableFilters: React.FC<Props> = ({
         onReset();
     };
 
+    const dateRange: DateRange | undefined = useMemo(() => {
+        const from = localFilters.dateFrom ? new Date(localFilters.dateFrom) : undefined;
+        const to = localFilters.dateTo ? new Date(localFilters.dateTo) : undefined;
+        return from || to ? { from, to } : undefined;
+    }, [localFilters.dateFrom, localFilters.dateTo]);
+
+    const handleDateSelect = (value: Date | DateRange | undefined) => {
+        const range = value as DateRange | undefined;
+        setLocalFilters(prev => ({
+            ...prev,
+            dateFrom: range?.from ? format(range.from, "yyyy-MM-dd") : undefined,
+            dateTo: range?.to ? format(range.to, "yyyy-MM-dd") : undefined,
+        }));
+    };
+
+    const handleMapClick = (e: MapMouseEvent) => {
+        const { lng, lat } = e.lngLat;
+        setLocalFilters(prev => ({
+            ...prev,
+            latitude: Math.round(lat * 1e6) / 1e6,
+            longitude: Math.round(lng * 1e6) / 1e6,
+        }));
+    };
+
+    const hasMarker = localFilters.latitude != null && localFilters.longitude != null;
+
+    const markerGeoJson = useMemo(() => {
+        if (!hasMarker) return null;
+        return {
+            type: "FeatureCollection" as const,
+            features: [{
+                type: "Feature" as const,
+                geometry: {
+                    type: "Point" as const,
+                    coordinates: [localFilters.longitude!, localFilters.latitude!]
+                },
+                properties: {}
+            }]
+        };
+    }, [localFilters.latitude, localFilters.longitude]);
+
+    const radiusGeoJson = useMemo(() => {
+        if (!hasMarker || !localFilters.radius) return null;
+        return createRadiusCircle(
+            localFilters.longitude!,
+            localFilters.latitude!,
+            localFilters.radius / 1000
+        );
+    }, [localFilters.latitude, localFilters.longitude, localFilters.radius]);
+
+
     const activeFiltersCount =
         Object.values(localFilters).filter(v => v !== undefined && v !== "").length;
 
@@ -151,39 +207,6 @@ const TableFilters: React.FC<Props> = ({
 
                 {isExpanded && (
                     <div className="space-y-4 mt-4">
-
-                        {/* DATES */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Date From</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    className="input input-bordered input-sm w-full"
-                                    value={localFilters.dateFrom || ""}
-                                    max={localFilters.dateTo || undefined}
-                                    onChange={e =>
-                                        handleChange("dateFrom", e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Date To</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    className="input input-bordered input-sm w-full"
-                                    value={localFilters.dateTo || ""}
-                                    min={localFilters.dateFrom || undefined}
-                                    onChange={e =>
-                                        handleChange("dateTo", e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
 
                         {/* COUNTRY + VESSEL TYPE */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -231,63 +254,135 @@ const TableFilters: React.FC<Props> = ({
 
                         </div>
 
-                        {/* LATITUDE / LONGITUDE / RADIUS SUR UNE LIGNE */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* DATES */}
                             <div className="form-control">
                                 <label className="label">
-                                    <span className="label-text">Latitude</span>
+                                    <span className="label-text">Date Range</span>
                                 </label>
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-full"
-                                    value={localFilters.latitude || ""}
-                                    onChange={e =>
-                                        handleChange(
-                                            "latitude",
-                                            e.target.value
-                                                ? parseFloat(e.target.value)
-                                                : undefined
-                                        )
-                                    }
-                                />
+
+                                <div className="bg-base-100 border border-base-300 rounded-xl p-3">
+                                    <DatePicker
+                                        mode="range"
+                                        selected={dateRange}
+                                        onSelect={handleDateSelect}
+                                    />
+                                </div>
+
+                                {(localFilters.dateFrom || localFilters.dateTo) && (
+                                    <button
+                                        className="btn btn-xs btn-ghost mt-2 self-start"
+                                        onClick={() => {
+                                            handleChange("dateFrom", undefined);
+                                            handleChange("dateTo", undefined);
+                                        }}
+                                    >
+                                        Clear dates
+                                    </button>
+                                )}
                             </div>
 
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Longitude</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-full"
-                                    value={localFilters.longitude || ""}
-                                    onChange={e =>
-                                        handleChange(
-                                            "longitude",
-                                            e.target.value
-                                                ? parseFloat(e.target.value)
-                                                : undefined
-                                        )
-                                    }
-                                />
-                            </div>
 
+                            {/* LOCATION */}
                             <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text">Radius (meters)</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    className="input input-bordered input-sm w-full"
-                                    value={localFilters.radius || ""}
-                                    onChange={e =>
-                                        handleChange(
-                                            "radius",
-                                            e.target.value
-                                                ? parseFloat(e.target.value)
-                                                : undefined
-                                        )
-                                    }
-                                />
+                                <div className="flex items-center justify-between">
+                                    <label className="label">
+                                        <span className="label-text">Location</span>
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        {hasMarker && (
+                                            <span className="text-xs text-base-content/50">
+                                                {localFilters.latitude?.toFixed(4)}, {localFilters.longitude?.toFixed(4)}
+                                            </span>
+                                        )}
+                                        {hasMarker && (
+                                            <button
+                                                className="btn btn-xs btn-ghost text-error"
+                                                onClick={() => {
+                                                    handleChange("latitude", undefined);
+                                                    handleChange("longitude", undefined);
+                                                    handleChange("radius", undefined);
+                                                }}
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="mt-2 space-y-2">
+                                    <div
+                                        className="rounded-xl overflow-hidden border border-base-300"
+                                        style={{ height: 250 }}
+                                    >
+                                        <MapLibreMap
+                                            initialViewState={DEFAULT_VIEW_STATE_PREVIEW}
+                                            mapStyle={MAP_STYLES.STANDARD}
+                                            style={{ width: "100%", height: "100%" }}
+                                            onClick={handleMapClick}
+                                            cursor="crosshair"
+                                        >
+                                            {markerGeoJson && (
+                                                <Source id="marker" type="geojson" data={markerGeoJson}>
+                                                    <Layer
+                                                        id="marker-layer"
+                                                        type="circle"
+                                                        paint={{
+                                                            "circle-radius": 7,
+                                                            "circle-color": "#ef4444",
+                                                            "circle-stroke-width": 2,
+                                                            "circle-stroke-color": "#ffffff",
+                                                        }}
+                                                    />
+                                                </Source>
+                                            )}
+
+                                            {radiusGeoJson && (
+                                                <Source id="radius" type="geojson" data={radiusGeoJson}>
+                                                    <Layer
+                                                        id="radius-fill"
+                                                        type="fill"
+                                                        paint={{
+                                                            "fill-color": "#3b82f6",
+                                                            "fill-opacity": 0.1,
+                                                        }}
+                                                    />
+                                                    <Layer
+                                                        id="radius-outline"
+                                                        type="line"
+                                                        paint={{
+                                                            "line-color": "#3b82f6",
+                                                            "line-width": 2,
+                                                        }}
+                                                    />
+                                                </Source>
+                                            )}
+                                        </MapLibreMap>
+                                    </div>
+
+                                    {hasMarker && (
+                                        <div className="form-control">
+                                            <label className="label"><span className="label-text">
+                                                    Radius: {localFilters.radius
+                                                ? `${(localFilters.radius / 1000).toFixed(0)} km`
+                                                : "none"}
+                                                </span>
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min={5000}
+                                                max={1000000}
+                                                step={5000}
+                                                value={localFilters.radius ?? 0}
+                                                className="range range-primary range-sm"
+                                                onChange={e => handleChange(
+                                                    "radius",
+                                                    Number(e.target.value) === 0 ? undefined : Number(e.target.value)
+                                                )}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
