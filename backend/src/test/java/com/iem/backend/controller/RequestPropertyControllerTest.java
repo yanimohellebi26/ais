@@ -164,7 +164,7 @@ class RequestPropertyControllerTest {
                 .andExpect(jsonPath("$.content[0].id").value(rp.getId()))
                 .andExpect(jsonPath("$.content[0].username").value(user.getUsername()))
                 .andExpect(jsonPath("$.content[0].userEmail").value(user.getEmail()))
-                .andExpect(jsonPath("$.content[0].mmsi").value(vessel.getMmsi()))
+                .andExpect(jsonPath("$.content[0].vesselId").value(vessel.getId()))
                 .andExpect(jsonPath("$.content[0].fileName").value(file.getOriginalFilename()));
     }
 
