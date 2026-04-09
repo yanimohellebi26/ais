@@ -7,6 +7,7 @@ import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.ApiExceptions;
 import com.iem.backend.repository.VesselTypeStatsRepository;
+import com.iem.backend.repository.projection.VesselTypeStatsProjection;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -24,13 +25,14 @@ public class VesselTypeStatsService {
         this.vesselTypeStatsRepository = vesselTypeStatsRepository;
     }
 
-    public List<VesselTypeStats> getVesselTypeStats(
+    public List<VesselTypeStats> getAllVesselTypeStats(
             CustomUserDetails currentUser, AnalyticsFilter filters
     ) {
         User user = currentUser.getUser();
         Role userRole = user.getRole();
 
         checkAccess(userRole);
+        validateGeoFilter(filters);
 
         Timestamp startTimestamp = null;
         Timestamp endTimestamp = null;
@@ -50,24 +52,47 @@ public class VesselTypeStatsService {
             endTimestamp = Timestamp.valueOf(dateEnd.atTime(23, 59, 59));
         }
 
-        return vesselTypeStatsRepository.getVesselTypeStatistics(
-                startTimestamp, endTimestamp,
-                filters.vesselType(),
-                filters.vesselGroup(),
-                filters.country(),
-                filters.latitude(),
-                filters.longitude(),
-                filters.radius()
-        ).stream()
-        .map(p -> new VesselTypeStats(
-                p.getVesselTypeId(),
-                p.getVesselTypeDescription(),
-                p.getVesselGroup(),
-                p.getTrajectoryCount(),
-                p.getTotalDistanceKm(),
-                p.getAverageSpeedKmh()
-       ))
-       .toList();
+        boolean hasDate = startTimestamp != null && endTimestamp != null;
+        boolean hasGeo = filters.latitude() != null;
+
+        List<VesselTypeStatsProjection> results;
+
+        if (hasDate) {
+            if (hasGeo) {
+                results = vesselTypeStatsRepository.getVesselTypeStatsByDateInRadius(
+                        startTimestamp, endTimestamp,
+                        filters.latitude(), filters.longitude(), filters.radius(),
+                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                );
+            } else {
+                results = vesselTypeStatsRepository.getVesselTypeStatsByDate(
+                        startTimestamp, endTimestamp,
+                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                );
+            }
+        } else {
+            if (hasGeo) {
+                results = vesselTypeStatsRepository.getVesselTypeStatsInRadius(
+                        filters.latitude(), filters.longitude(), filters.radius(),
+                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                );
+            } else {
+                results = vesselTypeStatsRepository.getVesselTypeStatsAll(
+                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                );
+            }
+        }
+
+        return results.stream()
+                .map(p -> new VesselTypeStats(
+                        p.getVesselTypeId(),
+                        p.getVesselTypeDescription(),
+                        p.getVesselGroup(),
+                        p.getTrajectoryCount(),
+                        p.getTotalDistanceKm(),
+                        p.getAverageSpeedKmh()
+                ))
+                .toList();
     }
 
     private void checkAccess(Role role) {
@@ -77,6 +102,15 @@ public class VesselTypeStatsService {
         };
         if(!isFullAccess) {
             throw new AccessDeniedException("Unauthorized Role");
+        }
+    }
+
+    private void validateGeoFilter(AnalyticsFilter filters) {
+        boolean hasGeo = filters.latitude() != null && filters.longitude() != null && filters.radius() != null;
+        boolean hasPartialGeo = filters.latitude() != null || filters.longitude() != null || filters.radius() != null;
+
+        if (hasPartialGeo && !hasGeo) {
+            throw new ApiExceptions.BadRequestException("Latitude, longitude and radius must all be provided together");
         }
     }
 }

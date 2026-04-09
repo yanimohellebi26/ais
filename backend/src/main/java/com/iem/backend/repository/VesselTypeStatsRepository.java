@@ -3,14 +3,15 @@ package com.iem.backend.repository;
 import com.iem.backend.entity.Trajectory;
 import com.iem.backend.repository.projection.VesselTypeStatsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 
+@Repository
 public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUID> {
 
     @Query(value = """
@@ -19,39 +20,118 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             vt.description AS vesselTypeDescription,
             vt.vessel_group AS vesselGroup,
             COUNT(t.id) AS trajectoryCount,
-            ROUND(COALESCE(SUM(t.distance_nm) * 1.852, 0), 2) AS totalDistanceKm,
-            ROUND(COALESCE(AVG(t.avg_speed) * 1.852, 0), 2) AS avgSpeedKmH
+            ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
         FROM trajectories t
         JOIN vessel v ON t.vessel_id = v.id
         JOIN vessel_type vt ON v.vessel_type_id = vt.id
-        LEFT JOIN mid m ON v.mid_code = m.id
+        LEFT JOIN mid m ON v.mid_code = m.mid
         LEFT JOIN country c ON m.country_id = c.id
-        WHERE 1=1
-
-        AND (:startDate IS NULL OR t.start_time >= :startDate)
-        AND (:endDate IS NULL OR t.end_time <= :endDate)
-        AND (:vesselType IS NULL OR vt.id = :vesselType)
+        WHERE (:vesselType IS NULL OR vt.id = :vesselType)
         AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
         AND (:country IS NULL OR c.name = :country)
-        AND (
-                :latitude IS NULL OR :longitude IS NULL OR :radius IS NULL
-                    OR ST_DWithin(
-                        t.geom::geography,
-                        ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
-                        :radius * 1000
-                    )
-            )
         GROUP BY vt.id, vt.description, vt.vessel_group
         ORDER BY totalDistanceKm DESC
     """, nativeQuery = true)
-    List<VesselTypeStatsProjection> getVesselTypeStatistics(
+    List<VesselTypeStatsProjection> getVesselTypeStatsAll(
+            @Param("vesselType") Integer vesselType,
+            @Param("vesselGroup") String vesselGroup,
+            @Param("country") String country
+    );
+
+    @Query(value = """
+        SELECT
+            vt.id AS vesselTypeId,
+            vt.description AS vesselTypeDescription,
+            vt.vessel_group AS vesselGroup,
+            COUNT(t.id) AS trajectoryCount,
+            ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+        FROM trajectories t
+        JOIN vessel v ON t.vessel_id = v.id
+        JOIN vessel_type vt ON v.vessel_type_id = vt.id
+        LEFT JOIN mid m ON v.mid_code = m.mid
+        LEFT JOIN country c ON m.country_id = c.id
+        WHERE t.start_time >= :startDate AND t.end_time <= :endDate
+            AND (:vesselType IS NULL OR vt.id = :vesselType)
+            AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
+            AND (:country IS NULL OR c.name = :country)
+        GROUP BY vt.id, vt.description, vt.vessel_group
+        ORDER BY totalDistanceKm DESC
+    """, nativeQuery = true)
+    List<VesselTypeStatsProjection> getVesselTypeStatsByDate(
             @Param("startDate") Timestamp startDate,
             @Param("endDate") Timestamp endDate,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
-            @Param("country") String country,
-            @Param("latitude") Double latitude,
-            @Param("longitude") Double longitude,
-            @Param("radius") Double radius
+            @Param("country") String country
+    );
+
+    @Query(value = """
+        SELECT
+            vt.id AS vesselTypeId,
+            vt.description AS vesselTypeDescription,
+            vt.vessel_group AS vesselGroup,
+            COUNT(t.id) AS trajectoryCount,
+            ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+        FROM trajectories t
+        JOIN vessel v ON t.vessel_id = v.id
+        JOIN vessel_type vt ON v.vessel_type_id = vt.id
+        LEFT JOIN mid m ON v.mid_code = m.mid
+        LEFT JOIN country c ON m.country_id = c.id
+        WHERE ST_DWithin(
+            t.geom::geography,
+            ST_SetSRID(ST_MakePoint(:lon,:lat),4326)::geography,
+            :radius*1000)
+            AND (:vesselType IS NULL OR vt.id = :vesselType)
+            AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
+            AND (:country IS NULL OR c.name = :country)
+        GROUP BY vt.id, vt.description, vt.vessel_group
+        ORDER BY totalDistanceKm DESC
+    """, nativeQuery = true)
+    List<VesselTypeStatsProjection> getVesselTypeStatsInRadius(
+            @Param("lat") Double lat,
+            @Param("lon") Double lon,
+            @Param("radius") Double radius,
+            @Param("vesselType") Integer vesselType,
+            @Param("vesselGroup") String vesselGroup,
+            @Param("country") String country
+    );
+
+    @Query(value = """
+        SELECT
+            vt.id AS vesselTypeId,
+            vt.description AS vesselTypeDescription,
+            vt.vessel_group AS vesselGroup,
+            COUNT(t.id) AS trajectoryCount,
+            ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+        FROM trajectories t
+        JOIN vessel v ON t.vessel_id = v.id
+        JOIN vessel_type vt ON v.vessel_type_id = vt.id
+        LEFT JOIN mid m ON v.mid_code = m.mid
+        LEFT JOIN country c ON m.country_id = c.id
+        WHERE t.start_time >= :startDate AND t.end_time <= :endDate
+          AND ST_DWithin(
+              t.geom::geography,
+                  ST_SetSRID(ST_MakePoint(:lon,:lat),4326)::geography,
+                      :radius*1000
+                  )
+          AND (:vesselType IS NULL OR vt.id = :vesselType)
+          AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
+          AND (:country IS NULL OR c.name = :country)
+        GROUP BY vt.id, vt.description, vt.vessel_group
+        ORDER BY totalDistanceKm DESC
+    """, nativeQuery = true)
+    List<VesselTypeStatsProjection> getVesselTypeStatsByDateInRadius(
+            @Param("startDate") Timestamp startDate,
+            @Param("endDate") Timestamp endDate,
+            @Param("lat") Double lat,
+            @Param("lon") Double lon,
+            @Param("radius") Double radius,
+            @Param("vesselType") Integer vesselType,
+            @Param("vesselGroup") String vesselGroup,
+            @Param("country") String country
     );
 }
