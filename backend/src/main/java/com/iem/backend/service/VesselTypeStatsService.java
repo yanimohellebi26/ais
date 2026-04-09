@@ -26,7 +26,7 @@ public class VesselTypeStatsService {
     }
 
     public List<VesselTypeStats> getAllVesselTypeStats(
-            CustomUserDetails currentUser, AnalyticsFilter filters
+            CustomUserDetails currentUser, AnalyticsFilter filters, int topN
     ) {
         User user = currentUser.getUser();
         Role userRole = user.getRole();
@@ -62,23 +62,23 @@ public class VesselTypeStatsService {
                 results = vesselTypeStatsRepository.getVesselTypeStatsByDateInRadius(
                         startTimestamp, endTimestamp,
                         filters.latitude(), filters.longitude(), filters.radius(),
-                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                        filters.vesselType(), filters.vesselGroup(), filters.country(), topN
                 );
             } else {
                 results = vesselTypeStatsRepository.getVesselTypeStatsByDate(
                         startTimestamp, endTimestamp,
-                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                        filters.vesselType(), filters.vesselGroup(), filters.country(), topN
                 );
             }
         } else {
             if (hasGeo) {
                 results = vesselTypeStatsRepository.getVesselTypeStatsInRadius(
                         filters.latitude(), filters.longitude(), filters.radius(),
-                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                        filters.vesselType(), filters.vesselGroup(), filters.country(), topN
                 );
             } else {
                 results = vesselTypeStatsRepository.getVesselTypeStatsAll(
-                        filters.vesselType(), filters.vesselGroup(), filters.country()
+                        filters.vesselType(), filters.vesselGroup(), filters.country(), topN
                 );
             }
         }

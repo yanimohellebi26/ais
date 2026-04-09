@@ -23,9 +23,10 @@ public class StatisticsController {
     @PostMapping("/vessel_type")
     public ResponseEntity<List<VesselTypeStats>> getVesselTypeStats(
             @RequestBody AnalyticsFilter filters,
+            @RequestParam(defaultValue = "10") int topN,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        List<VesselTypeStats> stats = vesselTypeStatsService.getAllVesselTypeStats(currentUser, filters);
+        List<VesselTypeStats> stats = vesselTypeStatsService.getAllVesselTypeStats(currentUser, filters, topN);
 
         return ResponseEntity.ok(stats);
     }

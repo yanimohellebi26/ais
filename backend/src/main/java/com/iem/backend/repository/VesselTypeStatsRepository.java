@@ -32,11 +32,13 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
         AND (:country IS NULL OR c.name = :country)
         GROUP BY vt.id, vt.description, vt.vessel_group
         ORDER BY totalDistanceKm DESC
+        LIMIT :topN
     """, nativeQuery = true)
     List<VesselTypeStatsProjection> getVesselTypeStatsAll(
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
-            @Param("country") String country
+            @Param("country") String country,
+            @Param("topN") int topN
     );
 
     @Query(value = """
@@ -58,13 +60,15 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             AND (:country IS NULL OR c.name = :country)
         GROUP BY vt.id, vt.description, vt.vessel_group
         ORDER BY totalDistanceKm DESC
+        LIMIT :topN
     """, nativeQuery = true)
     List<VesselTypeStatsProjection> getVesselTypeStatsByDate(
             @Param("startDate") Timestamp startDate,
             @Param("endDate") Timestamp endDate,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
-            @Param("country") String country
+            @Param("country") String country,
+            @Param("topN") int topN
     );
 
     @Query(value = """
@@ -89,6 +93,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             AND (:country IS NULL OR c.name = :country)
         GROUP BY vt.id, vt.description, vt.vessel_group
         ORDER BY totalDistanceKm DESC
+        LIMIT :topN
     """, nativeQuery = true)
     List<VesselTypeStatsProjection> getVesselTypeStatsInRadius(
             @Param("lat") Double lat,
@@ -96,7 +101,8 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             @Param("radiusMeters") Double radius,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
-            @Param("country") String country
+            @Param("country") String country,
+            @Param("topN") int topN
     );
 
     @Query(value = """
@@ -123,6 +129,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
           AND (:country IS NULL OR c.name = :country)
         GROUP BY vt.id, vt.description, vt.vessel_group
         ORDER BY totalDistanceKm DESC
+        LIMIT :topN
     """, nativeQuery = true)
     List<VesselTypeStatsProjection> getVesselTypeStatsByDateInRadius(
             @Param("startDate") Timestamp startDate,
@@ -132,6 +139,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             @Param("radiusMeters") Double radius,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
-            @Param("country") String country
+            @Param("country") String country,
+            @Param("topN") int topN
     );
 }
