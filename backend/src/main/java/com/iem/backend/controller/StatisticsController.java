@@ -4,7 +4,6 @@ import com.iem.backend.dto.analytics.AnalyticsFilter;
 import com.iem.backend.dto.statistics.VesselTypeStats;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.VesselTypeStatsService;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
