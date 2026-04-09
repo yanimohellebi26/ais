@@ -83,7 +83,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
         WHERE ST_DWithin(
             t.geom::geography,
             ST_SetSRID(ST_MakePoint(:lon,:lat),4326)::geography,
-            :radius*1000)
+            :radiusMeters)
             AND (:vesselType IS NULL OR vt.id = :vesselType)
             AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
             AND (:country IS NULL OR c.name = :country)
@@ -93,7 +93,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
     List<VesselTypeStatsProjection> getVesselTypeStatsInRadius(
             @Param("lat") Double lat,
             @Param("lon") Double lon,
-            @Param("radius") Double radius,
+            @Param("radiusMeters") Double radius,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
             @Param("country") String country
@@ -116,7 +116,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
           AND ST_DWithin(
               t.geom::geography,
                   ST_SetSRID(ST_MakePoint(:lon,:lat),4326)::geography,
-                      :radius*1000
+                      :radiusMeters
                   )
           AND (:vesselType IS NULL OR vt.id = :vesselType)
           AND (:vesselGroup IS NULL OR vt.vessel_group = :vesselGroup)
@@ -129,7 +129,7 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             @Param("endDate") Timestamp endDate,
             @Param("lat") Double lat,
             @Param("lon") Double lon,
-            @Param("radius") Double radius,
+            @Param("radiusMeters") Double radius,
             @Param("vesselType") Integer vesselType,
             @Param("vesselGroup") String vesselGroup,
             @Param("country") String country
