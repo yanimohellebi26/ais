@@ -9,13 +9,17 @@ import {
     Title,
     Tooltip,
     Legend,
+    RadialLinearScale,
+    PointElement,
+    LineElement,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
-import {ArrowLeft} from "lucide-react";
+import type { ChartOptions } from "chart.js";
+import { Bar, Radar, Scatter } from "react-chartjs-2";
+import {ArrowLeft, BarChart3, RadarIcon, ScatterChart} from "lucide-react";
 import Breadcrumbs from "../../../components/BaseComponents/Breadcrumbs";
 import {AnalyticsFilters} from "./interfaces";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement);
 
 interface Props {
     filters?: AnalyticsFilters;
@@ -37,11 +41,22 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const initialFilters: AnalyticsFilters = filters || (location.state as any)?.filters || {};
 
     const [metric, setMetric] = useState<"trajectory" | "distance" | "speed">("trajectory");
+    const [chartType, setChartType] = useState<"bar" | "radar" | "scatter">("bar");
     const [topN, setTopN] = useState(TOP_N_BY_METRIC[metric]);
 
     useEffect(() => {
-        setTopN(TOP_N_BY_METRIC[metric]);
-    }, [metric]);
+        if (chartType === "bar") {
+            setTopN(TOP_N_BY_METRIC[metric]);
+        } else {
+            setTopN(10);
+        }
+    }, [metric, chartType]);
+
+    useEffect(() => {
+        if (chartType !== "bar") {
+            setMetric("trajectory");
+        }
+    }, [chartType]);
 
     const { data, loading } = useVesselTypeStats({ filters: initialFilters, topN });
 
@@ -91,13 +106,10 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         ],
     };
 
-    const indexAxis: "x" | "y" =
-        metric === "distance" ? "y" : "x";
-
-    const options = {
+    const options: ChartOptions<"bar"> = {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis,
+        indexAxis: metric === "distance" ? "y" : "x",
         plugins: {
             legend: { display: false },
             tooltip: {
@@ -117,6 +129,96 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         },
     };
 
+    const radarData = {
+        labels: [
+            "Trajectories",
+            "Distance (km)",
+            "Avg Speed (km/h)",
+        ],
+
+        datasets: metricData.slice(0, 6).map((d, idx) => ({
+            label: d.vesselTypeDescription,
+
+            data: [
+                d.trajectoryCount,
+                d.totalDistanceKm,
+                d.averageSpeedKmh,
+            ],
+
+            backgroundColor: `rgba(37, 99, 235, 0.1)`,
+            borderColor: idx === 0 ? "#2563eb" : "#94a3b8",
+            borderWidth: idx === 0 ? 2 : 1,
+        })),
+    };
+
+    const radarOptions: ChartOptions<"radar"> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: "top",
+            },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) =>
+                        `${ctx.dataset.label}: ${ctx.raw}`,
+                },
+            },
+        },
+        scales: {
+            r: {
+                beginAtZero: true,
+            },
+        },
+    };
+
+    const scatterData = {
+        datasets: [{
+            label: "Vessel Types",
+            data: metricData.map(d => ({
+                x: d.totalDistanceKm,
+                y: d.averageSpeedKmh,
+            })),
+
+            backgroundColor: "#2563eb",
+        }],
+    };
+
+    const scatterOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: (ctx: any) => {
+                        const d = metricData[ctx.dataIndex];
+                        return [
+                            d.vesselTypeDescription,
+                            `Distance: ${d.totalDistanceKm} km`,
+                            `Speed: ${d.averageSpeedKmh} km/h`,
+                            `Trajectories: ${d.trajectoryCount}`,
+                        ];
+                    },
+                },
+            },
+        },
+
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: "Total Distance (km)",
+                },
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: "Average Speed (km/h)",
+                },
+            },
+        },
+    };
+
     return (
         <>
             <Breadcrumbs />
@@ -130,26 +232,54 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                 <h1 className="text-2xl font-semibold pb-4">Vessel Type Statistics</h1>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
                 <button
-                    className={`btn btn-sm ${metric === "trajectory" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setMetric("trajectory")}
+                    className={`btn btn-sm ${chartType === "bar" ? "btn-primary" : "btn-outline"}`}
+                    onClick={() => setChartType("bar")}
                 >
-                    Trajectories
+                    <BarChart3 size={16} />
+                    Bar
                 </button>
+
                 <button
-                    className={`btn btn-sm ${metric === "distance" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setMetric("distance")}
+                    className={`btn btn-sm ${chartType === "radar" ? "btn-primary" : "btn-outline"}`}
+                    onClick={() => setChartType("radar")}
                 >
-                    Distance
+                    <RadarIcon size={16} />
+                    Radar
                 </button>
+
                 <button
-                    className={`btn btn-sm ${metric === "speed" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setMetric("speed")}
+                    className={`btn btn-sm ${chartType === "scatter" ? "btn-primary" : "btn-outline"}`}
+                    onClick={() => setChartType("scatter")}
                 >
-                    Speed
+                    <ScatterChart size={16} />
+                    Scatter
                 </button>
             </div>
+
+            {chartType === "bar" && (
+                <div className="flex gap-2 mt-4">
+                    <button
+                        className={`btn btn-sm ${metric === "trajectory" ? "btn-primary" : "btn-outline"}`}
+                        onClick={() => setMetric("trajectory")}
+                    >
+                        Trajectories
+                    </button>
+                    <button
+                        className={`btn btn-sm ${metric === "distance" ? "btn-primary" : "btn-outline"}`}
+                        onClick={() => setMetric("distance")}
+                    >
+                        Distance
+                    </button>
+                    <button
+                        className={`btn btn-sm ${metric === "speed" ? "btn-primary" : "btn-outline"}`}
+                        onClick={() => setMetric("speed")}
+                    >
+                        Speed
+                    </button>
+                </div>
+            )}
 
             <div className="form-control w-64 mt-4 mb-4">
                 <label className="label">
@@ -165,7 +295,8 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                     onChange={(e) => setTopN(Number(e.target.value))}
                 />
                 <div className="text-xs mt-1 text-gray-500 text-right">
-                    Top {topN} vessel types for {metric}
+                    Top {topN} vessel types
+                    {chartType === "bar" && ` for ${metric}`}
                 </div>
             </div>
 
@@ -181,9 +312,19 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             )}
 
             {!loading && data.length > 0 && (
-                <div className="mt-6">
-                    <div className="card bg-base-100 shadow p-6 h-[450px]">
-                        <Bar data={chartData} options={options} />
+                <div className="card bg-base-100 shadow p-6 h-[450px]">
+                    <div className="w-full h-full">
+                        {chartType === "bar" && (
+                            <Bar data={chartData} options={options} />
+                        )}
+
+                        {chartType === "radar" && (
+                            <Radar data={radarData} options={radarOptions} />
+                        )}
+
+                        {chartType === "scatter" && (
+                            <Scatter data={scatterData} options={scatterOptions} />
+                        )}
                     </div>
                 </div>
             )}
