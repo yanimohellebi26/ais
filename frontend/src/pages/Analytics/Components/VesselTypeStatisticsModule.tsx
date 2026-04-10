@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import { useVesselTypeStats } from "../../../hooks/useVesselTypeStats";
+import { VesselTypeStat } from "../../../hooks/useVesselTypeStats";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -12,8 +13,9 @@ import {
     RadialLinearScale,
     PointElement,
     LineElement,
+    ChartOptions,
+    TooltipItem
 } from "chart.js";
-import type { ChartOptions } from "chart.js";
 import { Bar, Radar, Scatter } from "react-chartjs-2";
 import {ArrowLeft, BarChart3, RadarIcon, ScatterChart} from "lucide-react";
 import Breadcrumbs from "../../../components/BaseComponents/Breadcrumbs";
@@ -28,11 +30,30 @@ interface Props {
 const PRIMARY_COLOR = "#FF9F40";
 const SECONDARY_COLOR = "rgba(37, 99, 235, 0.3)";
 
-const TOP_N_BY_METRIC = {
-    trajectory: 15,
-    distance: 10,
-    speed: 5,
+type Metric = "trajectory" | "distance" | "speed" | "avgDistance" | "totalDuration" | "avgDuration" | "efficiency";
+type ChartType = "bar" | "radar" | "scatter";
+
+const METRIC_LABELS: Record<Metric, string> = {
+    trajectory:    "Number of Trajectories",
+    distance:      "Total Distance (km)",
+    speed:         "Average Speed (km/h)",
+    avgDistance:   "Average Distance (km)",
+    totalDuration: "Total Duration (h)",
+    avgDuration:   "Average Duration (h)",
+    efficiency:    "Efficiency (km/h)",
 };
+
+const METRIC_ACCESSORS: Record<Metric, (d: VesselTypeStat ) => number> = {
+    trajectory: d => d.trajectoryCount,
+    distance: d => d.totalDistanceKm,
+    speed: d => d.avgSpeedKmh,
+    avgDistance: d => d.avgDistanceKm,
+    totalDuration: d => d.totalDurationHours,
+    avgDuration: d => d.avgDurationHours,
+    efficiency: d => d.efficiencyKmh,
+};
+
+const HORIZONTAL_METRICS: Metric[] = ["distance", "avgDistance", "totalDuration", "avgDuration"];
 
 const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const navigate = useNavigate();
@@ -40,17 +61,9 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
 
     const initialFilters: AnalyticsFilters = filters || (location.state as any)?.filters || {};
 
-    const [metric, setMetric] = useState<"trajectory" | "distance" | "speed">("trajectory");
-    const [chartType, setChartType] = useState<"bar" | "radar" | "scatter">("bar");
-    const [topN, setTopN] = useState(TOP_N_BY_METRIC[metric]);
-
-    useEffect(() => {
-        if (chartType === "bar") {
-            setTopN(TOP_N_BY_METRIC[metric]);
-        } else {
-            setTopN(10);
-        }
-    }, [metric, chartType]);
+    const [metric, setMetric] = useState<Metric>("trajectory");
+    const [chartType, setChartType] = useState<ChartType>("bar");
+    const [topN, setTopN] = useState(10);
 
     useEffect(() => {
         if (chartType !== "bar") {
@@ -58,20 +71,39 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         }
     }, [chartType]);
 
+    useEffect(() => {
+        setTopN(10);
+    }, [chartType]);
+
     const { data, loading } = useVesselTypeStats({ filters: initialFilters, topN });
 
     const metricData = useMemo(() => {
-        let sorted = [...data];
-
-        if (metric === "trajectory") {
-            sorted.sort((a, b) => b.trajectoryCount - a.trajectoryCount);
-        } else if (metric === "distance") {
-            sorted.sort((a, b) => b.totalDistanceKm - a.totalDistanceKm);
-        } else {
-            sorted.sort((a, b) => b.averageSpeedKmh - a.averageSpeedKmh);
-        }
-        return sorted;
+        if (!data) return [];
+        return [...data].sort((a, b) => METRIC_ACCESSORS[metric](b) - METRIC_ACCESSORS[metric](a));
     }, [data, metric]);
+
+    const normalizedRadarData = useMemo(() => {
+        if (metricData.length === 0) return [];
+
+        const fields: (keyof VesselTypeStat)[] = [
+            "trajectoryCount",
+            "totalDistanceKm",
+            "avgSpeedKmh",
+            "avgDistanceKm",
+            "totalDurationHours",
+            "avgDurationHours",
+            "efficiencyKmh",
+        ];
+        const mins = fields.map(f => Math.min(...metricData.map(d => d[f] as number)));
+        const maxs = fields.map(f => Math.max(...metricData.map(d => d[f] as number)));
+
+        return metricData.slice(0, 6).map(d =>
+            fields.map((f, i) => {
+                const range = maxs[i] - mins[i];
+                return range === 0 ? 1 : ((d[f] as number) - mins[i]) / range;
+            })
+        );
+    }, [metricData]);
 
     const backgroundColors = metricData.map((_, index) =>
         index === 0 ? PRIMARY_COLOR : SECONDARY_COLOR
@@ -81,20 +113,9 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         labels: metricData.map(d => d.vesselTypeDescription),
         datasets: [
             {
-                label:
-                    metric === "trajectory"
-                        ? "Number of Trajectories"
-                        : metric === "distance"
-                            ? "Total Distance (km)"
-                            : "Average Speed (km/h)",
+                label: METRIC_LABELS[metric],
 
-                data: metricData.map(d =>
-                    metric === "trajectory"
-                        ? d.trajectoryCount
-                        : metric === "distance"
-                            ? d.totalDistanceKm
-                            : d.averageSpeedKmh
-                ),
+                data: metricData.map(d => METRIC_ACCESSORS[metric](d)),
 
                 backgroundColor: backgroundColors,
 
@@ -109,12 +130,12 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const options: ChartOptions<"bar"> = {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: metric === "distance" ? "y" : "x",
+        indexAxis: HORIZONTAL_METRICS.includes(metric) ? "y" : "x",
         plugins: {
             legend: { display: false },
             tooltip: {
                 callbacks: {
-                    label: (ctx: any) => {
+                    label: (ctx: TooltipItem<"bar">) => {
                         const item = metricData[ctx.dataIndex];
                         const value = ctx.raw;
 
@@ -132,19 +153,17 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const radarData = {
         labels: [
             "Trajectories",
-            "Distance (km)",
+            "Total Distance (km)",
             "Avg Speed (km/h)",
+            "Avg Distance (km)",
+            "Total Duration (h)",
+            "Avg Duration (h)",
+            "Efficiency (km/h)",
         ],
 
         datasets: metricData.slice(0, 6).map((d, idx) => ({
             label: d.vesselTypeDescription,
-
-            data: [
-                d.trajectoryCount,
-                d.totalDistanceKm,
-                d.averageSpeedKmh,
-            ],
-
+            data: normalizedRadarData[idx],
             backgroundColor: `rgba(37, 99, 235, 0.1)`,
             borderColor: idx === 0 ? "#2563eb" : "#94a3b8",
             borderWidth: idx === 0 ? 2 : 1,
@@ -160,14 +179,37 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             },
             tooltip: {
                 callbacks: {
-                    label: (ctx: any) =>
-                        `${ctx.dataset.label}: ${ctx.raw}`,
+                    label: (ctx: TooltipItem<"radar">) => {
+                        const vessel = metricData[ctx.datasetIndex];
+
+                        if (!vessel) return "";
+
+                        const realValues = [
+                            `Trajectories: ${vessel.trajectoryCount}`,
+                            `Total Distance: ${vessel.totalDistanceKm} km`,
+                            `Avg Speed: ${vessel.avgSpeedKmh} km/h`,
+                            `Avg Distance: ${vessel.avgDistanceKm} km`,
+                            `Total Duration: ${vessel.totalDurationHours} h`,
+                            `Avg Duration: ${vessel.avgDurationHours} h`,
+                            `Efficiency: ${vessel.efficiencyKmh} km/h`,
+                        ];
+
+                        return realValues[ctx.dataIndex] ?? "";
+                    },
                 },
             },
         },
         scales: {
             r: {
                 beginAtZero: true,
+                min: 0,
+                max: 1,
+                ticks: {
+                    display: false,
+                },
+                pointLabels: {
+                    font: {size: 11},
+                },
             },
         },
     };
@@ -177,26 +219,26 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             label: "Vessel Types",
             data: metricData.map(d => ({
                 x: d.totalDistanceKm,
-                y: d.averageSpeedKmh,
+                y: d.efficiencyKmh,
             })),
 
             backgroundColor: "#2563eb",
         }],
     };
 
-    const scatterOptions = {
+    const scatterOptions: ChartOptions<"scatter"> = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             tooltip: {
                 callbacks: {
-                    label: (ctx: any) => {
+                    label: (ctx: TooltipItem<"scatter">) => {
                         const d = metricData[ctx.dataIndex];
                         return [
                             d.vesselTypeDescription,
                             `Distance: ${d.totalDistanceKm} km`,
-                            `Speed: ${d.averageSpeedKmh} km/h`,
-                            `Trajectories: ${d.trajectoryCount}`,
+                            `Efficiency: ${d.efficiencyKmh} km/h`,
+                            `Speed: ${d.avgSpeedKmh} km/h`,
                         ];
                     },
                 },
@@ -213,7 +255,7 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             y: {
                 title: {
                     display: true,
-                    text: "Average Speed (km/h)",
+                    text: "Efficiency (km/h)",
                 },
             },
         },
@@ -233,51 +275,31 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             </div>
 
             <div className="flex gap-2 mt-4">
-                <button
-                    className={`btn btn-sm ${chartType === "bar" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setChartType("bar")}
-                >
-                    <BarChart3 size={16} />
-                    Bar
-                </button>
-
-                <button
-                    className={`btn btn-sm ${chartType === "radar" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setChartType("radar")}
-                >
-                    <RadarIcon size={16} />
-                    Radar
-                </button>
-
-                <button
-                    className={`btn btn-sm ${chartType === "scatter" ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => setChartType("scatter")}
-                >
-                    <ScatterChart size={16} />
-                    Scatter
-                </button>
+                {(["bar", "radar", "scatter"] as ChartType[]).map((type) => (
+                    <button
+                        key={type}
+                        className={`btn btn-sm ${chartType === type ? "btn-primary" : "btn-outline"}`}
+                        onClick={() => setChartType(type)}
+                    >
+                        {type === "bar" && <BarChart3 size={16} />}
+                        {type === "radar" && <RadarIcon size={16} />}
+                        {type === "scatter" && <ScatterChart size={16} />}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                ))}
             </div>
 
             {chartType === "bar" && (
-                <div className="flex gap-2 mt-4">
-                    <button
-                        className={`btn btn-sm ${metric === "trajectory" ? "btn-primary" : "btn-outline"}`}
-                        onClick={() => setMetric("trajectory")}
-                    >
-                        Trajectories
-                    </button>
-                    <button
-                        className={`btn btn-sm ${metric === "distance" ? "btn-primary" : "btn-outline"}`}
-                        onClick={() => setMetric("distance")}
-                    >
-                        Distance
-                    </button>
-                    <button
-                        className={`btn btn-sm ${metric === "speed" ? "btn-primary" : "btn-outline"}`}
-                        onClick={() => setMetric("speed")}
-                    >
-                        Speed
-                    </button>
+                <div className="flex flex-wrap gap-2 mt-4">
+                    {(Object.keys(METRIC_LABELS) as Metric[]).map((m) => (
+                        <button
+                            key={m}
+                            className={`btn btn-sm ${metric === m ? "btn-primary" : "btn-outline"}`}
+                            onClick={() => setMetric(m)}
+                        >
+                            {METRIC_LABELS[m]}
+                        </button>
+                    ))}
                 </div>
             )}
 
@@ -296,7 +318,7 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                 />
                 <div className="text-xs mt-1 text-gray-500 text-right">
                     Top {topN} vessel types
-                    {chartType === "bar" && ` for ${metric}`}
+                    {chartType === "bar" && ` for ${METRIC_LABELS[metric]}`}
                 </div>
             </div>
 
@@ -305,26 +327,18 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                     <span className="loading loading-spinner loading-lg"></span>
                 </div>
             )}
-            {!loading && data.length === 0 && (
+            {!loading && metricData.length === 0 && (
                 <div className="mt-6 text-center text-gray-500">
                     No data available for the selected filters.
                 </div>
             )}
 
-            {!loading && data.length > 0 && (
+            {!loading && metricData.length > 0 && (
                 <div className="card bg-base-100 shadow p-6 h-[450px]">
                     <div className="w-full h-full">
-                        {chartType === "bar" && (
-                            <Bar data={chartData} options={options} />
-                        )}
-
-                        {chartType === "radar" && (
-                            <Radar data={radarData} options={radarOptions} />
-                        )}
-
-                        {chartType === "scatter" && (
-                            <Scatter data={scatterData} options={scatterOptions} />
-                        )}
+                        {chartType === "bar" && <Bar key={metric} data={chartData} options={options} />}
+                        {chartType === "radar" && <Radar data={radarData} options={radarOptions} />}
+                        {chartType === "scatter" && <Scatter data={scatterData} options={scatterOptions} />}
                     </div>
                 </div>
             )}

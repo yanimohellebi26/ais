@@ -9,7 +9,11 @@ export interface VesselTypeStat {
     vesselGroup: string;
     trajectoryCount: number;
     totalDistanceKm: number;
-    averageSpeedKmh: number;
+    avgSpeedKmh: number;
+    avgDistanceKm : number;
+    totalDurationHours : number;
+    avgDurationHours : number;
+    efficiencyKmh : number;
 }
 
 interface Props {
