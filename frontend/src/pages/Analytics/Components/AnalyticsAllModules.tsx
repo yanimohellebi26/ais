@@ -48,6 +48,14 @@ const AnalyticsAllModules: React.FC = () => {
                         Top countries by number of vessels detected
                     </p>
                 </BaseModule>
+                <BaseModule
+                    title={"Vessel Type Statistics"}
+                    onClick={() => navigate("vessel-type-statistics", { state: { filters } })}
+                >
+                    <p className="text-sm text-gray-500">
+                        Compare vessel types across key metrics
+                    </p>
+                </BaseModule>
             </div>
 
         </>

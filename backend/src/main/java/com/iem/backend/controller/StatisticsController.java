@@ -20,7 +20,7 @@ public class StatisticsController {
         this.vesselTypeStatsService = vesselTypeStatsService;
     }
 
-    @PostMapping("/vessel_type")
+    @PostMapping("/vessel-type-statistics")
     public ResponseEntity<List<VesselTypeStats>> getVesselTypeStats(
             @RequestBody AnalyticsFilter filters,
             @RequestParam(defaultValue = "10") int topN,
