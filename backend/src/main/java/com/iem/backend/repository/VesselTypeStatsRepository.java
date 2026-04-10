@@ -21,7 +21,17 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             vt.vessel_group AS vesselGroup,
             COUNT(t.id) AS trajectoryCount,
             ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
-            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS avgSpeedKmh,
+            ROUND(COALESCE(AVG(t.distance_nm) * 1.852,0)::numeric,2) AS avgDistanceKm,
+            ROUND(COALESCE(SUM(t.duration_minutes) / 60,0)::numeric,2) AS totalDurationHours,
+            ROUND(COALESCE(AVG(t.duration_minutes) / 60,0)::numeric,2) AS avgDurationHours,
+            ROUND(
+                COALESCE(
+                    (SUM(t.distance_nm) * 1.852)
+                        /
+                        NULLIF(SUM(t.duration_minutes) / 60, 0),0
+                )::numeric,2
+            ) AS efficiencyKmh
         FROM trajectories t
         JOIN vessel v ON t.vessel_id = v.id
         JOIN vessel_type vt ON v.vessel_type_id = vt.id
@@ -48,7 +58,17 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             vt.vessel_group AS vesselGroup,
             COUNT(t.id) AS trajectoryCount,
             ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
-            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS avgSpeedKmh,
+            ROUND(COALESCE(AVG(t.distance_nm) * 1.852,0)::numeric,2) AS avgDistanceKm,
+            ROUND(COALESCE(SUM(t.duration_minutes) / 60,0)::numeric,2) AS totalDurationHours,
+            ROUND(COALESCE(AVG(t.duration_minutes) / 60,0)::numeric,2) AS avgDurationHours,
+            ROUND(
+                COALESCE(
+                    (SUM(t.distance_nm) * 1.852)
+                        /
+                        NULLIF(SUM(t.duration_minutes) / 60, 0),0
+                )::numeric,2
+            ) AS efficiencyKmh
         FROM trajectories t
         JOIN vessel v ON t.vessel_id = v.id
         JOIN vessel_type vt ON v.vessel_type_id = vt.id
@@ -78,7 +98,17 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             vt.vessel_group AS vesselGroup,
             COUNT(t.id) AS trajectoryCount,
             ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
-            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS avgSpeedKmh,
+            ROUND(COALESCE(AVG(t.distance_nm) * 1.852,0)::numeric,2) AS avgDistanceKm,
+            ROUND(COALESCE(SUM(t.duration_minutes) / 60,0)::numeric,2) AS totalDurationHours,
+            ROUND(COALESCE(AVG(t.duration_minutes) / 60,0)::numeric,2) AS avgDurationHours,
+            ROUND(
+                COALESCE(
+                    (SUM(t.distance_nm) * 1.852)
+                        /
+                        NULLIF(SUM(t.duration_minutes) / 60, 0),0
+                )::numeric,2
+            ) AS efficiencyKmh
         FROM trajectories t
         JOIN vessel v ON t.vessel_id = v.id
         JOIN vessel_type vt ON v.vessel_type_id = vt.id
@@ -112,7 +142,17 @@ public interface VesselTypeStatsRepository extends JpaRepository<Trajectory, UUI
             vt.vessel_group AS vesselGroup,
             COUNT(t.id) AS trajectoryCount,
             ROUND(COALESCE(SUM(t.distance_nm) * 1.852,0)::numeric,2) AS totalDistanceKm,
-            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS averageSpeedKmh
+            ROUND(COALESCE(AVG(t.avg_speed) * 1.852,0)::numeric,2) AS avgSpeedKmh,
+            ROUND(COALESCE(AVG(t.distance_nm) * 1.852,0)::numeric,2) AS avgDistanceKm,
+            ROUND(COALESCE(SUM(t.duration_minutes) / 60,0)::numeric,2) AS totalDurationHours,
+            ROUND(COALESCE(AVG(t.duration_minutes) / 60,0)::numeric,2) AS avgDurationHours,
+            ROUND(
+                COALESCE(
+                    (SUM(t.distance_nm) * 1.852)
+                        /
+                        NULLIF(SUM(t.duration_minutes) / 60, 0),0
+                )::numeric,2
+            ) AS efficiencyKmh
         FROM trajectories t
         JOIN vessel v ON t.vessel_id = v.id
         JOIN vessel_type vt ON v.vessel_type_id = vt.id

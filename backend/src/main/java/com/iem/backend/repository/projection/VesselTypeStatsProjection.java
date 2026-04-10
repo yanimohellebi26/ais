@@ -6,5 +6,9 @@ public interface VesselTypeStatsProjection {
     String getVesselGroup();
     Long getTrajectoryCount();
     Double getTotalDistanceKm();
-    Double getAverageSpeedKmh();
+    Double getAvgSpeedKmh();
+    Double getAvgDistanceKm();
+    Double getTotalDurationHours();
+    Double getAvgDurationHours();
+    Double getEfficiencyKmh();
 }

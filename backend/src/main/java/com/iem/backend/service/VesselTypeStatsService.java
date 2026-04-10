@@ -90,7 +90,11 @@ public class VesselTypeStatsService {
                         p.getVesselGroup(),
                         p.getTrajectoryCount(),
                         p.getTotalDistanceKm(),
-                        p.getAverageSpeedKmh()
+                        p.getAvgSpeedKmh(),
+                        p.getAvgDistanceKm(),
+                        p.getTotalDurationHours(),
+                        p.getAvgDurationHours(),
+                        p.getEfficiencyKmh()
                 ))
                 .toList();
     }

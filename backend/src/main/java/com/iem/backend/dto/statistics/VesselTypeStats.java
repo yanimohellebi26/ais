@@ -6,6 +6,10 @@ public record VesselTypeStats(
         String vesselGroup,
         Long trajectoryCount,
         Double totalDistanceKm,
-        Double averageSpeedKmh
+        Double avgSpeedKmh,
+        Double avgDistanceKm,
+        Double totalDurationHours,
+        Double avgDurationHours,
+        Double efficiencyKmh
 ) {
 }
