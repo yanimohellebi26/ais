@@ -33,14 +33,20 @@ const SECONDARY_COLOR = "rgba(37, 99, 235, 0.3)";
 type Metric = "trajectory" | "distance" | "speed" | "avgDistance" | "totalDuration" | "avgDuration" | "efficiency";
 type ChartType = "bar" | "radar" | "scatter";
 
+const CHART_LABELS: Record<ChartType, string> = {
+    bar: "Classement",
+    scatter: "Performance",
+    radar: "Profil",
+};
+
 const METRIC_LABELS: Record<Metric, string> = {
-    trajectory:    "Number of Trajectories",
-    distance:      "Total Distance (km)",
-    speed:         "Average Speed (km/h)",
-    avgDistance:   "Average Distance (km)",
+    trajectory: "Number of Trajectories",
+    distance: "Total Distance (km)",
+    speed: "Average Speed (km/h)",
+    avgDistance: "Average Distance (km)",
     totalDuration: "Total Duration (h)",
-    avgDuration:   "Average Duration (h)",
-    efficiency:    "Efficiency (km/h)",
+    avgDuration: "Average Duration (h)",
+    efficiency: "Efficiency (km/h)",
 };
 
 const METRIC_ACCESSORS: Record<Metric, (d: VesselTypeStat ) => number> = {
@@ -55,19 +61,29 @@ const METRIC_ACCESSORS: Record<Metric, (d: VesselTypeStat ) => number> = {
 
 const HORIZONTAL_METRICS: Metric[] = ["distance", "avgDistance", "totalDuration", "avgDuration"];
 
+const RADAR_COLORS = [
+    { border: "#2563eb", background: "rgba(37, 99, 235, 0.15)" },
+    { border: "#16a34a", background: "rgba(22, 163, 74, 0.15)" },
+    { border: "#dc2626", background: "rgba(220, 38, 38, 0.15)" },
+    { border: "#9333ea", background: "rgba(147, 51, 234, 0.15)" },
+    { border: "#ea580c", background: "rgba(234, 88, 12, 0.15)" },
+];
+
 const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
     const initialFilters: AnalyticsFilters = filters || (location.state as any)?.filters || {};
 
-    const [metric, setMetric] = useState<Metric>("trajectory");
+    const [metric, setMetric] = useState<Metric>("efficiency");
     const [chartType, setChartType] = useState<ChartType>("bar");
     const [topN, setTopN] = useState(10);
+    const isSliderDisabled = chartType === "radar";
 
     useEffect(() => {
         if (chartType !== "bar") {
-            setMetric("trajectory");
+            setMetric("efficiency");
+            if (chartType === "radar") setTopN(5);
         }
     }, [chartType]);
 
@@ -82,6 +98,11 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         return [...data].sort((a, b) => METRIC_ACCESSORS[metric](b) - METRIC_ACCESSORS[metric](a));
     }, [data, metric]);
 
+    const maxTrajectories = useMemo(
+        () => Math.max(...metricData.map(d => d.trajectoryCount), 1),
+        [metricData]
+    );
+
     const normalizedRadarData = useMemo(() => {
         if (metricData.length === 0) return [];
 
@@ -94,13 +115,39 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             "avgDurationHours",
             "efficiencyKmh",
         ];
-        const mins = fields.map(f => Math.min(...metricData.map(d => d[f] as number)));
-        const maxs = fields.map(f => Math.max(...metricData.map(d => d[f] as number)));
+        const n = metricData.length;
+        const ranks: Record<string, number[]> = {};
 
-        return metricData.slice(0, 6).map(d =>
-            fields.map((f, i) => {
-                const range = maxs[i] - mins[i];
-                return range === 0 ? 1 : ((d[f] as number) - mins[i]) / range;
+        fields.forEach((f) => {
+            const indexed = metricData.map((d, idx) => ({
+                value: d[f] as number,
+                index: idx,
+            }));
+            indexed.sort((a, b) => a.value - b.value);
+            const ranksArray = new Array(n);
+
+            let i = 0;
+            while (i < indexed.length) {
+                let j = i;
+                while (
+                    j < indexed.length &&
+                    indexed[j].value === indexed[i].value
+                    ) {
+                    j++;
+                }
+                const avgRank = (i + j - 1) / 2;
+                for (let k = i; k < j; k++) {
+                    ranksArray[indexed[k].index] = avgRank;
+                }
+                i = j;
+            }
+            ranks[f] = ranksArray;
+        });
+
+        return metricData.slice(0, 5).map((_, idx) =>
+            fields.map((f) => {
+                const rank = ranks[f][idx];
+                return n > 1 ? rank / (n - 1) : 1;
             })
         );
     }, [metricData]);
@@ -164,9 +211,9 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         datasets: metricData.slice(0, 6).map((d, idx) => ({
             label: d.vesselTypeDescription,
             data: normalizedRadarData[idx],
-            backgroundColor: `rgba(37, 99, 235, 0.1)`,
-            borderColor: idx === 0 ? "#2563eb" : "#94a3b8",
-            borderWidth: idx === 0 ? 2 : 1,
+            backgroundColor: RADAR_COLORS[idx].background,
+            borderColor:  RADAR_COLORS[idx].border,
+            borderWidth: idx === 0 ? 2 : 1.5,
         })),
     };
 
@@ -222,7 +269,17 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                 y: d.efficiencyKmh,
             })),
 
-            backgroundColor: "#2563eb",
+            backgroundColor: backgroundColors,
+            borderWidth: metricData.map((_, i) => (i === 0 ? 2 : 1)),
+            borderColor: metricData.map((_, i) =>
+                i === 0 ? "#1e40af" : "rgba(37, 99, 235, 0.8)"
+            ),
+            pointRadius: metricData.map(d =>
+                6 + (d.trajectoryCount / maxTrajectories) * 18
+            ),
+            pointHoverRadius: metricData.map(d =>
+                8 + (d.trajectoryCount / maxTrajectories) * 18
+            ),
         }],
     };
 
@@ -230,6 +287,9 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
+            legend: {
+                display: false,
+            },
             tooltip: {
                 callbacks: {
                     label: (ctx: TooltipItem<"scatter">) => {
@@ -238,7 +298,7 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                             d.vesselTypeDescription,
                             `Distance: ${d.totalDistanceKm} km`,
                             `Efficiency: ${d.efficiencyKmh} km/h`,
-                            `Speed: ${d.avgSpeedKmh} km/h`,
+                            `Trajectories: ${d.trajectoryCount}`,
                         ];
                     },
                 },
@@ -251,12 +311,14 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                     display: true,
                     text: "Total Distance (km)",
                 },
+                grid: { color: "rgba(0,0,0,0.05)" },
             },
             y: {
                 title: {
                     display: true,
                     text: "Efficiency (km/h)",
                 },
+                grid: { color: "rgba(0,0,0,0.05)" },
             },
         },
     };
@@ -284,7 +346,7 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                         {type === "bar" && <BarChart3 size={16} />}
                         {type === "radar" && <RadarIcon size={16} />}
                         {type === "scatter" && <ScatterChart size={16} />}
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                        {CHART_LABELS[type]}
                     </button>
                 ))}
             </div>
@@ -313,12 +375,15 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                     max={20}
                     step={5}
                     value={topN}
-                    className="range range-primary range-sm"
-                    onChange={(e) => setTopN(Number(e.target.value))}
+                    disabled={isSliderDisabled}
+                    className={`range range-sm ${isSliderDisabled ? "range-ghost opacity-40 cursor-not-allowed" : "range-primary"}`}
+                    onChange={(e) => !isSliderDisabled && setTopN(Number(e.target.value))}
                 />
                 <div className="text-xs mt-1 text-gray-500 text-right">
-                    Top {topN} vessel types
-                    {chartType === "bar" && ` for ${METRIC_LABELS[metric]}`}
+                    {isSliderDisabled
+                        ? "Fixed to top 5 in profil mode"
+                        : `Top ${topN} vessel types${chartType === "bar" ? ` for ${METRIC_LABELS[metric]}` : ""}`
+                    }
                 </div>
             </div>
 
