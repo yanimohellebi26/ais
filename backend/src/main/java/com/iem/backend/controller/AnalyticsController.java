@@ -7,7 +7,6 @@ import com.iem.backend.dto.analytics.TrafficDensity;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.AnalyticsService;
 import com.iem.backend.service.GeoJsonService;
-import com.iem.backend.service.TrafficDensityService;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.springdoc.core.annotations.ParameterObject;
@@ -21,14 +20,12 @@ import java.util.List;
 @RequestMapping("/api/v1/analytics")
 public class AnalyticsController {
 
-    private final TrafficDensityService trafficDensityService;
     private final AnalyticsService analyticsService;
     private final GeoJsonService geoJsonService;
 
     private static final GeometryFactory GF = new GeometryFactory();
 
-    public AnalyticsController(TrafficDensityService trafficDensityService,AnalyticsService analyticsService ,GeoJsonService geoJsonService) {
-        this.trafficDensityService = trafficDensityService;
+    public AnalyticsController(AnalyticsService analyticsService ,GeoJsonService geoJsonService) {
         this.analyticsService = analyticsService;
         this.geoJsonService = geoJsonService;
     }
@@ -43,7 +40,7 @@ public class AnalyticsController {
             @ModelAttribute @ParameterObject AnalyticsFilter filters,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        List<TrafficDensity> density = trafficDensityService.getTrafficDensity(
+        List<TrafficDensity> density = analyticsService.getTrafficDensity(
                 currentUser,
                 minLat, maxLat, minLon, maxLon,
                 gridSize,

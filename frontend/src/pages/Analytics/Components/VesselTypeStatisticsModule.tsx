@@ -161,11 +161,8 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         datasets: [
             {
                 label: METRIC_LABELS[metric],
-
                 data: metricData.map(d => METRIC_ACCESSORS[metric](d)),
-
                 backgroundColor: backgroundColors,
-
                 borderWidth: metricData.map((_, i) => (i === 0 ? 2 : 0)),
                 borderColor: metricData.map((_, i) =>
                     i === 0 ? "#1e40af" : "transparent"
@@ -228,7 +225,6 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                 callbacks: {
                     label: (ctx: TooltipItem<"radar">) => {
                         const vessel = metricData[ctx.datasetIndex];
-
                         if (!vessel) return "";
 
                         const realValues = [
@@ -304,7 +300,6 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
                 },
             },
         },
-
         scales: {
             x: {
                 title: {

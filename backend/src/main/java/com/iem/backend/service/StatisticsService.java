@@ -14,14 +14,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.*;
 
 @Service
-public class VesselTypeStatsService {
+public class StatisticsService {
 
     private final VesselTypeStatsRepository vesselTypeStatsRepository;
 
-    public VesselTypeStatsService(VesselTypeStatsRepository vesselTypeStatsRepository) {
+    public StatisticsService(VesselTypeStatsRepository vesselTypeStatsRepository) {
         this.vesselTypeStatsRepository = vesselTypeStatsRepository;
     }
 
