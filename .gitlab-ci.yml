@@ -23,7 +23,7 @@ deploy_dev:
     - git pull origin dev
     - cp .env .env.backup 2>/dev/null || true
     - cp $ENV_FILE .env
-    - docker compose up --build -d
+    - docker-compose up -d --build
     - sleep 10
     - docker compose ps
     - docker image prune -f
@@ -42,9 +42,9 @@ deploy_prod:
         git fetch origin &&
         git checkout main &&
         git pull origin main &&
-        docker compose down &&
-        docker compose up --build -d &&
+        docker-compose down &&
+        docker-compose up -d --build &&
         sleep 10 &&
-        docker compose ps &&
+        docker-compose ps &&
         docker image prune -f
       "
