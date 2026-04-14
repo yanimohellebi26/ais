@@ -25,7 +25,7 @@ deploy_dev:
     - cp $ENV_FILE .env
     - docker-compose up -d --build
     - sleep 10
-    - docker compose ps
+    - docker-compose ps
     - docker image prune -f
 
 deploy_prod:
