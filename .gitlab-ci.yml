@@ -1,0 +1,50 @@
+stages:
+  - deploy
+
+variables:
+  DEPLOY_PATH: /opt/ais/ais
+  GIT_STRATEGY: none
+
+.deploy_base: &deploy_base
+  stage: deploy
+  tags:
+    - deploy
+
+deploy_dev:
+  <<: *deploy_base
+  environment:
+    name: dev
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  script:
+    - cd $DEPLOY_PATH
+    - git fetch origin
+    - git checkout dev
+    - git pull origin dev
+    - cp .env .env.backup 2>/dev/null || true
+    - cp $ENV_FILE .env
+    - docker compose up --build -d
+    - sleep 10
+    - docker compose ps
+    - docker image prune -f
+
+deploy_prod:
+  <<: *deploy_base
+  environment:
+    name: production
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  script:
+    - ssh prod-server "
+        set -e &&
+        cd $DEPLOY_PATH &&
+        git fetch origin &&
+        git checkout main &&
+        git pull origin main &&
+        docker compose down &&
+        docker compose up --build -d &&
+        sleep 10 &&
+        docker compose ps &&
+        docker image prune -f
+      "
