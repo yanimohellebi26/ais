@@ -6,6 +6,7 @@ import BaseModule from "../../../components/BaseComponents/BaseModule";
 import { useNavigate, useLocation } from "react-router-dom";
 import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
 import CountryPresenceWidget from "../../Map/components/CountryPresenceWidget";
+import VesselTypeStatisticsWidget from "./VesselTypeStatisticsWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
@@ -46,6 +47,15 @@ const AnalyticsAllModules: React.FC = () => {
                     <CountryPresenceWidget filters={filters} />
                     <p className="text-sm text-gray-500">
                         Top countries by number of vessels detected
+                    </p>
+                </BaseModule>
+                <BaseModule
+                    title={"Vessel Type Statistics"}
+                    onClick={() => navigate("vessel-type-statistics", { state: { filters } })}
+                >
+                    <VesselTypeStatisticsWidget filters={filters} />
+                    <p className="text-sm text-gray-500">
+                        Compare vessel types across key metrics
                     </p>
                 </BaseModule>
             </div>
