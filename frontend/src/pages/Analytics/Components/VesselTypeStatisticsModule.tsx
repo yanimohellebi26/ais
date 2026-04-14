@@ -73,7 +73,10 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const initialFilters: AnalyticsFilters = filters || (location.state as any)?.filters || {};
+    const initialFilters: AnalyticsFilters = useMemo( () =>
+        filters || (location.state as any)?.filters || {},
+        [filters, location.state]
+    );
 
     const [metric, setMetric] = useState<Metric>("efficiency");
     const [chartType, setChartType] = useState<ChartType>("bar");
@@ -84,11 +87,8 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
         if (chartType !== "bar") {
             setMetric("efficiency");
             if (chartType === "radar") setTopN(5);
+            else { setTopN(10); }
         }
-    }, [chartType]);
-
-    useEffect(() => {
-        setTopN(10);
     }, [chartType]);
 
     const { data, loading } = useVesselTypeStats({ filters: initialFilters, topN });
@@ -205,7 +205,7 @@ const VesselTypeStatisticsModule: React.FC<Props> = ({ filters }) => {
             "Efficiency (km/h)",
         ],
 
-        datasets: metricData.slice(0, 6).map((d, idx) => ({
+        datasets: metricData.slice(0, 5).map((d, idx) => ({
             label: d.vesselTypeDescription,
             data: normalizedRadarData[idx],
             backgroundColor: RADAR_COLORS[idx].background,
