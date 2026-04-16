@@ -5,9 +5,9 @@ services:
     pgadmin:
         ports: []
         environment:
-            - PGADMIN_DEFAULT_EMAIL = ${PG_ADMIN_EMAIL}
-            - PGADMIN_DEFAULT_PASSWORD = ${PG_ADMIN_PASSWORD}
-            - SCRIPT_NAME = /pgadmin
+            - PGADMIN_DEFAULT_EMAIL=${PG_ADMIN_EMAIL}
+            - PGADMIN_DEFAULT_PASSWORD=${PG_ADMIN_PASSWORD}
+            - SCRIPT_NAME=/pgadmin
 
     prometheus:
         ports: []
@@ -20,10 +20,10 @@ services:
     grafana:
         ports: []
         environment:
-            - GF_SECURITY_ADMIN_USER = ${GRAFANA_USER}
-            - GF_SECURITY_ADMIN_PASSWORD = ${GRAFANA_PASSWORD}
-            - GF_SERVER_ROOT_URL = %(protocol)s://(domain)s/grafana
-            - GF_SERVER_SERVE_FROM_SUB_PATH = true
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+            - GF_SERVER_ROOT_URL=%(protocol)s://(domain)s/grafana
+            - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
     cadvisor:
         ports: []
