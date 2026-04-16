@@ -1,16 +1,20 @@
 package com.iem.backend.service;
 
 import com.iem.backend.dto.analytics.AnalyticsFilter;
+import com.iem.backend.dto.statistics.Seasonality;
 import com.iem.backend.dto.statistics.VesselTypeStats;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.entity.Role;
 import com.iem.backend.entity.User;
 import com.iem.backend.exception.ApiExceptions;
+import com.iem.backend.repository.SeasonalityRepository;
 import com.iem.backend.repository.VesselTypeStatsRepository;
+import com.iem.backend.repository.projection.SeasonalityProjection;
 import com.iem.backend.repository.projection.VesselTypeStatsProjection;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -19,9 +23,11 @@ import java.time.LocalDate;
 public class StatisticsService {
 
     private final VesselTypeStatsRepository vesselTypeStatsRepository;
+    private final SeasonalityRepository seasonalityRepository;
 
-    public StatisticsService(VesselTypeStatsRepository vesselTypeStatsRepository) {
+    public StatisticsService(VesselTypeStatsRepository vesselTypeStatsRepository, SeasonalityRepository seasonalityRepository) {
         this.vesselTypeStatsRepository = vesselTypeStatsRepository;
+        this.seasonalityRepository = seasonalityRepository;
     }
 
     public List<VesselTypeStats> getAllVesselTypeStats(
@@ -94,6 +100,88 @@ public class StatisticsService {
                         p.getTotalDurationHours(),
                         p.getAvgDurationHours(),
                         p.getEfficiencyKmh()
+                ))
+                .toList();
+    }
+
+    public List<Seasonality> getSeasonality(
+            CustomUserDetails currentUser, AnalyticsFilter filters
+    ){
+        User user = currentUser.getUser();
+        Role userRole = user.getRole();
+        checkAccess(userRole);
+        validateGeoFilter(filters);
+
+        LocalDate startDate = filters.startDate();
+        LocalDate endDate = filters.endDate();
+
+        List<SeasonalityProjection> results;
+        String granularity;
+
+        if(startDate == null && endDate == null){
+            Integer year = seasonalityRepository.findLatestYear();
+            granularity = "MONTH";
+            results = seasonalityRepository.findSeasonalityByYear(
+                    year,
+                    filters.vesselType(), filters.vesselGroup(), filters.country(),
+                    filters.latitude(), filters.longitude(), filters.radius()
+            );
+
+        } else {
+            LocalDate dateStart = startDate != null ? startDate : LocalDate.now();
+            LocalDate dateEnd = endDate != null ? endDate : dateStart;
+
+            if (dateEnd.isBefore(dateStart)) {
+                throw new ApiExceptions.BadRequestException("End date must be after or equal to start date");
+            }
+
+            long daysBetween = ChronoUnit.DAYS.between(dateStart, dateEnd);
+            Timestamp startTimestamp = Timestamp.valueOf(dateStart.atStartOfDay());
+            Timestamp endTimestamp = Timestamp.valueOf(dateEnd.atTime(23, 59, 59));
+
+            if(daysBetween == 0) {
+                granularity = "HOUR";
+                results = seasonalityRepository.findSeasonalityByHour(
+                        startTimestamp,
+                        filters.vesselType(), filters.vesselGroup(), filters.country(),
+                        filters.latitude(), filters.longitude(), filters.radius()
+                );
+            } else if (daysBetween <= 31) {
+                granularity = "DAY";
+                results = seasonalityRepository.findSeasonalityByDay(
+                        startTimestamp, endTimestamp,
+                        filters.vesselType(), filters.vesselGroup(), filters.country(),
+                        filters.latitude(), filters.longitude(), filters.radius()
+                );
+            } else if (daysBetween <= 90) {
+                granularity = "WEEK";
+                results = seasonalityRepository.findSeasonalityByWeek(
+                        startTimestamp, endTimestamp,
+                        filters.vesselType(), filters.vesselGroup(), filters.country(),
+                        filters.latitude(), filters.longitude(), filters.radius()
+                );
+            }
+            else {
+                granularity = "MONTH";
+                results = seasonalityRepository.findSeasonalityByMonth(
+                        startTimestamp, endTimestamp,
+                        filters.vesselType(), filters.vesselGroup(), filters.country(),
+                        filters.latitude(), filters.longitude(), filters.radius()
+                );
+            }
+        }
+
+        boolean isEmpty = results.stream().allMatch(p -> p.getTrajectoryCount() == 0);
+        if (isEmpty) return List.of();
+
+        return results.stream()
+                .map(p -> new Seasonality(
+                        p.getValue(),
+                        p.getYear(),
+                        p.getDate(),
+                        p.getEndDate(),
+                        p.getTrajectoryCount(),
+                        granularity
                 ))
                 .toList();
     }
