@@ -47,6 +47,6 @@ services:
             - prometheus
             - grafana
             - cadvisor
-        network:
+        networks:
             - ais-net
         restart: unless-stopped
