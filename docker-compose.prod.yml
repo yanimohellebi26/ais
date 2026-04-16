@@ -5,8 +5,8 @@ services:
     pgadmin:
         ports: []
         environment:
-            - PGADMIN_DEFAULT_EMAIL = ${PGADMIN_ADMIN_EMAIL}
-            - PGADMIN_DEFAULT_PASSWORD = ${PGADMIN_ADMIN_PASSWORD}
+            - PGADMIN_DEFAULT_EMAIL = ${PG_ADMIN_EMAIL}
+            - PGADMIN_DEFAULT_PASSWORD = ${PG_ADMIN_PASSWORD}
             - SCRIPT_NAME = /pgadmin
 
     prometheus:
