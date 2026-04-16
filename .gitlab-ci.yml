@@ -23,11 +23,11 @@ deploy_dev:
     - git pull origin dev
     - cp .env .env.backup 2>/dev/null || true
     - cp $ENV_FILE .env
-    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
-    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    - docker-compose -f docker-compose.yml down
+    - docker-compose -f docker-compose.yml build --no-cache
+    - docker-compose -f docker-compose.yml up -d
     - sleep 10
-    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+    - docker-compose -f docker-compose.yml ps
     - docker image prune -f
 
 deploy_prod:
@@ -44,9 +44,9 @@ deploy_prod:
         git fetch origin &&
         git checkout main &&
         git pull origin main &&
-        docker-compose -f docker-compose.yml -f docker-compose.prod.yml down &&
-        docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build &&
+        docker-compose -f docker-compose.yml down &&
+        docker-compose -f docker-compose.yml up -d --build &&
         sleep 10 &&
-        docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps &&
+        docker-compose -f docker-compose.yml ps &&
         docker image prune -f
       "
