@@ -1,16 +1,16 @@
 services:
     frontend:
-        ports: !reset []
+        ports: []
 
     pgadmin:
-        volumes: !reset []
+        ports: []
         environment:
             - PGADMIN_DEFAULT_EMAIL = ${PGADMIN_ADMIN_EMAIL}
             - PGADMIN_DEFAULT_PASSWORD = ${PGADMIN_ADMIN_PASSWORD}
             - SCRIPT_NAME = /pgadmin
 
     prometheus:
-        ports: !reset []
+        ports: []
         command:
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--storage.tsdb.path=/prometheus'
@@ -18,7 +18,7 @@ services:
             - '--web.route-prefix=/prometheus'
 
     grafana:
-        ports: !reset []
+        ports: []
         environment:
             - GF_SECURITY_ADMIN_USER = ${GRAFANA_USER}
             - GF_SECURITY_ADMIN_PASSWORD = ${GRAFANA_PASSWORD}
@@ -26,13 +26,13 @@ services:
             - GF_SERVER_SERVE_FROM_SUB_PATH = true
 
     cadvisor:
-        ports: !reset []
+        ports: []
 
     etl-api:
-        ports: !reset []
+        ports: []
 
     postgres-exporter:
-        ports: !reset []
+        ports: []
 
     nginx:
         image: nginx:alpine
