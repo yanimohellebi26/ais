@@ -23,7 +23,9 @@ deploy_dev:
     - git pull origin dev
     - cp .env .env.backup 2>/dev/null || true
     - cp $ENV_FILE .env
-    - docker-compose up -d --build
+    - docker-compose down
+    - docker-compose build --no-cache
+    - docker-compose up -d
     - sleep 10
     - docker-compose ps
     - docker image prune -f
