@@ -5,6 +5,7 @@ import com.iem.backend.dto.statistics.Seasonality;
 import com.iem.backend.dto.statistics.VesselTypeStats;
 import com.iem.backend.entity.CustomUserDetails;
 import com.iem.backend.service.StatisticsService;
+import com.iem.backend.utils.Granularity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,9 +38,11 @@ public class StatisticsController {
     @PostMapping("/seasonality")
     public ResponseEntity<List<Seasonality>> getSeasonalityStats(
             @RequestBody AnalyticsFilter filters,
+            @RequestParam(defaultValue = "AUTO") Granularity granularity,
+            @RequestParam(required = false) Integer year,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ){
-        List<Seasonality> seasonality = seasonalityService.getSeasonality(currentUser, filters);
+        List<Seasonality> seasonality = seasonalityService.getSeasonality(currentUser, filters, granularity, year);
 
         return ResponseEntity.ok(seasonality);
     }

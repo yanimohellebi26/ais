@@ -11,6 +11,7 @@ import com.iem.backend.repository.SeasonalityRepository;
 import com.iem.backend.repository.VesselTypeStatsRepository;
 import com.iem.backend.repository.projection.SeasonalityProjection;
 import com.iem.backend.repository.projection.VesselTypeStatsProjection;
+import com.iem.backend.utils.Granularity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -105,7 +106,8 @@ public class StatisticsService {
     }
 
     public List<Seasonality> getSeasonality(
-            CustomUserDetails currentUser, AnalyticsFilter filters
+            CustomUserDetails currentUser, AnalyticsFilter filters, Granularity granularity,
+            Integer yearParam
     ){
         User user = currentUser.getUser();
         Role userRole = user.getRole();
@@ -116,17 +118,17 @@ public class StatisticsService {
         LocalDate endDate = filters.endDate();
 
         List<SeasonalityProjection> results;
-        String granularity;
+        Granularity resolvedGranularity;
 
         if(startDate == null && endDate == null){
-            Integer year = seasonalityRepository.findLatestYear();
-            granularity = "MONTH";
+            // No filters
+            Integer year = yearParam != null ? yearParam : seasonalityRepository.findLatestYear();
+            resolvedGranularity = Granularity.MONTH;
             results = seasonalityRepository.findSeasonalityByYear(
                     year,
                     filters.vesselType(), filters.vesselGroup(), filters.country(),
                     filters.latitude(), filters.longitude(), filters.radius()
             );
-
         } else {
             LocalDate dateStart = startDate != null ? startDate : LocalDate.now();
             LocalDate dateEnd = endDate != null ? endDate : dateStart;
@@ -139,36 +141,38 @@ public class StatisticsService {
             Timestamp startTimestamp = Timestamp.valueOf(dateStart.atStartOfDay());
             Timestamp endTimestamp = Timestamp.valueOf(dateEnd.atTime(23, 59, 59));
 
-            if(daysBetween == 0) {
-                granularity = "HOUR";
-                results = seasonalityRepository.findSeasonalityByHour(
+            resolvedGranularity = granularity == Granularity.AUTO ? resolveAuto(daysBetween) : granularity;
+
+            if (resolvedGranularity == Granularity.HOUR && daysBetween > 0) {
+                throw new ApiExceptions.BadRequestException("HOUR granularity is only allowed for a single day range");
+            }
+            if (resolvedGranularity == Granularity.DAY && daysBetween > 90) {
+                throw new ApiExceptions.BadRequestException("DAY granularity is not allowed for ranges over 90 days");
+            }
+
+            results = switch (resolvedGranularity) {
+                case HOUR -> seasonalityRepository.findSeasonalityByHour(
                         startTimestamp,
                         filters.vesselType(), filters.vesselGroup(), filters.country(),
                         filters.latitude(), filters.longitude(), filters.radius()
                 );
-            } else if (daysBetween <= 31) {
-                granularity = "DAY";
-                results = seasonalityRepository.findSeasonalityByDay(
+                case DAY -> seasonalityRepository.findSeasonalityByDay(
                         startTimestamp, endTimestamp,
                         filters.vesselType(), filters.vesselGroup(), filters.country(),
                         filters.latitude(), filters.longitude(), filters.radius()
                 );
-            } else if (daysBetween <= 90) {
-                granularity = "WEEK";
-                results = seasonalityRepository.findSeasonalityByWeek(
+                case WEEK -> seasonalityRepository.findSeasonalityByWeek(
                         startTimestamp, endTimestamp,
                         filters.vesselType(), filters.vesselGroup(), filters.country(),
                         filters.latitude(), filters.longitude(), filters.radius()
                 );
-            }
-            else {
-                granularity = "MONTH";
-                results = seasonalityRepository.findSeasonalityByMonth(
+                case MONTH -> seasonalityRepository.findSeasonalityByMonth(
                         startTimestamp, endTimestamp,
                         filters.vesselType(), filters.vesselGroup(), filters.country(),
                         filters.latitude(), filters.longitude(), filters.radius()
                 );
-            }
+                default -> throw new ApiExceptions.BadRequestException("Unexpected granularity");
+            };
         }
 
         boolean isEmpty = results.stream().allMatch(p -> p.getTrajectoryCount() == 0);
@@ -181,7 +185,7 @@ public class StatisticsService {
                         p.getDate(),
                         p.getEndDate(),
                         p.getTrajectoryCount(),
-                        granularity
+                        resolvedGranularity.name()
                 ))
                 .toList();
     }
@@ -203,5 +207,12 @@ public class StatisticsService {
         if (hasPartialGeo && !hasGeo) {
             throw new ApiExceptions.BadRequestException("Latitude, longitude and radius must all be provided together");
         }
+    }
+
+    private Granularity resolveAuto(long daysBetween) {
+        if (daysBetween == 0)  return Granularity.HOUR;
+        if (daysBetween <= 31) return Granularity.DAY;
+        if (daysBetween <= 90) return Granularity.WEEK;
+        return Granularity.MONTH;
     }
 }
