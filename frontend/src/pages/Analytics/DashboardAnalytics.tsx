@@ -4,6 +4,7 @@ import AnalyticsAllModules from "./Components/AnalyticsAllModules";
 import TrafficDensityModule from "./Components/TrafficDensityModule";
 import CountryPresenceModule from "./Components/CountryPresenceModule";
 import VesselTypeStatisticsModule from "./Components/VesselTypeStatisticsModule";
+import SeasonalityModule from "./Components/SeasonalityModule";
 
 const DashboardAnalytics: React.FC = () => {
     return (
@@ -12,6 +13,7 @@ const DashboardAnalytics: React.FC = () => {
             <Route path="traffic-density" element={<TrafficDensityModule />} />
             <Route path="country-presence" element={<CountryPresenceModule />} />
             <Route path="vessel-type-statistics" element={<VesselTypeStatisticsModule />} />
+            <Route path="seasonality" element={<SeasonalityModule />} />
         </Routes>
     );
 };

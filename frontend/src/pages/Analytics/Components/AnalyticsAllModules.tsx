@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
 import CountryPresenceWidget from "../../Map/components/CountryPresenceWidget";
 import VesselTypeStatisticsWidget from "./VesselTypeStatisticsWidget";
+import SeasonalityWidget from "./SeasonalityWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
@@ -56,6 +57,15 @@ const AnalyticsAllModules: React.FC = () => {
                     <VesselTypeStatisticsWidget filters={filters} />
                     <p className="text-sm text-gray-500">
                         Compare vessel types across key metrics
+                    </p>
+                </BaseModule>
+                <BaseModule
+                    title={"Seasonality"}
+                    onClick={() => navigate("seasonality", { state: { filters } })}
+                >
+                    <SeasonalityWidget filters={filters} />
+                    <p className="text-sm text-gray-500">
+                        Analyze vessel traffic evolution over time
                     </p>
                 </BaseModule>
             </div>
