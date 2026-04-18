@@ -44,11 +44,14 @@ export const usePortRoutes = ({ filters, map }: { filters?: AnalyticsFilters, ma
                 const bounds = nativeMap.getBounds();
                 const zoom = Math.floor(nativeMap.getZoom());
 
+                const minLon = Math.max(-179.9999, Math.min(bounds.getWest(), 179.9999));
+                const maxLon = Math.max(-179.9999, Math.min(bounds.getEast(), 179.9999));
+
                 const params = new URLSearchParams({
                     minLat: bounds.getSouth().toString(),
                     maxLat: bounds.getNorth().toString(),
-                    minLon: bounds.getWest().toString(),
-                    maxLon: bounds.getEast().toString(),
+                    minLon: minLon.toString(),
+                    maxLon: maxLon.toString(),
                     zoom: zoom.toString(),
                     startDate: filters?.dateFrom ?? "",
                     endDate: filters?.dateTo ?? "",
