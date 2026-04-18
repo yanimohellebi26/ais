@@ -17,7 +17,7 @@ def compute_port_routes(context: PipelineContext):
             t.start_time::date AS route_date,
             p_start.id AS src_port_id,
             p_end.id AS dest_port_id,
-            COUNT(*) AS ship_count,
+            COUNT(DISTINCT t.vessel_id) AS ship_count,
             AVG(t.duration_minutes) AS avg_duration_minutes,
             ST_MakeLine(p_start.geom::geometry, p_end.geom::geometry)::geography AS geom
         FROM trajectories t

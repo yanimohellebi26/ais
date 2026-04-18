@@ -1,6 +1,6 @@
 ALTER TABLE trajectories 
-ADD COLUMN start_point geography(Point,4326),
-ADD COLUMN end_point geography(Point,4326);
+ADD COLUMN IF NOT EXISTS start_point geography(Point,4326),
+ADD COLUMN IF NOT EXISTS end_point geography(Point,4326);
 
 UPDATE trajectories
 SET 
