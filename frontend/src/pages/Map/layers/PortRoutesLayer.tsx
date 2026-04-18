@@ -65,9 +65,9 @@ const PortRoutesLayer: React.FC<{ filters?: any }> = ({ filters }) => {
                     id="port-routes-line"
                     type="line"
                     paint={{
-                        'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#f39c12', '#3498db'],
+                        'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#f39c12', '#2C12F3'],
                         'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 8, ['interpolate', ['linear'], ['get', 'count'], 1, 2, 20, 6]],
-                        'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, isHovering ? 0.2 : 0.7]
+                        'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 1, isHovering ? 0.2 : 1.5]
                     }}
                 />
             </Source>
