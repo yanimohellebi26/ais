@@ -105,6 +105,12 @@ update-protected-areas:
     - func: cleanup_wdpa_files
       kwargs: {}
 
+add-port-routes:
+  desc: "Compute and insert port routes in database"
+  steps:
+    - func: compute_port_routes
+      kwargs: {}
+
 test:
   desc: "Test pipeline"
   steps:

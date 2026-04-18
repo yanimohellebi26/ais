@@ -27,7 +27,8 @@ def compute_trajectories_db(context: PipelineContext, **kwargs):
         )
         INSERT INTO trajectories (
             id, vessel_id, start_time, end_time, 
-            duration_minutes, point_count, distance_nm, avg_speed, geom
+            duration_minutes, point_count, distance_nm, avg_speed, geom,
+            start_point, end_point
         )
         SELECT 
             gen_random_uuid(),
@@ -38,7 +39,9 @@ def compute_trajectories_db(context: PipelineContext, **kwargs):
             point_count,
             ST_Length(geom::geography) / 1852.0 AS distance_nm,
             (ST_Length(geom::geography) / 1852.0) / NULLIF(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600.0, 0) AS avg_speed,
-            geom
+            geom,
+            ST_StartPoint(geom)::geography,
+            ST_EndPoint(geom)::geography
         FROM daily_positions
         WHERE 
             (ST_Length(geom::geography) / 1852.0) > 1
