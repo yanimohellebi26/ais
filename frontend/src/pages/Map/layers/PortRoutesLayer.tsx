@@ -7,7 +7,7 @@ import { Ship, Clock, ArrowRightLeft } from "lucide-react";
 
 const PortRoutesLayer: React.FC<{ filters?: any }> = ({ filters }) => {
     const { current: map } = useMap();
-    const { data: rawData } = usePortRoutes({ filters });
+    const { data: rawData } = usePortRoutes({ map, filters });
 
     const data = useMemo(() => {
         if (!rawData || !rawData.features) return rawData;

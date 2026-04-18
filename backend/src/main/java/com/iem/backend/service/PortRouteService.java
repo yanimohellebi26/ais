@@ -20,15 +20,20 @@ public class PortRouteService {
         this.repository = repository;
     }
 
-    public String getRoutesAsFeatureCollection(CustomUserDetails currentUser, AnalyticsFilter filters) {
+    public String getRoutesAsFeatureCollection(CustomUserDetails currentUser, AnalyticsFilter filters, double minLat, double maxLat, double minLon, double maxLon, int zoom) {
         checkAccess(currentUser.getUser().getRole());
+
+        double tolerance = Math.pow(2, 2 - zoom);
         
         List<PortRouteProjection> results = repository.getRoutesGeoJson(
                 filters.startDate(),
                 filters.endDate(),
                 filters.latitude(),
                 filters.longitude(),
-                filters.radius()
+                filters.radius(),
+                minLat, maxLat, minLon, maxLon,
+                zoom,
+                tolerance
         );
 
         StringBuilder sb = new StringBuilder();
