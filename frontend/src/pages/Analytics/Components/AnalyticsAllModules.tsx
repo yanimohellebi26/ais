@@ -8,6 +8,7 @@ import TrafficDensityWidget from "../../Map/components/TrafficDensityWidget";
 import CountryPresenceWidget from "../../Map/components/CountryPresenceWidget";
 import VesselTypeStatisticsWidget from "./VesselTypeStatisticsWidget";
 import SeasonalityWidget from "./SeasonalityWidget";
+import PortRoutesBarWidget from "../../Map/components/PortRoutesWidget";
 
 const AnalyticsAllModules: React.FC = () => {
 
@@ -66,6 +67,15 @@ const AnalyticsAllModules: React.FC = () => {
                     <SeasonalityWidget filters={filters} />
                     <p className="text-sm text-gray-500">
                         Analyze vessel traffic evolution over time
+                    </p>
+                </BaseModule>
+                <BaseModule
+                    title={"Port Routes"}
+                    onClick={() => navigate("port-routes", { state: { filters } })}
+                >
+                    <PortRoutesBarWidget filters={filters} />
+                    <p className="text-sm text-gray-500">
+                        Analyze corridors and routes between ports
                     </p>
                 </BaseModule>
             </div>

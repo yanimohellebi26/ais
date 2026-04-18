@@ -14,21 +14,25 @@ public interface PortRouteRepository extends JpaRepository<PortRoute, Integer> {
     @Query(value = """
         SELECT 
             r.src_port_id AS srcPortId, 
-            ps.name AS srcPortName,
+            ps.name AS srcPortName, 
             r.dest_port_id AS destPortId, 
-            pd.name AS destPortName,
-            COUNT(*) AS ship_count,
-            AVG(r.duration_minutes) AS avg_duration,
+            pd.name AS destPortName, 
+            COUNT(*) AS shipCount, 
+            AVG(r.avg_duration_minutes) AS avgDuration, 
             ST_AsGeoJSON(ST_Simplify(r.geom::geometry, 0.01)) AS geojson
         FROM port_routes r
         JOIN port ps ON r.src_port_id = ps.id
         JOIN port pd ON r.dest_port_id = pd.id
-        WHERE (:startDate IS NULL OR r.route_date >= :startDate)
-        AND (:endDate IS NULL OR r.route_date <= :endDate)
+        WHERE (CAST(:startDate AS date) IS NULL OR r.route_date >= CAST(:startDate AS date))
+        AND (CAST(:endDate AS date) IS NULL OR r.route_date <= CAST(:endDate AS date))
         AND (
-                (:lat IS NOT NULL AND :lon IS NOT NULL AND :radius IS NOT NULL
-                    AND ST_DWithin(r.geom, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, :radius)
-                ) OR (:lat IS NULL)
+            (CAST(:lat AS double precision) IS NULL OR CAST(:lon AS double precision) IS NULL OR CAST(:radius AS double precision) IS NULL)
+            OR 
+            ST_DWithin(
+                r.geom::geography, 
+                ST_SetSRID(ST_MakePoint(CAST(:lon AS double precision), CAST(:lat AS double precision)), 4326)::geography, 
+                CAST(:radius AS double precision)
+            )
         )
         GROUP BY r.src_port_id, ps.name, r.dest_port_id, pd.name, r.geom
         """, nativeQuery = true)
